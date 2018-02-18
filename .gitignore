@@ -1,0 +1,30 @@
+# Ignore all
+*
+
+# Avoid ignoring directory
+!*/
+
+# Avoid ignoring some suffix
+!*.[0-9]
+!*.cfg
+!*.md
+!*.msg
+!*.sh
+
+# Avoid ignoring default file
+!.dockerignore
+!.gitignore
+!.lib
+!.function
+!containerd
+!f[0-9]
+!ifinit
+!mdisk
+!pw
+!tags
+!wtmp
+!Dockerfile
+!LICENSE
+
+# Ignore some directory
+.*/
