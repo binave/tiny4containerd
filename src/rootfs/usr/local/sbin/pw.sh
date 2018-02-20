@@ -15,33 +15,33 @@
 
 _load() {
     # load MD5-based password, use: openssl passwd -1 [string]
-    [ $(id -u) = 0 ] || { echo 'must be root' >&2; return 1; }
+    [ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; return 1; }
 
     # import settings from env
     [ -s /etc/env ] && . /etc/env;
 
-    : ${PW_CONFIG:='/opt/tiny/etc/passwd'};
+    : ${PW_CONFIG:='/var/tiny/etc/passwd'};
 
     [ -s $PW_CONFIG ] || printf \
         "# [username]:[MD5-based password (openssl passwd -1 [password])]\n\n" > $PW_CONFIG;
 
-    awk -F# '{print $1}' $PW_CONFIG | grep '[a-z]\+:[$a-zA-Z\.]\+' | chpasswd -e 2>&1 | \
-        grep -q 'password.*changed' || return 1;
+    /usr/bin/awk -F# '{print $1}' $PW_CONFIG | /bin/grep '[a-z]\+:[$a-zA-Z\.]\+' | /usr/sbin/chpasswd -e 2>&1 | \
+        /bin/grep -q 'password.*changed' || return 1;
 
-    # no auto login
-    echo booting > /etc/sysconfig/noautologin;
+    # # no auto login
+    # echo booting > /etc/sysconfig/noautologin;
 
     # chang sudo
-    sed -i 's/NOPASSWD/PASSWD/g' /etc/sudoers && \
+    /bin/sed -i 's/NOPASSWD/PASSWD/g' /etc/sudoers && \
         echo -e '\n%staff ALL=(ALL) NOPASSWD: WRITE_CMDS\n' >> /etc/sudoers;
 
     # sudo -i, -s mast use root password
-    awk -F# '{print $1}' $PW_CONFIG | grep -q 'root:[$a-zA-Z\.]\+' && \
+    /usr/bin/awk -F# '{print $1}' $PW_CONFIG | /bin/grep -q 'root:[$a-zA-Z\.]\+' && \
         printf '\nDefaults rootpw\n\n' >> /etc/sudoers
 }
 
 _string() {
-    openssl rand -base64 ${1:-9} | tr -d '\n' | sed "s/[^0-9A-Za-z]/${RANDOM:0:1}/g";
+    openssl rand -base64 ${1:-9} | /usr/bin/tr -d '\n' | /bin/sed "s/[^0-9A-Za-z]/${RANDOM:0:1}/g";
     printf "\n"
 }
 

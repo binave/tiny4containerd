@@ -13,13 +13,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
 # dockerd start script
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from env (e.g. HTTP_PROXY, HTTPS_PROXY)
 [ -s /etc/env ] && . /etc/env;
-
-. /etc/init.d/tc-functions;
 
 : ${IF_PREFIX:=eth};
 : ${CONTAINERD_ULIMITS:="1048576"};
@@ -33,13 +33,13 @@
 
 : ${WAIT_LIMIT:=20};
 
-STAMP=`date +%Y%m%d`;
+Ymd=`date +%Y%m%d`;
 CERT_INTERFACES="switch0 ${IF_PREFIX}0 ${IF_PREFIX}1 ${IF_PREFIX}2 ${IF_PREFIX}3 ${IF_PREFIX}4";
 
-CONTAINERD_LOG="/log/tiny/${STAMP:0:6}/${0##*/}_$STAMP.log";
-CONTAINERD_DIR="/opt/${0##*/}ata";
+CONTAINERD_LOG="/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
+CONTAINERD_DIR="/var/${0##*/}ata";
 
-SERVER_TLS_DIR="/opt/tiny/tls";
+SERVER_TLS_DIR="/var/tiny/tls";
 SERVER_KEY="$SERVER_TLS_DIR/serverkey.pem";
 SERVER_CSR="$SERVER_TLS_DIR/servercsr.pem";
 SERVER_CERT="$SERVER_TLS_DIR/server.pem";
@@ -54,18 +54,15 @@ CLIENT_CSR="$CLIENT_TLS_DIR/csr.pem";
 CLIENT_CERT="$CLIENT_TLS_DIR/cert.pem";
 CLIENT_EXTFILE="$CLIENT_TLS_DIR/cliextfile.txt";
 
-# Add /usr/local/sbin to the path.
-export PATH=$PATH:/usr/local/sbin;
-
 _start() {
     _check && {
-        printf "${GREEN}container already running.$NORMAL\n";
+        printf "container already running.\n";
         return 0
     };
 
     [ -e "/etc/docker" ] || {
-        mkdir -p "/opt/tiny/etc/docker";
-        ln -sf "/opt/tiny/etc/docker" "/etc/docker"
+        mkdir -p "/var/tiny/etc/docker";
+        ln -sf "/var/tiny/etc/docker" "/etc/docker"
     };
 
     _install_tls;
@@ -82,14 +79,14 @@ _start() {
     ulimit -p $CONTAINERD_ULIMITS;
 
     printf %s "------------------------------
-/usr/local/bin/dockerd --data-root \"$CONTAINERD_DIR\" -H unix:// $CONTAINERD_HOST $EXTRA_ARGS >> \"$CONTAINERD_LOG\"
+dockerd --data-root \"$CONTAINERD_DIR\" -H unix:// $CONTAINERD_HOST $EXTRA_ARGS >> \"$CONTAINERD_LOG\"
 " >> "$CONTAINERD_LOG";
 
-    /usr/local/bin/dockerd --data-root "$CONTAINERD_DIR" -H unix:// $CONTAINERD_HOST $EXTRA_ARGS >> "$CONTAINERD_LOG" 2>&1 &
+    dockerd --data-root "$CONTAINERD_DIR" -H unix:// $CONTAINERD_HOST $EXTRA_ARGS >> "$CONTAINERD_LOG" 2>&1 &
 
     [ $? == 0 ] || return 1
 
-    printf "${GREEN}container daemon is running.$NORMAL\n";
+    printf "container daemon is running.\n";
     _start_container
 }
 
@@ -116,7 +113,7 @@ _start_container(){
     done
 
     [ $count == $WAIT_LIMIT ] && {
-        printf "[${RED}ERROR$NORMAL] Cannot connect to the Docker daemon at unix:///var/run/docker.sock.\n" >&2;
+        printf "[ERROR] Cannot connect to the Docker daemon at unix:///var/run/docker.sock.\n" >&2;
         return 1
     };
 
@@ -164,7 +161,7 @@ _stop() {
     do
         sleep 0.1
     done
-    printf "${GREEN}container daemon is stop.$NORMAL\n"
+    printf "container daemon is stop.\n"
 }
 
 # stop all container by config
@@ -182,7 +179,7 @@ _restart() {
             _check || break;
             sleep 1
         done
-        [ $sum == $WAIT_LIMIT ] && { echo "[${RED}ERROR$NORMAL] Failed to stop container dameon. '$sum'"; return 1; }
+        [ $sum == $WAIT_LIMIT ] && { echo "[ERROR] Failed to stop container dameon. '$sum'"; return 1; }
     fi
     _start
 }

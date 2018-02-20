@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/busybox ash
 #   Copyright 2018 bin jin
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,24 +13,23 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-[ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
+[ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 _incremental() {
-    touch $1;
-    diff $1 - | grep '^+[^+]' | sed 's/^\+//g' >> $1
+    /bin/touch $1;
+    /usr/bin/diff $1 - | /bin/grep '^+[^+]' | /bin/sed 's/^\+//g' >> $1
 }
 
 _latnemercni() {
-    touch $1;
-    sed '1!G;h;$!d' | diff $1 - | grep '^+[^+]' | \
-        grep -v 'still logged in' | sed 's/^\+//g' >> $1
+    /bin/touch $1;
+    /bin/sed '1!G;h;$!d' | /usr/bin/diff $1 - | /bin/grep '^+[^+]' | \
+        /bin/grep -v 'still logged in' | /bin/sed 's/^\+//g' >> $1
 }
 
-STAMP=`date +%Y%m%d%H`;
-LOG_DIR=/log/tiny/${STAMP:0:6};
-mkdir -p $LOG_DIR;
+YmdH=`date +%Y%m%d%H`;
+/bin/mkdir -p /log/tiny/${YmdH:0:6};
 
-cat /home/*/.ash_history /root/.ash_history 2>/dev/null | _incremental $LOG_DIR/history_$STAMP.log;
+/bin/cat /home/*/.ash_history /root/.ash_history 2>/dev/null | _incremental /log/tiny/${YmdH:0:6}/history_$YmdH.log;
 
 # > /var/log/wtmp
-/usr/bin/last | _latnemercni $LOG_DIR/last_${STAMP:0:8}.log
+/usr/bin/last | _latnemercni /log/tiny/${YmdH:0:6}/last_${YmdH:0:8}.log

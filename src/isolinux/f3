@@ -1,11 +1,5 @@
-At boot prompt enter corepure64 followed by one or more space seperated options:
+At boot prompt enter tiny4containerd followed by one or more space seperated options:
 
  nodisk                     Skip mdisk
- tz=CST-8                   Timezone
  console=tty0               Serial port consoles
- waitusb=10                 Wait 10 seconds for slow USB devices
- base                       Do not load any extensions.
- noembed                    Unpack initramfs to tmpfs
- norestore                  Turn off the automatic restore
- noswap                     Do not use swap partition
 

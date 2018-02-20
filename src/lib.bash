@@ -84,3 +84,33 @@ _hash() {
     printf "${1##*/}:\n${h//(stdin)= /    }\n";
     return 0
 }
+
+_case_version() {
+    printf " $*\n$(tr "[:lower:]" "[:upper:]" <<< " ${2}_$3=")" >&2
+}
+
+_last_version() {
+    local ver=$(sed 's/LVM\|\.tgz\|\.tar.*//g;' | sort --version-sort | tail -1);
+    [[ $ver == [0-9]*\.*[0-9]* ]] && {
+        printf $ver;
+        printf "$ver\n" >&2;
+        return 0
+    };
+    printf "UNKNOWN\n";
+    return 1
+}
+
+_downlock() {
+    local prefix=${1##*/} suffix;
+    suffix=${prefix##*[0-9]};
+    [ "${suffix:0:1}" != "." ] && suffix=".${suffix#*.}";
+    prefix=${prefix%%-*};
+    [ "$prefix" == "${1##*/}" ] && prefix="${prefix%%[0-9]*}";
+    printf " ----------- download $prefix ---------------------\n";
+    curl -L --retry 10 -o $TMP/$prefix$suffix $1 || {
+        printf "[ERROR] download $prefix fail.\n";
+        return 1
+    };
+    [ "$2" ] || touch $TMP/$prefix$suffix.lock;
+    return 0
+}

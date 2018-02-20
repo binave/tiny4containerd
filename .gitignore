@@ -5,7 +5,7 @@
 !*/
 
 # Avoid ignoring some suffix
-!*.[0-9]
+!*.bash
 !*.cfg
 !*.md
 !*.msg
@@ -14,15 +14,7 @@
 # Avoid ignoring default file
 !.dockerignore
 !.gitignore
-!.lib
-!.function
-!containerd
 !f[0-9]
-!ifinit
-!mdisk
-!pw
-!tags
-!wtmp
 !Dockerfile
 !LICENSE
 

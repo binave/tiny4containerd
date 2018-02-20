@@ -1,19 +1,19 @@
-#!/bin/sh
+#!/bin/busybox ash
 # Begin basic-firewall
 #
 # This is a very basic firewall for normal users.
 # It blocks all incoming traffic, allows all outgoing,
 # and only allows incoming stuff when you started it (ie browsing)
 
-[ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
+[ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 _init() {
 
     # Insert connection-tracking modules
-    modprobe -q iptable_nat
-    modprobe -q nf_conntrack_ipv4
-    modprobe -q nf_conntrack_ftp
-    modprobe -q ipt_LOG
+    /sbin/modprobe -q iptable_nat
+    /sbin/modprobe -q nf_conntrack_ipv4
+    /sbin/modprobe -q nf_conntrack_ftp
+    /sbin/modprobe -q ipt_LOG
 
     # Enable broadcast echo Protection
     echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
@@ -89,11 +89,10 @@ _init() {
 }
 
 _status() {
-    . /etc/init.d/tc-functions
-    printf "$BLUE\n"
+    printf "\033[1;34m"
     # To display numeric values, type
     iptables -vnL
-    printf "$NORMAL\n"
+    printf "\033[0;39m"
 }
 
 case $1 in

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-[ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
+[ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from env
 [ -s /etc/env ] && . /etc/env;
@@ -11,21 +11,21 @@
 # Move /usr/local/etc/ssh to /opt/tiny/ssh if it doesn't exist
 # if it exists, remove the ramdisk's ssh config, so that the hard drive's is properly linked
 [ ! -d /opt/tiny/ssh ] && \
-    mv /usr/local/etc/ssh /opt/tiny/ || \
-        rm -fr /usr/local/etc/ssh;
+    /bin/mv /usr/local/etc/ssh /opt/tiny/ || \
+        /bin/rm -fr /usr/local/etc/ssh;
 
-ln -s /opt/tiny/ssh /usr/local/etc/ssh;
+/bin/ln -s /opt/tiny/ssh /usr/local/etc/ssh;
 
 [ -f /usr/local/etc/ssh/ssh_config ] || \
-    cp /usr/local/etc/ssh/ssh_config.orig \
+    /bin/cp /usr/local/etc/ssh/ssh_config.orig \
         /usr/local/etc/ssh/ssh_config;
 
 [ -f /usr/local/etc/ssh/sshd_config ] || \
-    cp /usr/local/etc/ssh/sshd_config.orig \
+    /bin/cp /usr/local/etc/ssh/sshd_config.orig \
         /usr/local/etc/ssh/sshd_config;
 
 # speed up login
-grep -q "^UseDNS no" /usr/local/etc/ssh/sshd_config || \
+/bin/grep -q "^UseDNS no" /usr/local/etc/ssh/sshd_config || \
     echo "UseDNS no" >> /usr/local/etc/ssh/sshd_config;
 
 # ssh dameon
