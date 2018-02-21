@@ -7,6 +7,7 @@ THIS_DIR=$(cd `dirname $0`; pwd);
 . $THIS_DIR/env.bash; # load environment variable
 . $THIS_DIR/lib.bash; # load common function
 . $THIS_DIR/function.bash;
+. $THIS_DIR/profile.bash;
 
 _main() {
     # set work path
@@ -76,19 +77,25 @@ _main() {
         _message_queue --put "_make_kernel"; # this may use most time
         _message_queue --put "_make_busybox";
         _message_queue --put "_make_libcap2";
+        _message_queue --put "_apply_rootfs";
         _message_queue --put "_make_dropbear";
+        _message_queue --put "_make_openssl";
         _message_queue --put "_make_iptables";
         _message_queue --put "_make_mdadm";
         _message_queue --put "_make_lvm2";
 
         _downlock $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 || return $((LINENO / 2));
 
+        _message_queue --put "_create_etc";
+
         _downlock $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz || return $((LINENO / 2));
 
         # for dropbear
-        _downlock $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz ||  return $((LINENO / 2));
+        _downlock $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz || return $((LINENO / 2));
 
         _downlock $DROPBEAR_DOWNLOAD/dropbear-$dropbear_version.tar.bz2 || return $((LINENO / 2));
+
+        _downlock $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz || return $((LINENO / 2));
 
         _downlock $IPTABLES_DOWNLOAD/files/iptables-$iptables_version.tar.bz2 || return $((LINENO / 2));
 
@@ -98,13 +105,10 @@ _main() {
 
         # _downlock $GIT_DOWNLOAD/git-$git_version.tar.xz || return $((LINENO / 2));
 
-        # https://www.openssl.org/source/openssl-1.0.2n.tar.gz
-
     fi
 
     apt-get -y install $APT_GET_LIST_ISO;
 
-    _message_queue --put "_apply_rootfs";
     _message_queue --destroy; # close queue
 
     _downlock "$CURL_DOWNLOAD/curl-$curl_version.tar.xz" - || return $((LINENO / 2));
@@ -139,7 +143,7 @@ _main() {
         /usr/lib/syslinux/modules/bios/ldlinux.c32 \
         $TMP/iso/boot/isolinux/;
 
-    _modify_config;
+    _create_config;
 
     echo "-------------- addgroup --------------------------";
     # make sure the "docker" group exists already

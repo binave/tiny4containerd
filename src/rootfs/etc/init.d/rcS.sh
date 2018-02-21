@@ -12,7 +12,7 @@ printf "\n\n[`date`]\nRunning init script...\n";
 
 # for find/crond/log
 /bin/mkdir -p \
-    /var/tiny/etc/crontabs \
+    /var/spool/cron/crontabs \
     /var/tiny/etc/init.d \
     /log/tiny/${Ymd:0:6};
 

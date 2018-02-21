@@ -41,7 +41,8 @@ _make_busybox() {
     cd $TMP/busybox-$busybox_version;
     make && make install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv _install/* $ROOTFS
+    cp -adv _install/* $ROOTFS;
+    # rm -f linuxrc
 }
 
 _make_libcap2() {
@@ -49,12 +50,12 @@ _make_libcap2() {
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/libcap-$libcap2_version;
-        mkdir -p output;
-        sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
-        make && make prefix=`pwd`/output install || return $(_err_line $((LINENO / 2)));
-        mkdir -p $ROOTFS/usr/local/lib;
-        cp -av `pwd`/output/lib64/* $ROOTFS/usr/local/lib;
-        rm -fr $TMP/libcap* # clear
+    mkdir -p output;
+    sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
+    make && make prefix=`pwd`/output install || return $(_err_line $((LINENO / 2)));
+    mkdir -p $ROOTFS/usr/local/lib;
+    cp -av `pwd`/output/lib64/* $ROOTFS/usr/local/lib;
+    rm -fr $TMP/libcap* # clear
 }
 
 _make_dropbear() {
@@ -75,6 +76,19 @@ _make_dropbear() {
     # mkdir $ROOTFS/etc/dropbear;
     # dropbearkey -t rsa -s 1024 -f $ROOTFS/etc/dropbear/dropbear_rsa_host_key;
     # dropbearkey -t dss -f $ROOTFS/etc/dropbear/dropbear_dss_host_key;
+}
+
+_make_openssl() {
+    _wait_file $TMP/openssl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    cd $TMP/openssl-$openssl_version;
+    ./config -fPIC no-shared --prefix=$ROOTFS && make && make install;
+
+    echo " ----------- ca-certificates ----------------------";
+    # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
+    chroot $ROOTFS sh -xc 'ldconfig && /bin/openssl' || return $(_err_line $((LINENO / 2)));
+
+    ln -sT lib $ROOTFS/lib64;
+    ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
 }
 
 # TODO _nftables
@@ -119,13 +133,6 @@ _make_lvm2() {
     ./configure --prefix=$ROOTFS && make && make install
 }
 
-_make_openssl() {
-    _wait_file $TMP/openssl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/openssl-$openssl_version;
-    ./config -fPIC no-shared;
-    make
-}
-
 _make_curl() {
     _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     cd $TMP/curl-$curl_version;
@@ -142,16 +149,56 @@ _make_curl() {
 #     make install-doc;
 # }
 
+_apt_get_install() {
+    # clear work path
+    rm -fr /var/lib/apt/lists/*;
+    {
+        curl -L --connect-timeout 1 http://www.google.com >/dev/null 2>&1 && {
+            printf %s "$DEBIAN_SOURCE";
+            :
+        } || printf %s "$DEBIAN_CN_SOURCE"
+    } | tee /etc/apt/sources.list;
+    apt-get update && apt-get -y install $APT_GET_LIST_MAKE;
+
+    return $?
+}
+
 _apply_rootfs() {
     cd $ROOTFS;
-    # rm -f linuxrc;
-
-    mkdir -pv dev etc/init.d etc/sysconfig home lib media mnt proc root sys tmp var;
-
-    # find $ROOTFS -type f -exec strip --strip-all {} \;
+    mkdir -pv \
+        dev \
+        etc/init.d \
+        etc/ssl/certs \
+        etc/skel \
+        etc/sysconfig \
+        home lib media mnt proc root sys tmp \
+        usr/local/etc/acpi/events \
+        usr/sbin \
+        usr/share;
+        # var run
 
     # Copy our custom rootfs,
     cp -frv $THIS_DIR/rootfs/* $ROOTFS;
+
+    # ca-certificates
+    cp /etc/ca-certificates.conf            $ROOTFS/etc;
+    cp -adv /etc/ssl/certs                  $ROOTFS/etc/ssl;
+    cp /usr/sbin/update-ca-certificates     $ROOTFS/usr/sbin;
+    cp -frv /usr/share/ca-certificates      $ROOTFS/usr/share;
+
+    cp -vL /usr/share/zoneinfo/UTC $ROOTFS/etc/localtime;
+
+    # setup acpi config dir
+    # tcl6's sshd is compiled without `/usr/local/sbin` in the path, need `ip`, link it elsewhere
+    # Make some handy symlinks (so these things are easier to find), visudo, Subversion link, after /opt/bin in $PATH
+    ln -svT /usr/local/etc/acpi     $ROOTFS/etc/acpi;
+    ln -svT /usr/local/sbin/ip      $ROOTFS/usr/sbin/ip;
+    ln -fs  /bin/vi                 $ROOTFS/usr/bin/;
+
+    # subversion
+    ln -fs /var/subversion/bin/svn         $ROOTFS/usr/bin/;
+    ln -fs /var/subversion/bin/svnadmin    $ROOTFS/usr/bin/;
+    ln -fs /var/subversion/bin/svnlook     $ROOTFS/usr/bin/;
 
     # trim suffix
     local sf;
@@ -162,85 +209,15 @@ _apply_rootfs() {
         # chmod
     done
 
-    echo " ----------- ca-certificates ----------------------";
-    # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
-    chroot $ROOTFS sh -xc ' \
-        ldconfig \
-        && /usr/local/tce.installed/openssl \
-        && /usr/local/tce.installed/ca-certificates \
-    ' || return $(_err_line $((LINENO / 2)));
-
-    ln -sT lib $ROOTFS/lib64;
-    ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
-}
-
-_modify_config() {
-    echo " ------------ modify config -----------------------";
-    mkdir -p $ROOTFS/usr/local/etc/acpi/events/;
-    printf %s 'event=button/power*
-action=/sbin/poweroff
-' | tee $ROOTFS/usr/local/etc/acpi/events/all;
-
-    # sysctl
-    printf %s 'net.ipv4.ip_forward=1
-# net.ipv6.conf.all.forwarding=1
-' | tee $ROOTFS/etc/sysctl.conf;
-
-    # clean motd
-    > $ROOTFS/etc/motd;
-
-    # reset PS1
-    sed -i 's/\\w/\\W/g;s/\/apps/\/opt/' $ROOTFS/etc/profile $ROOTFS/etc/skel/.profile;
-    printf %s "
-sudo /usr/local/sbin/wtmp
-export TERM=xterm TMOUT=300
-readonly TMOUT
-" | tee -a $ROOTFS/etc/profile;
-
-
-    # unset CMDLINE
-    printf "\nunset CMDLINE\n" | tee -a $ROOTFS/etc/init.d/tc-functions >> $ROOTFS/usr/bin/filetool.sh;
-
-    # hide std, fix stderr
-    sed -i 's/2>\&1 >\/dev\/null/>\/dev\/null 2>\&1/g;s/chpasswd -m/& 2\>\/dev\/null/g;s/home\*\|noautologin\*\|opt\*\|user\*/# &/' \
-        $ROOTFS/etc/init.d/tc-config;
-
-    # password
-    sed -i "s/^tc.*//;/# Cmnd alias specification/i\
-Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/sbin/wtmp\n\
-\n" $ROOTFS/etc/sudoers;
+    # Make sure init scripts are executable
+    find $ROOTFS/usr/local/sbin \
+        -type f -exec chmod -c +x '{}' +
 
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -f $ROOTFS/usr/bin/passwd;
 
-    # fix "su -"
-    echo root > $ROOTFS/etc/sysconfig/superuser;
+    # find $ROOTFS -type f -exec strip --strip-all {} \;
 
-    # add some timezone files so we're explicit about being UTC
-    echo 'UTC' | tee $ROOTFS/etc/timezone;
-    cp -vL /usr/share/zoneinfo/UTC $ROOTFS/etc/localtime;
-
-    # setup acpi config dir
-    # tcl6's sshd is compiled without `/usr/local/sbin` in the path, need `ip`, link it elsewhere
-    # Make some handy symlinks (so these things are easier to find), visudo, Subversion link, after /opt/bin in $PATH
-    ln -svT /usr/local/etc/acpi     $ROOTFS/etc/acpi;
-    ln -svT /usr/local/sbin/ip      $ROOTFS/usr/sbin/ip;
-    ln -fs /bin/vi              $ROOTFS/usr/bin/;
-    ln -fs /opt/bin/svn         $ROOTFS/usr/bin/;
-    ln -fs /opt/bin/svnadmin    $ROOTFS/usr/bin/;
-    ln -fs /opt/bin/svnlook     $ROOTFS/usr/bin/;
-
-    # crond
-    rm -fr $ROOTFS/var/spool/cron/crontabs;
-    ln -fs /opt/tiny/etc/crontabs/  $ROOTFS/var/spool/cron/;
-
-    # move dhcp.sh out of init.d as we're triggering it manually so its ready a bit faster
-    cp -v $ROOTFS/etc/init.d/dhcp.sh $ROOTFS/usr/local/etc/init.d;
-    echo : | tee $ROOTFS/etc/init.d/dhcp.sh;
-
-    # Make sure init scripts are executable
-    find $ROOTFS/usr/local/sbin \
-        -type f -exec chmod -c +x '{}' +
 }
 
 # It builds an image that can be used as an ISO *and* a disk image.
@@ -274,18 +251,4 @@ _build_iso() {
     _hash "$OUTPUT_PATH";
 
     return 0
-}
-
-_apt_get_install() {
-    # clear work path
-    rm -fr /var/lib/apt/lists/*;
-    {
-        curl -L --connect-timeout 1 http://www.google.com >/dev/null 2>&1 && {
-            printf %s "$DEBIAN_SOURCE";
-            :
-        } || printf %s "$DEBIAN_CN_SOURCE"
-    } | tee /etc/apt/sources.list;
-    apt-get update && apt-get -y install $APT_GET_LIST_MAKE;
-
-    return $?
 }

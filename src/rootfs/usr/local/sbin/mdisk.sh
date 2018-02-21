@@ -385,7 +385,7 @@ __vg_list() {
 }
 
 _lv_online() {
-    local lv vg;
+    local lv vg lv_swap lv_data lv_log;
 
     for vg in $(__vg_list);
     do
@@ -395,47 +395,54 @@ _lv_online() {
         for lv in $(lvdisplay | grep Path | grep "$vg" | awk '{print $3}');
         do
             if [ "${lv##*/}" == "lv_swap" ]; then
-                swapoff -a 2>/dev/null; # off old swap
-                swapon $lv
-            elif [ "${lv##*/}" == "lv_log" ]; then
-                mkdir -p /log;
-                mount $lv /log;
-                [ -d /mnt/data ] && return 0
+                lv_swap="$lv"
             elif [ "${lv##*/}" == "lv_data" ]; then
-                mkdir -p /mnt/data;
-                mount $lv /mnt/data;
-                _dir_online /mnt/data;
-                [ -d /log ] && return 0
+                lv_data="$lv"
+            elif [ "${lv##*/}" == "lv_log" ]; then
+                lv_log="$lv"
             fi
         done
-
-        {
-            printf "[ERROR] ";
-            [ -d /log ] || printf "'lv_log'";
-            [ -d /log -o -d /mnt/data ] || printf " ";
-            [ -d /mnt/data ] || printf "'lv_data'";
-            printf " load failed.\n";
-        } >&2;
-
-        return 1
-
     done
 
-    printf "[ERROR] no LVM found.\n" >&2;
-    return 1
+    if [ ! "$vg" ]; then
+        printf "[ERROR] no LVM found.\n" >&2;
+        return 1
+    fi
+
+    [ -e "$lv_swap" -a -e "$lv_data" -a -e "$lv_log" ] || {
+        printf "[ERROR]";
+        [ -e "$lv_swap" ] || printf " 'lv_swap'";
+        [ -e "$lv_data" ] || printf " 'lv_data'";
+        [ -e "$lv_log" ] || printf " 'lv_log'";
+        printf " load failed.\n";
+        return 1
+    } >&2;
+
+    # off old swap
+    swapoff -a 2>/dev/null;
+    swapon $lv_swap;
+
+    # data
+    mkdir -p /var;
+    mount $lv_data /var;
+
+    # log
+    mkdir -p /var/log;
+    mount $lv_log /var/log;
+
+    _dir_online /var;
+    return 0
 }
 
 _dir_online() {
     # clean /var/*
-    mkdir -p /var /run \
-        $1/var \
+    mkdir -p /run \
         $1/run \
         $1/home \
         $1/tmp;
 
     # create work, opt path
     printf "\nmount:";
-    mount --bind $1/var /var && printf " '/var'";
     mount --bind $1/run /run && printf ", '/run'";
 
     # change home path

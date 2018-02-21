@@ -119,6 +119,7 @@ _last_version() {
 _downlock() {
     local prefix=${1##*/} suffix;
     suffix=${prefix##*[0-9]};
+    [ "$suffix" ] || suffix=".${prefix##*[0-9]\.}";
     [ "${suffix:0:1}" != "." ] && suffix=".${suffix#*.}";
     prefix=${prefix%%-*};
     [ "$prefix" == "${1##*/}" ] && prefix="${prefix%%[0-9]*}";
