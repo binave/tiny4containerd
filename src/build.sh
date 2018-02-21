@@ -25,39 +25,39 @@ _main() {
     _apt_get_install || return $((LINENO / 2));
 
     _case_version ------------ kernel version ----------------------;
-    kernel_version=$(curl -L $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x | grep "linux-$KERNEL_MAJOR_VERSION.*xz" | \
+    kernel_version=$(curl -L $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x 2>/dev/null | grep "linux-$KERNEL_MAJOR_VERSION.*xz" | \
         awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
     _case_version ----------- busybox version ----------------------;
-    busybox_version=$(curl -L $BUSYBOX_DOWNLOAD | grep 'busybox-[0-9].*bz2"' | awk -F[-\"] '{print $7}' | _last_version) || return $((LINENO / 2));
+    busybox_version=$(curl -L $BUSYBOX_DOWNLOAD 2>/dev/null | grep 'busybox-[0-9].*bz2"' | awk -F[-\"] '{print $7}' | _last_version) || return $((LINENO / 2));
 
     _case_version ----------- libcap2 version ----------------------;
-    libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD | grep 'xz"' | awk -F[-\"] '{print $3}' | _last_version)
+    libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $3}' | _last_version)
 
     _case_version ------------- zlib version -----------------------;
-    zlib_version=$(curl -L $ZLIB_DOWNLOAD/ChangeLog.txt | grep Changes | awk '{print $3}' | _last_version) || return $((LINENO / 2));
+    zlib_version=$(curl -L $ZLIB_DOWNLOAD/ChangeLog.txt 2>/dev/null | grep Changes | awk '{print $3}' | _last_version) || return $((LINENO / 2));
 
     _case_version ----------- dropbear version ---------------------;
-    dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD | grep 'bz2"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+    dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
     _case_version ----------- iptables version ---------------------;
-    iptables_version=$(curl -L $IPTABLES_DOWNLOAD/downloads.html | grep 'bz2"' | awk -F[-\"] '{print $5}' | _last_version) || return $((LINENO / 2));
+    iptables_version=$(curl -L $IPTABLES_DOWNLOAD/downloads.html 2>/dev/null | grep '/iptables.*bz2"' | awk -F[-\"] '{print $5}' | _last_version) || return $((LINENO / 2));
 
     _case_version ------------- mdadm version ----------------------;
-    mdadm_version=$(curl -L $MDADM_DOWNLOAD | grep "mdadm-.*.xz" | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+    mdadm_version=$(curl -L $MDADM_DOWNLOAD 2>/dev/null | grep "mdadm-.*.xz" | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
     _case_version -------------- lvm2 version ----------------------;
-    lvm2_version=$(curl -L $LVM2_DOWNLOAD | grep 'tgz"' | awk -F[\"] '{print $2}' | _last_version) || return $((LINENO / 2));
+    lvm2_version=$(curl -L $LVM2_DOWNLOAD 2>/dev/null | grep 'tgz"' | awk -F[\"] '{print $2}' | _last_version) || return $((LINENO / 2));
 
     _case_version ------------- docker version ---------------------;
     # get docker stable version
-    docker_version=$(curl -L $DOCKER_DOWNLOAD | grep 'docker-' | awk -F[-\"] '{print $3"-"$4}' | _last_version) || return $((LINENO / 2));
+    docker_version=$(curl -L $DOCKER_DOWNLOAD 2>/dev/null | grep 'docker-' | awk -F[-\"] '{print $3"-"$4}' | _last_version) || return $((LINENO / 2));
 
     _case_version -------------- curl version ----------------------;
-    curl_version=$(curl -L $CURL_DOWNLOAD | grep 'xz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
+    curl_version=$(curl -L $CURL_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
 
     # _case_version ------------- git version ------------------------;
-    # git_version=$(curl -L $GIT_DOWNLOAD | grep 'git-[0-9].*tar.xz' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+    # git_version=$(curl -L $GIT_DOWNLOAD 2>/dev/null | grep 'git-[0-9].*tar.xz' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
     # clear for rebuild
     rm -fr $TMP/*.lock $TMP/.error $ROOTFS;
