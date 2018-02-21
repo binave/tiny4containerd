@@ -1,6 +1,8 @@
 #!/bin/bash
 [ "$SHELL" == "/bin/bash" ] || exit 255;
 
+THIS_DIR=$(cd `dirname $0`; pwd);
+
 # import script
 . $THIS_DIR/env.bash; # load environment variable
 . $THIS_DIR/lib.bash; # load common function

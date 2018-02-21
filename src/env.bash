@@ -8,7 +8,6 @@
 CORES=$(nproc);
 LABEL=`date +tc-%y%m%d-%H`;
 ROOTFS=$TMP/rootfs;
-THIS_DIR=$(cd `dirname $0`; pwd);
 
 # linux
 : ${KERNEL_MAJOR_VERSION:=4.9};
