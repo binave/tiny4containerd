@@ -75,6 +75,22 @@ _wait_file(){
         };
         sleep $TIMELAG_SEC
     done
+    _untar ${1%.*} || return 1;
+    rm -f $1;
+    return 0
+}
+
+# decompression
+_untar() {
+    _hash $1 || return 1;
+    case $1 in
+        *.tar.gz) tar -C $TMP -xzf $1 || return 1;;
+        *.tar.bz2) tar -C $TMP -xjf $1 || return 1;;
+        *.tar.xz) bsdtar -C $TMP -xJf $1 || return 1;;
+        *.tgz) tar -C $TMP -zxf $1 || return 1;;
+        *) return 1;;
+    esac
+    # rm -f $1;
     return 0
 }
 
@@ -108,7 +124,7 @@ _downlock() {
     [ "$prefix" == "${1##*/}" ] && prefix="${prefix%%[0-9]*}";
     printf " ----------- download $prefix ---------------------\n";
     curl -L --retry 10 -o $TMP/$prefix$suffix $1 || {
-        printf "[ERROR] download $prefix fail.\n";
+        printf "[ERROR] download $prefix fail.\n" >&2;
         return 1
     };
     [ "$2" ] || touch $TMP/$prefix$suffix.lock;

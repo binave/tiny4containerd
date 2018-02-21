@@ -58,7 +58,7 @@ _main() {
     # git_version=$(curl -L $GIT_DOWNLOAD | grep 'git-[0-9].*tar.xz' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
     # clear for rebuild
-    rm -fr $TMP/*.lock $TMP/.error $ROOTFS $KERNEL_PATH;
+    rm -fr $TMP/*.lock $TMP/.error $ROOTFS;
 
     # Make the rootfs, Prepare the build directory ($TMP/iso)
     mkdir -p $ROOTFS $TMP/iso/boot;
@@ -72,14 +72,19 @@ _main() {
         _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz - || return $((LINENO / 2));
 
         _message_queue --put "_make_kernel"; # this may use most time
+        _message_queue --put "_make_busybox";
         _message_queue --put "_make_libcap2";
+        _message_queue --put "_make_dropbear";
+        _message_queue --put "_make_iptables";
+        _message_queue --put "_make_mdadm";
+        _message_queue --put "_make_lvm2";
 
         _downlock $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 || return $((LINENO / 2));
 
         _downlock $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz || return $((LINENO / 2));
 
         # for dropbear
-        _downlock $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz - ||  return $((LINENO / 2));
+        _downlock $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz ||  return $((LINENO / 2));
 
         _downlock $DROPBEAR_DOWNLOAD/dropbear-$dropbear_version.tar.bz2 || return $((LINENO / 2));
 

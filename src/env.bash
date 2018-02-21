@@ -13,7 +13,6 @@ THIS_DIR=$(cd `dirname $0`; pwd);
 # linux
 : ${KERNEL_MAJOR_VERSION:=4.9};
 KERNEL_DOWNLOAD=https://www.kernel.org/pub/linux/kernel;
-KERNEL_PATH=$TMP/linux-kernel;
 
 BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 
@@ -60,7 +59,7 @@ APT_GET_LIST_MAKE="
     bc bsdtar build-essential
     curl
     kmod
-    libc6 libc6-dev
+    libc6 libc6-dev libcap-dev
     pkg-config
     squashfs-tools
     unzip
@@ -74,6 +73,6 @@ APT_GET_LIST_ISO="
     xorriso xz-utils
 ";
 
-# ncurses-dev
+# apt-get install -y ncurses-dev
 # make allnoconfig
 # make ARCH=x86_64 menuconfig

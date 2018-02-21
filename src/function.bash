@@ -3,63 +3,52 @@
 
 _make_kernel() {
     echo " ------------ untar kernel ------------------------";
-    _hash $TMP/linux.tar.xz;
+    local kernel_path=$TMP/linux-$kernel_version;
     # fix: Directory renamed before its status could be extracted
-    bsdtar -C $TMP -xJf $TMP/linux.tar.xz || return $(_err_line $((LINENO / 2)));
-    mv -v $TMP/linux-$kernel_version $KERNEL_PATH;
-    rm -f $TMP/linux.tar.xz;
+    _untar $TMP/linux.tar.xz || return $(_err_line $((LINENO / 2)));
 
     echo " -------- make bzImage modules --------------------";
     # make ARCH=x86_64 menuconfig # ncurses-dev
-    cp -v $THIS_DIR/kernel.cfg $KERNEL_PATH/.config;
+    cp -v $THIS_DIR/kernel.cfg $kernel_path/.config;
 
     # put in queue
-    cd $KERNEL_PATH;
+    cd $kernel_path;
 
-    make -j $CORES bzImage && \
-        make -j $CORES modules || \
-        return $(_err_line $((LINENO / 2)))
-
-    _wait_file || return 1;
+    make -j $CORES bzImage && make -j $CORES modules || return $(_err_line $((LINENO / 2)))
 
     echo " ------- install modules firmware -----------------";
     # The post kernel build process
     # Install the kernel modules in $ROOTFS
-    cd $KERNEL_PATH && \
-        make INSTALL_MOD_PATH=$ROOTFS modules_install firmware_install || \
-        return $(_err_line $((LINENO / 2)));
+    make INSTALL_MOD_PATH=$ROOTFS modules_install firmware_install || return $(_err_line $((LINENO / 2)));
 
     # remove empty link
     rm -fv $ROOTFS/lib/modules/${kernel_version}-tc/build \
         $ROOTFS/lib/modules/${kernel_version}-tc/source;
 
     echo " --------- bzImage -> vmlinuz64 -------------------";
-    _hash $KERNEL_PATH/arch/x86/boot/bzImage;
-    # Prepare the ISO directory with the kernel
-    # $KERNEL_PATH/arch/x86_64/boot/bzImage -> ../../x86/boot/bzImage
-    mv -v $KERNEL_PATH/arch/x86/boot/bzImage $TMP/iso/boot/vmlinuz64;
-    rm -fr $KERNEL_PATH # clear
+    _hash $kernel_path/arch/x86/boot/bzImage;
+
+    # $kernel_path/arch/x86_64/boot/bzImage -> ../../x86/boot/bzImage
+    mv -v $kernel_path/arch/x86/boot/bzImage $TMP/iso/boot/vmlinuz64;
+    rm -fr $TMP/linux* # clear
 }
 
 _make_busybox() {
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-    _hash $TMP/busybox.tar.bz2;
 
-    tar -C $TMP -xjf $TMP/busybox.tar.bz2 || return $(_err_line $((LINENO / 2)));
+    cp -v $THIS_DIR/busybox.cfg $TMP/busybox-$busybox_version/.config;
+
     cd $TMP/busybox-$busybox_version;
-
     make && make install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv _install/* $ROOTFS;
+    cp -adv _install/* $ROOTFS
 }
 
 _make_libcap2() {
     echo " ------------- make libcap2 -----------------------";
-    _wait_file $TMP/libcap.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    _hash $TMP/libcap.tar.gz;
+    _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
-    tar -C $TMP -xzf $TMP/libcap.tar.gz || return $(_err_line $((LINENO / 2)));
-    cd $TMP/libcap-$LIBCAP2_VERSION;
+    cd $TMP/libcap-$libcap2_version;
         mkdir -p output;
         sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
         make && make prefix=`pwd`/output install || return $(_err_line $((LINENO / 2)));
@@ -69,16 +58,12 @@ _make_libcap2() {
 }
 
 _make_dropbear() {
-    _wait_file $TMP/dropbear.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
-    tar -C $TMP -xzf $TMP/zlib.tar.gz || return $(_err_line $((LINENO / 2)));
     cd $TMP/zlib-$zlib_version;
-    ./configure && \
-        make && \
-        make install || return $(_err_line $((LINENO / 2)));
+    ./configure && make && make install || return $(_err_line $((LINENO / 2)));
 
-    _hash $TMP/dropbear.tar.bz2;
-    tar -C $TMP -xjf $TMP/dropbear.tar.bz2 || return $(_err_line $((LINENO / 2)));
+    _wait_file $TMP/dropbear.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/dropbear-$dropbear_version;
     mkdir -p $ROOTFS/usr/local;
@@ -95,8 +80,6 @@ _make_dropbear() {
 # TODO _nftables
 _make_iptables() {
     _wait_file $TMP/iptables.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-    _hash $TMP/iptables.tar.bz2;
-    tar -C $TMP -xjf $TMP/iptables.tar.bz2 || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/iptables-$iptables_version;
     # Error: No suitable 'libmnl' found: --disable-nftables
@@ -117,8 +100,6 @@ _make_iptables() {
 _make_mdadm() {
     echo " ------------- make mdadm -----------------------";
     _wait_file $TMP/mdadm.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    _hash $TMP/mdadm.tar.xz;
-    bsdtar -C $TMP -xJf $TMP/mdadm.tar.xz || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/mdadm-$mdadm_version;
     make || return $(_err_line $((LINENO / 2)));
@@ -133,15 +114,19 @@ _make_mdadm() {
 _make_lvm2() {
     echo " ------------- lvm2 libcap2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
-    _hash $TMP/LVM.tgz;
-    tar -C $TMP -zxf $TMP/LVM.tgz || return $(_err_line $((LINENO / 2)));
+
     cd $TMP/LVM$lvm2_version;
     ./configure --prefix=$ROOTFS && make && make install
 }
 
 _make_openssl() {
-    ./config -fPIC no-shared
-    make
+    # ./config -fPIC no-shared
+    # make
+    :
+}
+
+_make_curl() {
+    _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 }
 
 # _make_git() {
