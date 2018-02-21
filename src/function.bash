@@ -120,21 +120,26 @@ _make_lvm2() {
 }
 
 _make_openssl() {
-    # ./config -fPIC no-shared
-    # make
-    :
+    _wait_file $TMP/openssl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    cd $TMP/openssl-$openssl_version;
+    ./config -fPIC no-shared;
+    make
 }
 
 _make_curl() {
     _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    cd $TMP/curl-$curl_version;
+    ./configure --prefix=$ROOTFS --disable-shared --enable-static && make && make install
+    # --without-libidn --without-ssl --without-librtmp --without-gnutls --without-nss --without-libssh2 --without-zlib --without-winidn --disable-rtsp --disable-ldap --disable-ldaps --disable-ipv6
 }
 
 # _make_git() {
-#     :
-#     ./configure CFLAGS="${CFLAGS} -static" NO_OPENSSL=1 NO_CURL=1
-#     make -j $CORES
-#     make install
-#     make install-doc
+#     _wait_file $TMP/git.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+#     cd $TMP/git-$git_version;
+#     ./configure CFLAGS="${CFLAGS} -static" NO_OPENSSL=1 NO_CURL=1;
+#     make -j $CORES;
+#     make install;
+#     make install-doc;
 # }
 
 _apply_rootfs() {
