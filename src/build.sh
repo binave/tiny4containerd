@@ -89,13 +89,13 @@ _main() {
         _message_queue --put "_make_busybox";
         # _message_queue --put "_make_glibc";
         _message_queue --put "_make_libcap2";
-        _message_queue --put "_apply_rootfs";
         _message_queue --put "_make_dropbear";
         _message_queue --put "_make_openssl";
         _message_queue --put "_make_iptables";
         _message_queue --put "_make_mdadm";
         _message_queue --put "_make_lvm2";
         _message_queue --put "_make_curl";
+        _message_queue --put "_apply_rootfs";
 
         _downlock $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 || return $((LINENO / 2));
 
