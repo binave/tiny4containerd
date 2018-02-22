@@ -33,6 +33,15 @@ _main() {
     _case_version ----------- busybox version ----------------------;
     busybox_version=$(curl -L $BUSYBOX_DOWNLOAD 2>/dev/null | grep 'busybox-[0-9].*bz2"' | awk -F[-\"] '{print $7}' | _last_version) || return $((LINENO / 2));
 
+    _case_version ------------ glibc version -----------------------;
+    glibc_version=$(curl -L $GLIBC_DOWNLOAD 2>/dev/null | grep 'glibc-[0-9].*xz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
+
+    _case_version ------------ sshfs version -----------------------;
+    sshfs_version=$(curl -L $SSHFS_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | grep -v rc | _last_version) || return $((LINENO / 2));
+
+    _case_version ----------- libfuse version ----------------------;
+    libfuse_version=$(curl -L $LIBFUSE_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | grep -v rc | _last_version) || return $((LINENO / 2));
+
     _case_version ----------- libcap2 version ----------------------;
     libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $3}' | _last_version)
 
@@ -78,6 +87,7 @@ _main() {
 
         _message_queue --put "_make_kernel"; # this may use most time
         _message_queue --put "_make_busybox";
+        _message_queue --put "_make_glibc";
         _message_queue --put "_make_libcap2";
         _message_queue --put "_apply_rootfs";
         _message_queue --put "_make_dropbear";
@@ -88,6 +98,8 @@ _main() {
         _message_queue --put "_make_curl";
 
         _downlock $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 || return $((LINENO / 2));
+
+        _downlock $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz || return $((LINENO / 2));
 
         _downlock $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz || return $((LINENO / 2));
 
@@ -106,11 +118,14 @@ _main() {
 
         _downlock $LVM2_DOWNLOAD/LVM$lvm2_version.tgz - || return $((LINENO / 2));
 
-        _downlock "$CURL_DOWNLOAD/curl-$curl_version.tar.xz" || return $((LINENO / 2));
+        _downlock $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz || return $((LINENO / 2));
+
+        _downlock $LIBFUSE_DOWNLOAD/archive/libfuse-$libfuse_version.tar.gz || return $((LINENO / 2));
+
+        _downlock $CURL_DOWNLOAD/curl-$curl_version.tar.xz || return $((LINENO / 2));
 
         # _downlock $GIT_DOWNLOAD/git-$git_version.tar.xz || return $((LINENO / 2));
     fi
-
 
     apt-get -y install $APT_GET_LIST_ISO;
 

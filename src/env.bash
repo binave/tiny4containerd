@@ -15,6 +15,12 @@ KERNEL_DOWNLOAD=https://www.kernel.org/pub/linux/kernel;
 
 BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 
+GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
+
+SSHFS_DOWNLOAD=https://github.com/libfuse/libfuse;
+
+LIBFUSE_DOWNLOAD=https://github.com/libfuse/sshfs;
+
 LIBCAP2_DOWNLOAD=https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2;
 
 ZLIB_DOWNLOAD=http://www.zlib.net;

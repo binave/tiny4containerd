@@ -46,6 +46,10 @@ _make_busybox() {
     # rm -fr $busybox_path # clear
 }
 
+_make_glibc() {
+    :;
+}
+
 _make_libcap2() {
     echo " ------------- make libcap2 -----------------------";
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
@@ -83,14 +87,7 @@ _make_openssl() {
     cd $TMP/openssl-$OPENSSL_VERSION;
     ./config -fPIC no-shared --prefix=$ROOTFS && make && make install || return $(_err_line $((LINENO / 2)));
 
-    # rm -fr $TMP/openssl-$OPENSSL_VERSION; # clear
-
-    echo " ----------- ca-certificates ----------------------";
-    # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
-    chroot $ROOTFS sh -xc 'ldconfig && /bin/openssl' || return $(_err_line $((LINENO / 2)));
-
-    ln -sT lib $ROOTFS/lib64;
-    ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
+    # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
 }
 
 # TODO _nftables
@@ -194,6 +191,10 @@ _apply_rootfs() {
     cp /usr/sbin/update-ca-certificates     $ROOTFS/usr/sbin;
     cp -frv /usr/share/ca-certificates      $ROOTFS/usr/share;
 
+    # libc
+    cp /sbin/ldconfig       $ROOTFS/sbin;
+
+    # timezone
     cp -vL /usr/share/zoneinfo/UTC $ROOTFS/etc/localtime;
 
     # setup acpi config dir
@@ -223,6 +224,13 @@ _apply_rootfs() {
 
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -f $ROOTFS/usr/bin/passwd;
+
+    echo " ----------- ca-certificates ----------------------";
+    # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
+    chroot $ROOTFS sh -xc 'ldconfig && /bin/openssl' || return $(_err_line $((LINENO / 2)));
+
+    ln -sT lib $ROOTFS/lib64;
+    ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
 
     # find $ROOTFS -type f -exec strip --strip-all {} \;
 

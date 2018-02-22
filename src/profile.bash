@@ -115,6 +115,12 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
     # add some timezone files so we're explicit about being UTC
     echo 'UTC' | tee $ROOTFS/etc/timezone;
 
+    # ldconfig
+    printf %s '
+# libc default configuration
+/usr/local/lib
+' | tee $ROOTFS/etc/ld.so.conf;
+
 }
 
 _create_config() {
