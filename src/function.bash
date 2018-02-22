@@ -46,10 +46,6 @@ _make_busybox() {
     # rm -fr $busybox_path # clear
 }
 
-_make_glibc() {
-    :;
-}
-
 _make_libcap2() {
     echo " ------------- make libcap2 -----------------------";
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
