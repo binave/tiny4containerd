@@ -39,9 +39,9 @@ _make_busybox() {
     cp -v $THIS_DIR/busybox.cfg $TMP/busybox-$busybox_version/.config;
 
     cd $TMP/busybox-$busybox_version;
-    make && make install || return $(_err_line $((LINENO / 2)));
+    make && make PREFIX=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv _install/* $ROOTFS;
+    # cp -adv _install/* $ROOTFS;
     # rm -f linuxrc
 }
 
@@ -73,9 +73,6 @@ _make_dropbear() {
         make STATIC=1 PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" && \
         make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" install;
 
-    # mkdir $ROOTFS/etc/dropbear;
-    # dropbearkey -t rsa -s 1024 -f $ROOTFS/etc/dropbear/dropbear_rsa_host_key;
-    # dropbearkey -t dss -f $ROOTFS/etc/dropbear/dropbear_dss_host_key;
 }
 
 _make_openssl() {

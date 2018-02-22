@@ -155,9 +155,10 @@ _main() {
     chroot $ROOTFS adduser -S -G dockremap dockremap;
     echo "dockremap:165536:65536" | tee $ROOTFS/etc/subgid > $ROOTFS/etc/subuid;
 
-    # drop user: tc
-    # sed -i 's/staff:.*/&tc/' $ROOTFS/etc/group;
-    chroot $ROOTFS deluser tc 2>/dev/null;
+    # add user: tc
+    chroot $ROOTFS adduser -s /bin/sh -G staff -D tc;
+    chroot $ROOTFS sh -xc 'printf "tc:tcuser" | /usr/sbin/chpasswd -m';
+	printf "tc\tALL=NOPASSWD: ALL" >> /etc/sudoers;
 
     # for iso label
     printf %s "

@@ -60,8 +60,9 @@ echo "------ firewall --------------";
 # if we have the tc user, let's add it do the docker group
 /bin/grep -q '^tc:' /etc/passwd && /usr/sbin/addgroup tc docker;
 
-/bin/chmod 775 /tmp /volume1;
-/bin/chown :staff /tmp /volume1;
+/bin/chmod 775 /tmp /var;
+# /bin/chown :staff /tmp /var;
+/bin/chgrp staff /tmp /var;
 
 # hide directory
 /bin/chmod 700 /var/tiny/etc;
@@ -96,6 +97,10 @@ if [ -x /var/tiny/etc/rc.local ]; then
     echo "------ rc.local --------------";
     . /var/tiny/etc/rc.local
 fi
+
+# Laptop options enabled (AC, Battery and PCMCIA).
+modprobe ac && modprobe battery 2>/dev/null;
+modprobe yenta_socket >/dev/null 2>&1 || modprobe i82365 >/dev/null 2>&1;
 
 printf "Finished init script...\n";
 

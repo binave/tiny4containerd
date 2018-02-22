@@ -6,31 +6,14 @@
 [ -s /etc/env ] && . /etc/env;
 
 : ${SSHD_PORT:=22};
+DSS_KEY=/var/tiny/ssh/dropbear_dss_host_key;
+RSA_KEY=/var/tiny/ssh/dropbear_rsa_host_key;
 
-# Configure sshd and acknowledge for persistence in /opt/tiny of the keys/config
-# Move /usr/local/etc/ssh to /opt/tiny/ssh if it doesn't exist
-# if it exists, remove the ramdisk's ssh config, so that the hard drive's is properly linked
-[ ! -d /opt/tiny/ssh ] && \
-    /bin/mv /usr/local/etc/ssh /opt/tiny/ || \
-        /bin/rm -fr /usr/local/etc/ssh;
+[ -f "$RSA_KEY" ] || /usr/local/bin/dropbearkey -t rsa -s 1024 -f $RSA_KEY;
+[ -f "$DSS_KEY" ] || /usr/local/bin/dropbearkey -t dss -f $DSS_KEY;
 
-/bin/ln -s /opt/tiny/ssh /usr/local/etc/ssh;
-
-[ -f /usr/local/etc/ssh/ssh_config ] || \
-    /bin/cp /usr/local/etc/ssh/ssh_config.orig \
-        /usr/local/etc/ssh/ssh_config;
-
-[ -f /usr/local/etc/ssh/sshd_config ] || \
-    /bin/cp /usr/local/etc/ssh/sshd_config.orig \
-        /usr/local/etc/ssh/sshd_config;
-
-# speed up login
-/bin/grep -q "^UseDNS no" /usr/local/etc/ssh/sshd_config || \
-    echo "UseDNS no" >> /usr/local/etc/ssh/sshd_config;
-
-# ssh dameon
-/usr/local/etc/init.d/openssh start;
+/usr/local/sbin/dropbear -p $SSHD_PORT -d $DSS_KEY -r $RSA_KEY &
 
 # open sshd port
-iptables -I INPUT -p tcp --dport $SSHD_PORT -j ACCEPT;
-# iptables -I OUTPUT -p tcp --sport $SSHD_PORT -j ACCEPT
+/usr/local/sbin/iptables -I INPUT -p tcp --dport $SSHD_PORT -j ACCEPT;
+# /usr/local/sbin/iptables -I OUTPUT -p tcp --sport $SSHD_PORT -j ACCEPT
