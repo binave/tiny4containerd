@@ -125,7 +125,7 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
 
 _create_config() {
     echo " ------------ create config -----------------------";
-
+    mkdir $ROOTFS/usr/local/etc/acpi/events;
     printf %s 'event=button/power*
 action=/sbin/poweroff
 ' | tee $ROOTFS/usr/local/etc/acpi/events/all;

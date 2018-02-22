@@ -145,6 +145,7 @@ _main() {
     _create_config;
 
     echo " ------------ install docker ----------------------";
+    mkdir $ROOTFS/usr/local/bin;
     tar -zxvf $TMP/docker.tgz -C $ROOTFS/usr/local/bin --strip-components=1;
 
     # test docker command
