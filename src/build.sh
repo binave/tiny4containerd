@@ -126,26 +126,13 @@ _main() {
         return $(cat $TMP/.error)
     };
 
+    _create_config;
+
     echo " ------------ install docker ----------------------";
     tar -zxvf $TMP/docker.tgz -C $ROOTFS/usr/local/bin --strip-components=1;
 
     # test docker command
     chroot $ROOTFS docker -v || return $((LINENO / 2));
-
-    rm -f $TMP/docker.tgz; # clear
-
-    echo " -------------- boot file -------------------------";
-    # Copy boot params,
-    cd $TMP; # fix: sh: 0: getcwd() failed: No such file or directory
-
-    # add boot file
-    cp -rv $THIS_DIR/isolinux $TMP/iso/boot/;
-    cp -v \
-        /usr/lib/ISOLINUX/isolinux.bin \
-        /usr/lib/syslinux/modules/bios/ldlinux.c32 \
-        $TMP/iso/boot/isolinux/;
-
-    _create_config;
 
     echo "-------------- addgroup --------------------------";
     # make sure the "docker" group exists already
@@ -165,8 +152,12 @@ _main() {
     # for iso label
     printf %s "
 kernel-$kernel_version
-docker-$docker_version
 busybox-$busybox_version
+dropbear-$dropbear_version
+mdadm-$mdadm_version
+iptables-$iptables_version
+lvm2-$lvm2_version
+docker-$docker_version
 " | tee $TMP/iso/version;
 
     # build iso
@@ -179,16 +170,19 @@ STATUS_CODE=0;
 {
     printf "\n[`date`]\n";
     # $((LINENO / 2)) -> return|exit code: [0, 256)
-    time _main || {
+    if time _main; then
+        # clean
+        rm -fr $TMP/tmp/*.*
+    else
         echo "[ERROR]: build.sh: $(($? * 2)) line." >&2;
         STATUS_CODE=1
-    };
+    fi
 
     # log path
-    printf "\nuse command 'docker cp [container_name]:$THIS_DIR/build.log .' get log file.\n";
+    printf "\nuse command 'docker cp [container_name]:/build.log .' get log file.\n";
     # complete.
     printf "\ncomplete.\n\n"
 
-} 2>&1 | tee -a "${0%.*}.log";
+} 2>&1 | tee -a "/build.log";
 
 exit $STATUS_CODE

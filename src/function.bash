@@ -13,7 +13,6 @@ _make_kernel() {
 
     # put in queue
     cd $kernel_path;
-
     make -j $CORES bzImage && make -j $CORES modules || return $(_err_line $((LINENO / 2)))
 
     echo " ------- install modules firmware -----------------";
@@ -30,19 +29,21 @@ _make_kernel() {
 
     # $kernel_path/arch/x86_64/boot/bzImage -> ../../x86/boot/bzImage
     mv -v $kernel_path/arch/x86/boot/bzImage $TMP/iso/boot/vmlinuz64;
-    rm -fr $TMP/linux* # clear
+    # rm -fr $kernel_path # clear
 }
 
 _make_busybox() {
+    local busybox_path=$TMP/busybox-$busybox_version;
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
-    cp -v $THIS_DIR/busybox.cfg $TMP/busybox-$busybox_version/.config;
+    cp -v $THIS_DIR/busybox.cfg $busybox_path/.config;
 
-    cd $TMP/busybox-$busybox_version;
-    make && make PREFIX=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+    cd $busybox_path;
+    make && make install || return $(_err_line $((LINENO / 2)));
 
-    # cp -adv _install/* $ROOTFS;
-    # rm -f linuxrc
+    cp -adv _install/* $ROOTFS;
+    # rm -f $ROOTFS/linuxrc;
+    # rm -fr $busybox_path # clear
 }
 
 _make_libcap2() {
@@ -55,7 +56,7 @@ _make_libcap2() {
     make && make prefix=`pwd`/output install || return $(_err_line $((LINENO / 2)));
     mkdir -p $ROOTFS/usr/local/lib;
     cp -av `pwd`/output/lib64/* $ROOTFS/usr/local/lib;
-    rm -fr $TMP/libcap* # clear
+    # rm -fr $TMP/libcap-$libcap2_version # clear
 }
 
 _make_dropbear() {
@@ -73,12 +74,16 @@ _make_dropbear() {
         make STATIC=1 PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" && \
         make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" install;
 
+    # rm -fr $TMP/zlib-$zlib_version $TMP/dropbear-$dropbear_version # clear
 }
 
 _make_openssl() {
     _wait_file $TMP/openssl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/openssl-$openssl_version;
-    ./config -fPIC no-shared --prefix=$ROOTFS && make && make install;
+
+    cd $TMP/openssl-$OPENSSL_VERSION;
+    ./config -fPIC no-shared --prefix=$ROOTFS && make && make install || return $(_err_line $((LINENO / 2)));
+
+    # rm -fr $TMP/openssl-$OPENSSL_VERSION; # clear
 
     echo " ----------- ca-certificates ----------------------";
     # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
@@ -101,11 +106,12 @@ _make_iptables() {
 
     # Valid subcommands
     local subcommand;
-    for subcommand in iptables main4 iptables-save save4 iptables-restore restore4 iptables-xml xml \
-                ip6tables main6 ip6tables-save save6 ip6tables-restore restore6;
+    for subcommand in $($ROOTFS/usr/local/sbin/xtables-multi 2>&1 | grep '\*' | awk '{print $2}');
     do
         ln -fs /usr/local/sbin/xtables-multi    $ROOTFS/usr/local/sbin/$subcommand;
     done
+
+    # rm -fr $TMP/iptables-$iptables_version # clear
 }
 
 _make_mdadm() {
@@ -120,6 +126,8 @@ _make_mdadm() {
         mkdir -p $ROOTFS${md%/*};
         cp -v $md $ROOTFS$md;
     done
+
+    # rm -fr $TMP/mdadm-$mdadm_version # clear
 }
 
 _make_lvm2() {
@@ -127,23 +135,26 @@ _make_lvm2() {
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/LVM$lvm2_version;
-    ./configure --prefix=$ROOTFS && make && make install
+    ./configure --prefix=$ROOTFS && make && make install || return $(_err_line $((LINENO / 2)));
+
+    # rm -fr $TMP/LVM$lvm2_version # clear
 }
 
 _make_curl() {
     _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     cd $TMP/curl-$curl_version;
-    ./configure --prefix=$ROOTFS --disable-shared --enable-static && make && make install
+    ./configure --prefix=$ROOTFS --disable-shared --enable-static && make && make install || return $(_err_line $((LINENO / 2)));
     # --without-libidn --without-ssl --without-librtmp --without-gnutls --without-nss --without-libssh2 --without-zlib --without-winidn --disable-rtsp --disable-ldap --disable-ldaps --disable-ipv6
+
+    # rm -fr $TMP/curl-$curl_version # clear
 }
 
 # _make_git() {
 #     _wait_file $TMP/git.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 #     cd $TMP/git-$git_version;
 #     ./configure CFLAGS="${CFLAGS} -static" NO_OPENSSL=1 NO_CURL=1;
-#     make -j $CORES;
-#     make install;
-#     make install-doc;
+#     make -j $CORES && make install && make install-doc;
+#     rm -fr $TMP/git-$git_version # clear
 # }
 
 _apt_get_install() {
@@ -233,6 +244,12 @@ _build_iso() {
         $TMP/iso/boot/initrd.img || return $((LINENO / 2));
 
     _hash $TMP/iso/boot/initrd.img;
+
+    cp -rv $THIS_DIR/isolinux $TMP/iso/boot/;
+    cp -v \
+        /usr/lib/ISOLINUX/isolinux.bin \
+        /usr/lib/syslinux/modules/bios/ldlinux.c32 \
+        $TMP/iso/boot/isolinux/;
 
     # Note: only "-isohybrid-mbr /..." is specific to xorriso.
     xorriso \
