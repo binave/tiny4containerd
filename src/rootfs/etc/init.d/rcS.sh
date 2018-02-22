@@ -10,6 +10,10 @@ printf "\n\n[`date`]\nRunning init script...\n";
 # mount and monitor hard drive array
 /usr/local/sbin/mdisk init;
 
+# Laptop options enabled (AC, Battery and PCMCIA).
+modprobe ac && modprobe battery 2>/dev/null;
+modprobe yenta_socket >/dev/null 2>&1 || modprobe i82365 >/dev/null 2>&1;
+
 # for find/crond/log
 /bin/mkdir -p \
     /var/spool/cron/crontabs \
@@ -57,9 +61,6 @@ echo "------ firewall --------------";
 # start cron
 /usr/sbin/crond -f -d "${CROND_LOGLEVEL:-8}" >> /log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
 
-# if we have the tc user, let's add it do the docker group
-/bin/grep -q '^tc:' /etc/passwd && /usr/sbin/addgroup tc docker;
-
 /bin/chmod 775 /tmp /var;
 # /bin/chown :staff /tmp /var;
 /bin/chgrp staff /tmp /var;
@@ -73,8 +74,7 @@ echo "------ firewall --------------";
 # set the hostname
 echo tiny$(/sbin/ip addr | /bin/grep -A 2 'eth[0-9]*:' | /bin/grep inet | /usr/bin/awk -F'[.]|/' '{print "-"$4}' | /usr/bin/awk '{printf $_}') | \
     /usr/bin/tee /var/tiny/etc/hostname;
-HOSTNAME=`cat /var/tiny/etc/hostname`;
-/usr/bin/sethostname $HOSTNAME;
+HOSTNAME=`cat /var/tiny/etc/hostname` && /usr/bin/sethostname $HOSTNAME;
 
 # ssh dameon start
 /bin/sh /usr/local/etc/init.d/sshd;
@@ -97,10 +97,6 @@ if [ -x /var/tiny/etc/rc.local ]; then
     echo "------ rc.local --------------";
     . /var/tiny/etc/rc.local
 fi
-
-# Laptop options enabled (AC, Battery and PCMCIA).
-modprobe ac && modprobe battery 2>/dev/null;
-modprobe yenta_socket >/dev/null 2>&1 || modprobe i82365 >/dev/null 2>&1;
 
 printf "Finished init script...\n";
 

@@ -78,7 +78,7 @@ _make_dropbear() {
 }
 
 _make_openssl() {
-    _wait_file $TMP/openssl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/openssl-$OPENSSL_VERSION;
     ./config -fPIC no-shared --prefix=$ROOTFS && make && make install || return $(_err_line $((LINENO / 2)));

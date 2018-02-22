@@ -59,7 +59,7 @@ _message_queue() {
 
 _err_line() {
     [ -s $TMP/.error ] || printf %s $1 > $TMP/.error;
-    printf 1
+    return 1
 }
 
 # [file] [count_max]

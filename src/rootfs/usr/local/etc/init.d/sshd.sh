@@ -6,8 +6,8 @@
 [ -s /etc/env ] && . /etc/env;
 
 : ${SSHD_PORT:=22};
-DSS_KEY=/var/tiny/ssh/dropbear_dss_host_key;
-RSA_KEY=/var/tiny/ssh/dropbear_rsa_host_key;
+: ${DSS_KEY:='/var/tiny/ssh/dropbear_dss_host_key'};
+: ${RSA_KEY:='/var/tiny/ssh/dropbear_rsa_host_key'};
 
 [ -f "$RSA_KEY" ] || /usr/local/bin/dropbearkey -t rsa -s 1024 -f $RSA_KEY;
 [ -f "$DSS_KEY" ] || /usr/local/bin/dropbearkey -t dss -f $DSS_KEY;

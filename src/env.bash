@@ -33,10 +33,10 @@ OPENSSL_DOWNLOAD=https://www.openssl.org/source;
 
 CURL_DOWNLOAD=https://curl.haxx.se/download;
 
-GIT_DOWNLOAD=https://www.kernel.org/pub/software/scm/git;
-
 # docker
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64;
+
+GIT_DOWNLOAD=https://www.kernel.org/pub/software/scm/git;
 
 # debian sources
 DEBIAN_SOURCE='deb http://deb.debian.org/debian stretch main

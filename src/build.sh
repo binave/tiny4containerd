@@ -85,15 +85,16 @@ _main() {
         _message_queue --put "_make_iptables";
         _message_queue --put "_make_mdadm";
         _message_queue --put "_make_lvm2";
+        _message_queue --put "_make_curl";
 
         _downlock $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 || return $((LINENO / 2));
-
-        _message_queue --put "_create_etc";
 
         _downlock $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz || return $((LINENO / 2));
 
         # for dropbear
         _downlock $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz || return $((LINENO / 2));
+
+        _message_queue --put "_create_etc";
 
         _downlock $DROPBEAR_DOWNLOAD/dropbear-$dropbear_version.tar.bz2 || return $((LINENO / 2));
 
@@ -105,15 +106,15 @@ _main() {
 
         _downlock $LVM2_DOWNLOAD/LVM$lvm2_version.tgz - || return $((LINENO / 2));
 
-        # _downlock $GIT_DOWNLOAD/git-$git_version.tar.xz || return $((LINENO / 2));
+        _downlock "$CURL_DOWNLOAD/curl-$curl_version.tar.xz" || return $((LINENO / 2));
 
+        # _downlock $GIT_DOWNLOAD/git-$git_version.tar.xz || return $((LINENO / 2));
     fi
+
 
     apt-get -y install $APT_GET_LIST_ISO;
 
     _message_queue --destroy; # close queue
-
-    _downlock "$CURL_DOWNLOAD/curl-$curl_version.tar.xz" - || return $((LINENO / 2));
 
     # Get the Docker binaries with version.
     _downlock "$DOCKER_DOWNLOAD/docker-$docker_version.tgz" - || return $((LINENO / 2));
@@ -146,6 +147,7 @@ _main() {
 
     # add user: tc
     chroot $ROOTFS adduser -s /bin/sh -G staff -D tc;
+    chroot $ROOTFS addgroup tc docker;
     chroot $ROOTFS sh -xc 'printf "tc:tcuser" | /usr/sbin/chpasswd -m';
 	printf "tc\tALL=NOPASSWD: ALL" >> /etc/sudoers;
 
