@@ -25,6 +25,7 @@ _main() {
     # install pkg
     _apt_get_install || return $((LINENO / 2));
 
+    echo;
     _case_version ------------ kernel version ----------------------;
     kernel_version=$(curl -L $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x 2>/dev/null | grep "linux-$KERNEL_MAJOR_VERSION.*xz" | \
         awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
@@ -59,6 +60,7 @@ _main() {
 
     # _case_version ------------- git version ------------------------;
     # git_version=$(curl -L $GIT_DOWNLOAD 2>/dev/null | grep 'git-[0-9].*tar.xz' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+    echo;
 
     # clear for rebuild
     rm -fr $TMP/*.lock $TMP/.error $ROOTFS;

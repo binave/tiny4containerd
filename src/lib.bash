@@ -102,7 +102,7 @@ _hash() {
 }
 
 _case_version() {
-    printf " $*\n$(tr "[:lower:]" "[:upper:]" <<< " ${2}_$3=")" >&2
+    printf " $(tr "[:lower:]" "[:upper:]" <<< " ${2}_$3=")" >&2
 }
 
 _last_version() {
@@ -117,17 +117,19 @@ _last_version() {
 }
 
 _downlock() {
-    local prefix=${1##*/} suffix;
+    local prefix=${1##*/} suffix swp=$$$RANDOM$RANDOM;
     suffix=${prefix##*[0-9]};
     [ "$suffix" ] || suffix=".${prefix##*[0-9]\.}";
     [ "${suffix:0:1}" != "." ] && suffix=".${suffix#*.}";
     prefix=${prefix%%-*};
     [ "$prefix" == "${1##*/}" ] && prefix="${prefix%%[0-9]*}";
     printf " ----------- download $prefix ---------------------\n";
-    curl -L --retry 10 -o $TMP/$prefix$suffix $1 || {
+    curl -L --retry 10 -o $TMP/$swp $1 || {
+        rm -f $TMP/$swp;
         printf "[ERROR] download $prefix fail.\n" >&2;
         return 1
     };
+    mv $TMP/$swp $TMP/$prefix$suffix;
     [ "$2" ] || touch $TMP/$prefix$suffix.lock;
     return 0
 }
