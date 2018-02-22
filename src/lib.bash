@@ -124,12 +124,14 @@ _downlock() {
     prefix=${prefix%%-*};
     [ "$prefix" == "${1##*/}" ] && prefix="${prefix%%[0-9]*}";
     printf " ----------- download $prefix ---------------------\n";
-    [ -f "$TMP/$prefix$suffix" ] || curl -L --retry 10 -o $TMP/$swp $1 || {
-        rm -f $TMP/$swp;
-        printf "[ERROR] download $prefix fail.\n" >&2;
-        return 1
-    };
-    mv $TMP/$swp $TMP/$prefix$suffix;
+    if [ ! -f "$TMP/$prefix$suffix" ]; then
+        curl -L --retry 10 -o $TMP/$swp $1 || {
+            rm -f $TMP/$swp;
+            printf "[ERROR] download $prefix fail.\n" >&2;
+            return 1
+        };
+        mv $TMP/$swp $TMP/$prefix$suffix
+    fi
     [ "$2" ] || touch $TMP/$prefix$suffix.lock;
     return 0
 }
