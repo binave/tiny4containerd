@@ -223,7 +223,7 @@ _apply_rootfs() {
 
     echo " ----------- ca-certificates ----------------------";
     # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
-    chroot $ROOTFS sh -xc 'ldconfig && /bin/openssl' || return $(_err_line $((LINENO / 2)));
+    chroot $ROOTFS sh -xc 'ldconfig' || return $(_err_line $((LINENO / 2)));
 
     ln -sT lib $ROOTFS/lib64;
     ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
