@@ -29,7 +29,8 @@ LIBCAP2_DOWNLOAD=https://www.kernel.org/pub/linux/libs/security/linux-privs/libc
 
 ZLIB_DOWNLOAD=http://www.zlib.net;
 
-SSH_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
+DROPBEAR_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
+OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable;
 
 IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
 

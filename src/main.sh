@@ -11,7 +11,7 @@ THIS_DIR=$(cd `dirname $0`; pwd);
 
 _main() {
     # set work path
-    local kernel_version busybox_version glibc_version libcap2_version zlib_version ssh_version iptables_version mdadm_version lvm2_version docker_version curl_version;
+    local kernel_version busybox_version glibc_version libcap2_version zlib_version dropbear_version openssh_version iptables_version mdadm_version lvm2_version docker_version curl_version;
 
     # test complete, then pack it
     [ -s $TMP/iso/version ] && {
@@ -49,7 +49,8 @@ _main() {
     zlib_version=$(curl -L $ZLIB_DOWNLOAD/ChangeLog.txt 2>/dev/null | grep Changes | awk '{print $3}' | _last_version) || return $((LINENO / 2));
 
     _case_version ------------- ssh version ------------------------;
-    ssh_version=$(curl -L $SSH_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+    dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+    # openssh_version=$(curl -L $OPENSSH_DOWNLOAD 2>/dev/null | grep 'tar\.gz"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
     _case_version ----------- iptables version ---------------------;
     iptables_version=$(curl -L $IPTABLES_DOWNLOAD/downloads.html 2>/dev/null | grep '/iptables.*bz2"' | awk -F[-\"] '{print $5}' | _last_version) || return $((LINENO / 2));
@@ -116,7 +117,8 @@ _main() {
 
         _downlock $CA_CERTIFICATES_DOWNLOAD || return $((LINENO / 2));
 
-        _downlock $SSH_DOWNLOAD/dropbear-$ssh_version.tar.bz2 || return $((LINENO / 2));
+        _downlock $DROPBEAR_DOWNLOAD/dropbear-$dropbear_version.tar.bz2 || return $((LINENO / 2));
+        # _downlock $OPENSSH_DOWNLOAD/openssh-$openssh_version.tar.gz || return $((LINENO / 2));
 
         _downlock $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz || return $((LINENO / 2));
 

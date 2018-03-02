@@ -117,14 +117,28 @@ _last_version() {
 }
 
 _downlock() {
-    local prefix=${1##*/} suffix swp=$$$RANDOM.$RANDOM;
-    suffix=${prefix##*[0-9]};
-    [ "$suffix" ] || suffix=".${prefix##*[0-9]\.}";
-    [ "${suffix:0:1}" != "." ] && suffix=".${suffix#*.}";
-    prefix=${prefix%%-*};
-    [ "$prefix" == "${1##*/}" ] && prefix="${prefix%%[0-9]*}";
-    printf " ----------- download $prefix ---------------------\n";
+    local prefix=${1##*/} suffix=${1##*.} swp;
+    prefix=${prefix%.*}; # trim last suffix
+    if [ $prefix == ${prefix#*[0-9]} ]; then
+        swp=$prefix;
+        prefix=${swp%%.*};
+        suffix=${swp##*$prefix}.$suffix
+    else
+        swp=${prefix##*[0-9]};
+        if [ "$swp" -a "${swp:0:1}" != "." ]; then
+            if [ "$swp" == "${swp#*.}" ]; then
+                unset swp
+            else
+                swp=".${swp#*.}"
+            fi
+        fi
+        suffix=$swp.$suffix;
+        prefix=${prefix%%-*};
+        [ "$prefix$suffix" == "${1##*/}" ] && prefix="${prefix%%[0-9]*}";
+    fi
+    printf "# will download '$prefix$suffix' to '$TMP'.\n";
     if [ ! -f "$TMP/$prefix$suffix" ]; then
+        swp=$$$RANDOM.$RANDOM;
         curl -L --retry 10 -o $TMP/$swp $1 || {
             rm -f $TMP/$swp;
             printf "[ERROR] download $prefix fail.\n" >&2;
