@@ -38,10 +38,10 @@ _make_busybox() {
 
     cd $busybox_path;
 
-    patch -Np1 -i $THIS_DIR/patch/busybox-root-path.patch;
-    patch -Np1 -i $THIS_DIR/patch/busybox-rpm2cpio.patch;
-    patch -Np1 -i $THIS_DIR/patch/busybox-tc-depmod.patch;
-    patch -Np1 -i $THIS_DIR/patch/busybox-wget-make-default-timeout-configurable.patch;
+    patch -Ntp1 -i $THIS_DIR/patch/busybox-root-path.patch;
+    patch -Ntp1 -i $THIS_DIR/patch/busybox-rpm2cpio.patch;
+    patch -Ntp1 -i $THIS_DIR/patch/busybox-tc-depmod.patch;
+    patch -Ntp1 -i $THIS_DIR/patch/busybox-wget-make-default-timeout-configurable.patch;
 
     cp -v $THIS_DIR/config/busybox_suid.cfg $busybox_path/.config;
     make && make CONFIG_PREFIX=$ROOTFS install || \
@@ -62,7 +62,7 @@ _make_glibc() {
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     cd $TMP/glibc-$glibc_version;
 
-    patch -Np1 -i $THIS_DIR/patch/glibc-fhs-1.patch;
+    patch -Ntp1 -i $THIS_DIR/patch/glibc-fhs-1.patch;
     mkdir -p build $ROOTFS/etc;
     cd build;
 
