@@ -11,7 +11,7 @@ ROOTFS=$TMP/rootfs;
 
 # linux
 : ${KERNEL_MAJOR_VERSION:=4.9};
-KERNEL_DOWNLOAD=https://cdn.kernel.org/pub/linux/kernel;
+KERNEL_DOWNLOAD=https://www.kernel.org/pub/linux/kernel;
 
 BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 

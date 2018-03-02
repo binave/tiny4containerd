@@ -50,10 +50,9 @@ _make_busybox() {
     mv $ROOTFS/bin/busybox $ROOTFS/bin/busybox.suid;
 
     cp -v $THIS_DIR/config/busybox_nosuid.cfg $busybox_path/.config;
-    make && make CONFIG_PREFIX=$ROOTFS install || \
+    make oldconfig && make && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
-    # cp -adv _install/* $ROOTFS;
     # rm -f $ROOTFS/linuxrc;
     # rm -fr $busybox_path # clear
 }
@@ -64,6 +63,7 @@ _make_glibc() {
 
     patch -Ntp1 -i $THIS_DIR/patch/glibc-fhs-1.patch;
     mkdir -p build $ROOTFS/etc;
+    touch $ROOTFS/etc/ld.so.conf;
     cd build;
 
     echo "CFLAGS += -mtune=generic -Og -pipe" > configparms;
@@ -80,7 +80,6 @@ _make_glibc() {
     find . -name config.status -type f -exec sed -i 's/-O2//g' {} \;
 
     make;
-    touch $ROOTFS/etc/ld.so.conf;
     make install install_root=$ROOTFS;
 
 }

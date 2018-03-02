@@ -5,7 +5,6 @@
 !*/
 
 # Avoid ignoring some suffix
-!*.bash
 !*.cfg
 !*.md
 !*.msg
