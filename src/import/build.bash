@@ -38,10 +38,10 @@ _make_busybox() {
 
     cd $busybox_path;
 
-    patch -Np0 -i $THIS_DIR/patch/busybox_tc_depmod.patch;
-    patch -Np1 -i $THIS_DIR/patch/busybox_root_path.patch;
-    patch -Np1 -i $THIS_DIR/patch/busybox-wget-make-default-timeout-configurable.patch;
+    patch -Np1 -i $THIS_DIR/patch/busybox-root-path.patch;
     patch -Np1 -i $THIS_DIR/patch/busybox-rpm2cpio.patch;
+    patch -Np1 -i $THIS_DIR/patch/busybox-tc-depmod.patch;
+    patch -Np1 -i $THIS_DIR/patch/busybox-wget-make-default-timeout-configurable.patch;
 
     cp -v $THIS_DIR/config/busybox_suid.cfg $busybox_path/.config;
     make && make CONFIG_PREFIX=$ROOTFS install || \
