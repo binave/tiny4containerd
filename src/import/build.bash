@@ -47,7 +47,7 @@ _make_busybox() {
     make && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
-    mv $ROOTFS/bin/busybox $ROOTFS/sbin/busybox.suid;
+    mv $ROOTFS/bin/busybox $ROOTFS/bin/busybox.suid;
 
     cp -v $THIS_DIR/config/busybox_nosuid.cfg $busybox_path/.config;
     make && make CONFIG_PREFIX=$ROOTFS install || \
