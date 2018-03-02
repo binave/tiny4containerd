@@ -4,10 +4,10 @@
 THIS_DIR=$(cd `dirname $0`; pwd);
 
 # import script
-. $THIS_DIR/env.bash; # load environment variable
-. $THIS_DIR/lib.bash; # load common function
-. $THIS_DIR/build.bash;
-. $THIS_DIR/profile.bash;
+. $THIS_DIR/import/env.bash; # load environment variable
+. $THIS_DIR/import/lib.bash; # load common function
+. $THIS_DIR/import/build.bash;
+. $THIS_DIR/import/profile.bash;
 
 _main() {
     # set work path

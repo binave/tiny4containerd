@@ -1,0 +1,13 @@
+diff --git a/libbb/messages.c b/libbb/messages.c
+index 23e440b..683946e 100644
+--- a/libbb/messages.c
++++ b/libbb/messages.c
+@@ -9,7 +9,7 @@
+ 
+ /* allow default system PATH to be extended via CFLAGS */
+ #ifndef BB_ADDITIONAL_PATH
+-#define BB_ADDITIONAL_PATH ""
++#define BB_ADDITIONAL_PATH ":/usr/local/bin"
+ #endif
+ 
+ /* allow version to be extended, via CFLAGS */

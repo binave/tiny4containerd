@@ -9,7 +9,7 @@ _make_kernel() {
 
     echo " -------- make bzImage modules --------------------";
     # make ARCH=x86_64 menuconfig # ncurses-dev
-    cp -v $THIS_DIR/kernel.cfg $kernel_path/.config;
+    cp -v $THIS_DIR/config/kernel.cfg $kernel_path/.config;
 
     # put in queue
     cd $kernel_path;
@@ -38,18 +38,18 @@ _make_busybox() {
 
     cd $busybox_path;
 
-    patch -Np0 -i $THIS_DIR/busybox_tc_depmod.patch;
-    patch -Np1 -i $THIS_DIR/busybox_root_path.patch;
-    patch -Np1 -i $THIS_DIR/busybox-wget-make-default-timeout-configurable.patch;
-    patch -Np1 -i $THIS_DIR/busybox-rpm2cpio.patch;
+    patch -Np0 -i $THIS_DIR/config/busybox_tc_depmod.patch;
+    patch -Np1 -i $THIS_DIR/config/busybox_root_path.patch;
+    patch -Np1 -i $THIS_DIR/config/busybox-wget-make-default-timeout-configurable.patch;
+    patch -Np1 -i $THIS_DIR/config/busybox-rpm2cpio.patch;
 
-    cp -v $THIS_DIR/busybox_suid.cfg $busybox_path/.config;
+    cp -v $THIS_DIR/config/busybox_suid.cfg $busybox_path/.config;
     make && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
     mv $ROOTFS/bin/busybox $ROOTFS/sbin/busybox.suid;
 
-    cp -v $THIS_DIR/busybox_nosuid.cfg $busybox_path/.config;
+    cp -v $THIS_DIR/config/busybox_nosuid.cfg $busybox_path/.config;
     make && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
@@ -62,7 +62,7 @@ _make_glibc() {
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     cd $TMP/glibc-$glibc_version;
 
-    patch -Np1 -i $THIS_DIR/glibc-fhs-1.patch;
+    patch -Np1 -i $THIS_DIR/config/glibc-fhs-1.patch;
     mkdir -p build $ROOTFS/etc;
     cd build;
 
