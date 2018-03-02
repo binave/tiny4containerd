@@ -11,21 +11,25 @@ ROOTFS=$TMP/rootfs;
 
 # linux
 : ${KERNEL_MAJOR_VERSION:=4.9};
-KERNEL_DOWNLOAD=https://www.kernel.org/pub/linux/kernel;
+KERNEL_DOWNLOAD=https://cdn.kernel.org/pub/linux/kernel;
 
 BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 
-# GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
+GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
 
 # SSHFS_DOWNLOAD=https://github.com/libfuse/libfuse;
 
 # LIBFUSE_DOWNLOAD=https://github.com/libfuse/sshfs;
 
+CERTDATA_DOWNLOAD=http://anduin.linuxfromscratch.org/BLFS/other/certdata.txt;
+
+CA_CERTIFICATES_DOWNLOAD=https://salsa.debian.org/debian/ca-certificates/repository/master/archive.tar.bz2;
+
 LIBCAP2_DOWNLOAD=https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2;
 
 ZLIB_DOWNLOAD=http://www.zlib.net;
 
-DROPBEAR_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
+SSH_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
 
 IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
 
@@ -63,6 +67,7 @@ APT_GET_LIST_MAKE="
     automake
     bc bsdtar build-essential
     curl
+    file
     kmod
     libc6 libc6-dev libcap-dev
     pkg-config
@@ -81,3 +86,6 @@ APT_GET_LIST_ISO="
 # apt-get install -y ncurses-dev
 # make allnoconfig
 # make ARCH=x86_64 menuconfig
+
+export CC="gcc -flto -fuse-linker-plugin -mtune=generic -Os -pipe";
+export CXX="g++ -flto -fuse-linker-plugin -mtune=generic -Os -pipe -fno-exceptions -fno-rtti";

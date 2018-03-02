@@ -36,15 +36,55 @@ _make_busybox() {
     local busybox_path=$TMP/busybox-$busybox_version;
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
-    cp -v $THIS_DIR/busybox.cfg $busybox_path/.config;
-
     cd $busybox_path;
-    make && make install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv _install/* $ROOTFS;
+    patch -Np0 -i $THIS_DIR/busybox_tc_depmod.patch;
+    patch -Np1 -i $THIS_DIR/busybox_root_path.patch;
+    patch -Np1 -i $THIS_DIR/busybox-wget-make-default-timeout-configurable.patch;
+    patch -Np1 -i $THIS_DIR/busybox-rpm2cpio.patch;
+
+    cp -v $THIS_DIR/busybox_suid.cfg $busybox_path/.config;
+    make && make CONFIG_PREFIX=$ROOTFS install || \
+        return $(_err_line $((LINENO / 2)));
+
+    mv $ROOTFS/bin/busybox $ROOTFS/sbin/busybox.suid;
+
+    cp -v $THIS_DIR/busybox_nosuid.cfg $busybox_path/.config;
+    make && make CONFIG_PREFIX=$ROOTFS install || \
+        return $(_err_line $((LINENO / 2)));
+
+    # cp -adv _install/* $ROOTFS;
     # rm -f $ROOTFS/linuxrc;
     # rm -fr $busybox_path # clear
 }
+
+_make_glibc() {
+    _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    cd $TMP/glibc-$glibc_version;
+
+    patch -Np1 -i $THIS_DIR/glibc-fhs-1.patch;
+    mkdir -p build $ROOTFS/etc;
+    cd build;
+
+    echo "CFLAGS += -mtune=generic -Og -pipe" > configparms;
+    ../configure \
+        --prefix=/usr \
+        --libexecdir=/usr/lib/glibc \
+        --enable-kernel=4.2.9 \
+        --enable-stack-protector=strong \
+        libc_cv_slibdir=/lib \
+        --enable-obsolete-rpc  \
+        --disable-werror;
+
+    find . -name config.make -type f -exec sed -i 's/-O2//g' {} \;
+    find . -name config.status -type f -exec sed -i 's/-O2//g' {} \;
+
+    make;
+    touch $ROOTFS/etc/ld.so.conf;
+    make install install_root=$ROOTFS;
+
+}
+
 
 _make_libcap2() {
     echo " ------------- make libcap2 -----------------------";
@@ -59,7 +99,22 @@ _make_libcap2() {
     # rm -fr $TMP/libcap-$libcap2_version # clear
 }
 
-_make_dropbear() {
+_make_ssh() {
+
+    # ./configure \
+    #     --prefix=$ROOTFS/usr/local \
+    #     --localstatedir=/var \
+    #     --sysconfdir=/usr/local/etc/ssh \
+    #     --libexecdir=/usr/local/lib/openssh \
+    #     --with-privsep-path=/var/lib/sshd \
+    #     --with-privsep-user=nobody \
+    #     --with-xauth=/usr/local/bin/xauth \
+    #     --with-md5-passwords || return $(_err_line $((LINENO / 2)));
+
+    # find . -name Makefile -type f -exec sed -i 's/-g -O2//g' {} \;
+
+    # make && make install || return $(_err_line $((LINENO / 2)));
+
     _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/zlib-$zlib_version;
@@ -77,13 +132,46 @@ _make_dropbear() {
     # rm -fr $TMP/zlib-$zlib_version $TMP/dropbear-$dropbear_version # clear
 }
 
+# http://www.linuxfromscratch.org/blfs/view/7.10-systemd/postlfs/cacerts.html
+_make_ca_certificates() {
+    _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    cd  $TMP/ca-certificates-*
+    make && make install;
+    printf %s 'mozilla/ValiCert_Class_1_VA.crt
+mozilla/ValiCert_Class_2_VA.crt
+mozilla/Verisign_Class_1_Public_Primary_Certification_Authority.crt
+' | tee $ROOTFS/etc/ca-certificates.conf;
+
+}
+
+# https://github.com/wolfSSL/wolfssl/releases
 _make_openssl() {
     _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/openssl-$OPENSSL_VERSION;
-    ./config -fPIC no-shared --prefix=$ROOTFS && make && make install || return $(_err_line $((LINENO / 2)));
+
+    ./config \
+        --install_prefix=$ROOTFS \
+        --prefix=$ROOTFS/usr/local \
+        --openssldir=$ROOTFS/usr/local/etc/ssl no-shared || return $(_err_line $((LINENO / 2)));
+
+    find . -name Makefile -type f -exec sed -i 's/-O3//g' {} \;
+
+    make && make install || return $(_err_line $((LINENO / 2)));
 
     # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
+}
+
+_make_sshfs() {
+    _wait_file $TMP/sshfs-fuse.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    cd $TMP/sshfs-fuse-$sshfs_fuse_version;
+
+    ./configure --prefix=$ROOTFS/usr/local --localstatedir=/var || return $(_err_line $((LINENO / 2)));
+
+    find . -name Makefile -type f -exec sed -i 's/-g -O2//g' {} \;
+
+    make && make install || return $(_err_line $((LINENO / 2)));
+
 }
 
 # TODO _nftables
@@ -92,8 +180,11 @@ _make_iptables() {
 
     cd $TMP/iptables-$iptables_version;
     # Error: No suitable 'libmnl' found: --disable-nftables
-    ./configure --enable-static --disable-shared --disable-nftables && \
-        make -j $CORES LDFLAGS="-all-static" || return $(_err_line $((LINENO / 2)));
+    ./configure --enable-static --disable-shared --disable-nftables;
+
+    find . -name Makefile -type f -exec sed -i 's/-O2/ /g' {} \;
+
+    make -j $CORES LDFLAGS="-all-static" || return $(_err_line $((LINENO / 2)));
 
     mv -v $TMP/iptables-$iptables_version/iptables/xtables-multi $ROOTFS/usr/local/sbin;
 
@@ -124,31 +215,70 @@ _make_mdadm() {
 }
 
 _make_lvm2() {
-    echo " ------------- lvm2 libcap2 -----------------------";
+    echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/LVM$lvm2_version;
-    ./configure --prefix=$ROOTFS && make && make install || return $(_err_line $((LINENO / 2)));
+
+    ./configure \
+        --prefix=$ROOTFS/usr/local \
+        --localstatedir=/var \
+        --sysconfdir=/usr/local/etc \
+        --with-confdir=/usr/local/etc \
+        --enable-applib \
+        --enable-cmdlib \
+        --enable-pkgconfig \
+        --enable-udev_sync || return $(_err_line $((LINENO / 2)));
+
+    find . -name make.tmpl -type f -exec sed -i 's/-O2/ /g' {} \;
+
+    # Edit make.tmpl
+    # DEFAULT_SYS_DIR = /usr/local/etc/lvm
+
+    make && make install || return $(_err_line $((LINENO / 2)));
 
     # rm -fr $TMP/LVM$lvm2_version # clear
 }
 
 _make_curl() {
     _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+
     cd $TMP/curl-$curl_version;
-    ./configure --prefix=$ROOTFS --disable-shared --enable-static && make && make install || return $(_err_line $((LINENO / 2)));
-    # --without-libidn --without-ssl --without-librtmp --without-gnutls --without-nss --without-libssh2 --without-zlib --without-winidn --disable-rtsp --disable-ldap --disable-ldaps --disable-ipv6
+
+    ./configure \
+        --prefix=$ROOTFS/usr/local \
+        --disable-shared \
+        --enable-static \
+        --enable-threaded-resolver \
+        --with-ca-bundle=/usr/local/etc/ssl/certs/ca-certificates.crt || return $(_err_line $((LINENO / 2)));
+
+    find . -name Makefile -type f -exec sed -i 's/-O2/ /g' {} \;
+
+    make && make install || return $(_err_line $((LINENO / 2)));
 
     # rm -fr $TMP/curl-$curl_version # clear
 }
 
-# _make_git() {
-#     _wait_file $TMP/git.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-#     cd $TMP/git-$git_version;
-#     ./configure CFLAGS="${CFLAGS} -static" NO_OPENSSL=1 NO_CURL=1;
-#     make -j $CORES && make install && make install-doc;
-#     rm -fr $TMP/git-$git_version # clear
-# }
+_make_git() {
+
+    _wait_file $TMP/git.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    cd $TMP/git-$git_version;
+
+    ./configure \
+        --prefix=$ROOTFS/usr/local \
+        --libexecdir=/usr/local/lib \
+        --with-gitconfig=$ROOTFS/usr/local/etc/gitconfig || return $(_err_line $((LINENO / 2)));
+        # CFLAGS="${CFLAGS} -static"
+
+    find . -name Makefile -type f -exec sed -i 's/-g -O2/ /g' {} \;
+    find . -name config.mak.autogen -type f -exec sed -i 's/-g -O2/ /g' {} \;
+
+    make PERL_PATH="/usr/local/bin/perl" PYTHON_PATH="/usr/local/bin/python" -j $CORES && \
+    make PERL_PATH="/usr/local/bin/perl" PYTHON_PATH="/usr/local/bin/python" install;
+    make install-doc;
+
+    rm -fr $TMP/git-$git_version # clear
+}
 
 _apt_get_install() {
     # clear work path
@@ -181,11 +311,11 @@ _apply_rootfs() {
     # Copy our custom rootfs,
     cp -frv $THIS_DIR/rootfs/* $ROOTFS;
 
-    # ca-certificates
-    cp /etc/ca-certificates.conf            $ROOTFS/etc;
-    cp -adv /etc/ssl/certs                  $ROOTFS/etc/ssl;
-    cp /usr/sbin/update-ca-certificates     $ROOTFS/usr/sbin;
-    cp -frv /usr/share/ca-certificates      $ROOTFS/usr/share;
+    # # ca-certificates
+    # cp /etc/ca-certificates.conf            $ROOTFS/etc;
+    # cp -adv /etc/ssl/certs                  $ROOTFS/etc/ssl;
+    # cp /usr/sbin/update-ca-certificates     $ROOTFS/usr/sbin;
+    # cp -frv /usr/share/ca-certificates      $ROOTFS/usr/share;
 
     # libc
     cp /sbin/ldconfig       $ROOTFS/sbin;
@@ -221,12 +351,11 @@ _apply_rootfs() {
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -f $ROOTFS/usr/bin/passwd;
 
-    echo " ----------- ca-certificates ----------------------";
     # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
-    chroot $ROOTFS sh -xc 'ldconfig' || return $(_err_line $((LINENO / 2)));
+    chroot $ROOTFS sh -xc 'ldconfig && openssl' || return $(_err_line $((LINENO / 2)));
 
     ln -sT lib $ROOTFS/lib64;
-    ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
+    # ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
 
     # find $ROOTFS -type f -exec strip --strip-all {} \;
 

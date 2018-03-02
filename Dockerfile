@@ -12,7 +12,7 @@ ENV TMP /tmp
 COPY src $TMP/src
 
 # command run in container, can not access local path.
-RUN bash $TMP/src/build.sh; \
+RUN bash $TMP/src/main.sh; \
     cat $TMP/iso/version >/dev/null 2>&1
 
 # print tiny4containerd.is to stdout

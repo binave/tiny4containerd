@@ -106,7 +106,7 @@ _case_version() {
 }
 
 _last_version() {
-    local ver=$(sed 's/LVM\|\.tgz\|\.tar.*//g;' | sort --version-sort | tail -1);
+    local ver=$(sed 's/LVM\|\.tgz\|\.tar.*\|\///g;' | sort --version-sort | tail -1);
     [[ $ver == [0-9]*\.*[0-9]* ]] && {
         printf $ver;
         printf "$ver\n" >&2;

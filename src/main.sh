@@ -6,12 +6,12 @@ THIS_DIR=$(cd `dirname $0`; pwd);
 # import script
 . $THIS_DIR/env.bash; # load environment variable
 . $THIS_DIR/lib.bash; # load common function
-. $THIS_DIR/function.bash;
+. $THIS_DIR/build.bash;
 . $THIS_DIR/profile.bash;
 
 _main() {
     # set work path
-    local busybox_version docker_version dropbear_version git_version iptables_version kernel_version lvm2_version mdadm_version zlib_version;
+    local kernel_version busybox_version glibc_version libcap2_version zlib_version ssh_version iptables_version mdadm_version lvm2_version docker_version curl_version;
 
     # test complete, then pack it
     [ -s $TMP/iso/version ] && {
@@ -33,8 +33,8 @@ _main() {
     _case_version ----------- busybox version ----------------------;
     busybox_version=$(curl -L $BUSYBOX_DOWNLOAD 2>/dev/null | grep 'busybox-[0-9].*bz2"' | awk -F[-\"] '{print $7}' | _last_version) || return $((LINENO / 2));
 
-    # _case_version ------------ glibc version -----------------------;
-    # glibc_version=$(curl -L $GLIBC_DOWNLOAD 2>/dev/null | grep 'glibc-[0-9].*xz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
+    _case_version ------------ glibc version -----------------------;
+    glibc_version=$(curl -L $GLIBC_DOWNLOAD 2>/dev/null | grep 'glibc-[0-9].*xz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
 
     # _case_version ------------ sshfs version -----------------------;
     # sshfs_version=$(curl -L $SSHFS_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | grep -v rc | _last_version) || return $((LINENO / 2));
@@ -48,8 +48,8 @@ _main() {
     _case_version ------------- zlib version -----------------------;
     zlib_version=$(curl -L $ZLIB_DOWNLOAD/ChangeLog.txt 2>/dev/null | grep Changes | awk '{print $3}' | _last_version) || return $((LINENO / 2));
 
-    _case_version ----------- dropbear version ---------------------;
-    dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+    _case_version ------------- ssh version ------------------------;
+    ssh_version=$(curl -L $SSH_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
     _case_version ----------- iptables version ---------------------;
     iptables_version=$(curl -L $IPTABLES_DOWNLOAD/downloads.html 2>/dev/null | grep '/iptables.*bz2"' | awk -F[-\"] '{print $5}' | _last_version) || return $((LINENO / 2));
@@ -89,7 +89,7 @@ _main() {
         _message_queue --put "_make_busybox";
         # _message_queue --put "_make_glibc";
         _message_queue --put "_make_libcap2";
-        _message_queue --put "_make_dropbear";
+        _message_queue --put "_make_ssh";
         _message_queue --put "_make_openssl";
         _message_queue --put "_make_iptables";
         _message_queue --put "_make_mdadm";
@@ -99,7 +99,7 @@ _main() {
 
         _downlock $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 || return $((LINENO / 2));
 
-        # _downlock $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz || return $((LINENO / 2));
+        _downlock $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz || return $((LINENO / 2));
 
         # _downlock $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz || return $((LINENO / 2));
 
@@ -112,7 +112,11 @@ _main() {
 
         _message_queue --put "_create_etc";
 
-        _downlock $DROPBEAR_DOWNLOAD/dropbear-$dropbear_version.tar.bz2 || return $((LINENO / 2));
+        curl --retry 10 -LO $CERTDATA_DOWNLOAD || return $((LINENO / 2));
+
+        _downlock $CA_CERTIFICATES_DOWNLOAD || return $((LINENO / 2));
+
+        _downlock $SSH_DOWNLOAD/dropbear-$ssh_version.tar.bz2 || return $((LINENO / 2));
 
         _downlock $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz || return $((LINENO / 2));
 
@@ -120,7 +124,7 @@ _main() {
 
         _downlock $MDADM_DOWNLOAD/mdadm-$mdadm_version.tar.xz || return $((LINENO / 2));
 
-        _downlock $LVM2_DOWNLOAD/LVM$lvm2_version.tgz - || return $((LINENO / 2));
+        _downlock $LVM2_DOWNLOAD/LVM$lvm2_version.tgz || return $((LINENO / 2));
 
         _downlock $CURL_DOWNLOAD/curl-$curl_version.tar.xz || return $((LINENO / 2));
 
@@ -171,7 +175,7 @@ _main() {
     printf %s "
 kernel-$kernel_version
 busybox-$busybox_version
-dropbear-$dropbear_version
+ssh-$ssh_version
 mdadm-$mdadm_version
 iptables-$iptables_version
 lvm2-$lvm2_version
