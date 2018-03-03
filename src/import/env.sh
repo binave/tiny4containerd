@@ -69,6 +69,7 @@ APT_GET_LIST_MAKE="
     bc bsdtar build-essential
     curl
     file
+    bison gawk
     kmod
     libc6 libc6-dev libcap-dev
     pkg-config
@@ -88,5 +89,5 @@ APT_GET_LIST_ISO="
 # make allnoconfig
 # make ARCH=x86_64 menuconfig
 
-export CC="gcc -flto -fuse-linker-plugin -mtune=generic -Os -pipe";
-export CXX="g++ -flto -fuse-linker-plugin -mtune=generic -Os -pipe -fno-exceptions -fno-rtti";
+# CC="gcc -flto -fuse-linker-plugin -mtune=generic -Os -pipe";
+# CXX="g++ -flto -fuse-linker-plugin -mtune=generic -Os -pipe -fno-exceptions -fno-rtti";

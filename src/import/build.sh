@@ -32,6 +32,31 @@ _make_kernel() {
     # rm -fr $kernel_path # clear
 }
 
+_make_glibc() {
+    _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    cd $TMP/glibc-$glibc_version;
+
+    patch -Ntp1 -i $THIS_DIR/patch/glibc-fhs-1.patch;
+    mkdir -p build $ROOTFS/etc;
+    touch $ROOTFS/etc/ld.so.conf;
+    cd build;
+
+    echo "CFLAGS += -mtune=generic -Og -pipe" > configparms;
+    ../configure \
+        --prefix=$ROOTFS \
+        --libexecdir=/usr/lib/glibc \
+        --enable-kernel=4.2.9 \
+        --enable-stack-protector=strong \
+        libc_cv_slibdir=/lib \
+        --enable-obsolete-rpc  \
+        --disable-werror;
+
+    find . -name config.make -type f -exec sed -i 's/-O2//g' {} \;
+    find . -name config.status -type f -exec sed -i 's/-O2//g' {} \;
+
+    make && make install # install_root=$ROOTFS
+}
+
 _make_busybox() {
     local busybox_path=$TMP/busybox-$busybox_version;
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
@@ -44,7 +69,7 @@ _make_busybox() {
     patch -Ntp1 -i $THIS_DIR/patch/busybox-wget-make-default-timeout-configurable.patch;
 
     cp -v $THIS_DIR/config/busybox_suid.cfg $busybox_path/.config;
-    make && make CONFIG_PREFIX=$ROOTFS install || \
+    make -L  && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
     mv $ROOTFS/bin/busybox $ROOTFS/bin/busybox.suid;
@@ -56,34 +81,6 @@ _make_busybox() {
     # rm -f $ROOTFS/linuxrc;
     # rm -fr $busybox_path # clear
 }
-
-_make_glibc() {
-    _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/glibc-$glibc_version;
-
-    patch -Ntp1 -i $THIS_DIR/patch/glibc-fhs-1.patch;
-    mkdir -p build $ROOTFS/etc;
-    touch $ROOTFS/etc/ld.so.conf;
-    cd build;
-
-    echo "CFLAGS += -mtune=generic -Og -pipe" > configparms;
-    ../configure \
-        --prefix=/usr \
-        --libexecdir=/usr/lib/glibc \
-        --enable-kernel=4.2.9 \
-        --enable-stack-protector=strong \
-        libc_cv_slibdir=/lib \
-        --enable-obsolete-rpc  \
-        --disable-werror;
-
-    find . -name config.make -type f -exec sed -i 's/-O2//g' {} \;
-    find . -name config.status -type f -exec sed -i 's/-O2//g' {} \;
-
-    make;
-    make install install_root=$ROOTFS;
-
-}
-
 
 _make_libcap2() {
     echo " ------------- make libcap2 -----------------------";
