@@ -69,7 +69,8 @@ _make_busybox() {
     patch -Ntp1 -i $THIS_DIR/patch/busybox-wget-make-default-timeout-configurable.patch;
 
     cp -v $THIS_DIR/config/busybox_suid.cfg $busybox_path/.config;
-    make -L  && make CONFIG_PREFIX=$ROOTFS install || \
+    local CFLAGS=-I$ROOTFS/include LDFLAGS=-L$ROOTFS/lib;
+    make && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
     mv $ROOTFS/bin/busybox $ROOTFS/bin/busybox.suid;
