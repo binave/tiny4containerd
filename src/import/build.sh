@@ -33,6 +33,7 @@ _make_kernel() {
     # rm -fr $kernel_path # clear
 }
 
+# http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
 _make_glibc() {
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     cd $TMP/glibc-$glibc_version;
@@ -55,7 +56,28 @@ _make_glibc() {
     sed -i 's/-O2//g' ./config.make ./config.status;
 
     make && make install install_root=$ROOTFS;
-    ln -sT lib $ROOTFS/lib64
+    ln -sT lib $ROOTFS/lib64;
+
+    printf %s '/usr/local/lib' | tee $ROOTFS/etc/ld.so.conf;
+
+    printf %s '# GNU Name Service Switch config.
+# Begin /etc/nsswitch.conf
+
+passwd: files
+group: files
+shadow: files
+
+hosts: files dns
+networks: files
+
+protocols: files
+services: files
+ethers: files
+rpc: files
+
+# End /etc/nsswitch.conf
+' | tee $ROOTFS/etc/nsswitch.conf
+
 }
 
 _make_busybox() {
@@ -90,6 +112,37 @@ _make_busybox() {
     # rm -fr $busybox_path # clear
 }
 
+_make_zlib() {
+    _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+
+    cd $TMP/zlib-$zlib_version;
+    ./configure --prefix=$ROOTFS --shared && \
+        make && make install || return $(_err_line $((LINENO / 2)));
+    # rm -fr $TMP/zlib-$zlib_version # clear
+}
+
+_make_openssl() {
+    _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+
+    cd $TMP/openssl-$OPENSSL_VERSION;
+
+    ./config \
+        --prefix=/usr/local \
+        --openssldir=/usr/local/etc/ssl \
+        shared zlib-dynamic
+
+    ./config \
+        --install_prefix=$ROOTFS \
+        --prefix=$ROOTFS/usr/local \
+        --openssldir=$ROOTFS/usr/local/etc/ssl no-shared || return $(_err_line $((LINENO / 2)));
+
+    sed -i 's/-O3//g' ./Makefile;
+
+    make && make install install_root=$ROOTFS || return $(_err_line $((LINENO / 2)));
+
+    # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
+}
+
 _make_libcap2() {
     echo " ------------- make libcap2 -----------------------";
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
@@ -103,37 +156,31 @@ _make_libcap2() {
     # rm -fr $TMP/libcap-$libcap2_version # clear
 }
 
-_make_ssh() {
+_make_openssh() {
+    ./configure \
+        --prefix=/usr/local \
+        --localstatedir=/var \
+        --sysconfdir=/usr/local/etc/ssh \
+        --libexecdir=/usr/local/lib/openssh \
+        --with-privsep-path=/var/lib/sshd \
+        --with-privsep-user=nobody \
+        --with-xauth=/usr/local/bin/xauth \
+        --with-md5-passwords || return $(_err_line $((LINENO / 2)));
 
-    # ./configure \
-    #     --prefix=$ROOTFS/usr/local \
-    #     --localstatedir=/var \
-    #     --sysconfdir=/usr/local/etc/ssh \
-    #     --libexecdir=/usr/local/lib/openssh \
-    #     --with-privsep-path=/var/lib/sshd \
-    #     --with-privsep-user=nobody \
-    #     --with-xauth=/usr/local/bin/xauth \
-    #     --with-md5-passwords || return $(_err_line $((LINENO / 2)));
+    sed -i 's/-g -O2//g' ./Makefile;
 
-    # sed -i 's/-g -O2//g' ./Makefile;
+    make && make install install_root=$ROOTFS || return $(_err_line $((LINENO / 2)));
 
-    # make && make install || return $(_err_line $((LINENO / 2)));
+    # _wait_file $TMP/dropbear.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
-    _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    # cd $TMP/dropbear-$dropbear_version;
+    # mkdir -p $ROOTFS/usr/local;
 
-    cd $TMP/zlib-$zlib_version;
-    ./configure && make && make install || return $(_err_line $((LINENO / 2)));
+    # ./configure --prefix=$ROOTFS/usr/local && \
+    #     make STATIC=1 PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" && \
+    #     make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" install;
 
-    _wait_file $TMP/dropbear.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-
-    cd $TMP/dropbear-$dropbear_version;
-    mkdir -p $ROOTFS/usr/local;
-
-    ./configure --prefix=$ROOTFS/usr/local && \
-        make STATIC=1 PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" && \
-        make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" install;
-
-    # rm -fr $TMP/zlib-$zlib_version $TMP/dropbear-$dropbear_version # clear
+    # rm -fr $TMP/dropbear-$dropbear_version # clear
 }
 
 # http://www.linuxfromscratch.org/blfs/view/7.10-systemd/postlfs/cacerts.html
@@ -146,24 +193,6 @@ mozilla/ValiCert_Class_2_VA.crt
 mozilla/Verisign_Class_1_Public_Primary_Certification_Authority.crt
 ' | tee $ROOTFS/etc/ca-certificates.conf;
 
-}
-
-# https://github.com/wolfSSL/wolfssl/releases
-_make_openssl() {
-    _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-
-    cd $TMP/openssl-$OPENSSL_VERSION;
-
-    ./config \
-        --install_prefix=$ROOTFS \
-        --prefix=$ROOTFS/usr/local \
-        --openssldir=$ROOTFS/usr/local/etc/ssl no-shared || return $(_err_line $((LINENO / 2)));
-
-    sed -i 's/-O3//g' ./Makefile;
-
-    make && make install || return $(_err_line $((LINENO / 2)));
-
-    # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
 }
 
 _make_sshfs() {
@@ -298,6 +327,10 @@ _apt_get_install() {
 }
 
 _apply_rootfs() {
+
+    # remove glibc include
+    rm -fr $ROOTFS/usr/include;
+
     cd $ROOTFS;
     mkdir -pv \
         dev \
