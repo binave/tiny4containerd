@@ -29,6 +29,7 @@ _make_kernel() {
 
     # $kernel_path/arch/x86_64/boot/bzImage -> ../../x86/boot/bzImage
     mv -v $kernel_path/arch/x86/boot/bzImage $TMP/iso/boot/vmlinuz64;
+    # rm -f $ROOTFS/linuxrc;
     # rm -fr $kernel_path # clear
 }
 
@@ -41,24 +42,24 @@ _make_glibc() {
     touch $ROOTFS/etc/ld.so.conf;
     cd build;
 
-    echo "CFLAGS += -mtune=generic -Og -pipe" > configparms;
+    echo "CFLAGS += -mtune=generic -Og -pipe" > ./configparms;
     ../configure \
-        --prefix=$ROOTFS \
+        --prefix=/usr \
         --libexecdir=/usr/lib/glibc \
-        --enable-kernel=4.2.9 \
+        --enable-kernel=3.2 \
         --enable-stack-protector=strong \
         libc_cv_slibdir=/lib \
         --enable-obsolete-rpc  \
         --disable-werror;
 
-    find . -name config.make -type f -exec sed -i 's/-O2//g' {} \;
-    find . -name config.status -type f -exec sed -i 's/-O2//g' {} \;
+    sed -i 's/-O2//g' ./config.make ./config.status;
 
-    make && make install # install_root=$ROOTFS
+    make && make install install_root=$ROOTFS;
+    ln -sT lib $ROOTFS/lib64
 }
 
 _make_busybox() {
-    local busybox_path=$TMP/busybox-$busybox_version;
+    local busybox_path=$TMP/busybox-$busybox_version symbolic CFLAGS LDFLAGS;
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
     cd $busybox_path;
@@ -68,18 +69,24 @@ _make_busybox() {
     patch -Ntp1 -i $THIS_DIR/patch/busybox-tc-depmod.patch;
     patch -Ntp1 -i $THIS_DIR/patch/busybox-wget-make-default-timeout-configurable.patch;
 
+    export LDFLAGS="-L $ROOTFS/lib" CFLAGS="-I $ROOTFS/usr/include";
+
     cp -v $THIS_DIR/config/busybox_suid.cfg $busybox_path/.config;
-    local CFLAGS=-I$ROOTFS/include LDFLAGS=-L$ROOTFS/lib;
     make && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
     mv $ROOTFS/bin/busybox $ROOTFS/bin/busybox.suid;
+    for symbolic in $($ROOTFS/bin/busybox.suid | sed ':a;N;$!ba;s/.*functions://g;s/,//g');
+    do
+        symbolic=$(cd $ROOTFS; find . -name "$symbolic");
+        symbolic=$ROOTFS${symbolic#.};
+        rm -f $symbolic && ln -fs /bin/busybox.suid $symbolic
+    done
 
     cp -v $THIS_DIR/config/busybox_nosuid.cfg $busybox_path/.config;
-    make oldconfig && make && make CONFIG_PREFIX=$ROOTFS install || \
+    make && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
-    # rm -f $ROOTFS/linuxrc;
     # rm -fr $busybox_path # clear
 }
 
@@ -108,7 +115,7 @@ _make_ssh() {
     #     --with-xauth=/usr/local/bin/xauth \
     #     --with-md5-passwords || return $(_err_line $((LINENO / 2)));
 
-    # find . -name Makefile -type f -exec sed -i 's/-g -O2//g' {} \;
+    # sed -i 's/-g -O2//g' ./Makefile;
 
     # make && make install || return $(_err_line $((LINENO / 2)));
 
@@ -152,7 +159,7 @@ _make_openssl() {
         --prefix=$ROOTFS/usr/local \
         --openssldir=$ROOTFS/usr/local/etc/ssl no-shared || return $(_err_line $((LINENO / 2)));
 
-    find . -name Makefile -type f -exec sed -i 's/-O3//g' {} \;
+    sed -i 's/-O3//g' ./Makefile;
 
     make && make install || return $(_err_line $((LINENO / 2)));
 
@@ -165,7 +172,7 @@ _make_sshfs() {
 
     ./configure --prefix=$ROOTFS/usr/local --localstatedir=/var || return $(_err_line $((LINENO / 2)));
 
-    find . -name Makefile -type f -exec sed -i 's/-g -O2//g' {} \;
+    sed -i 's/-g -O2//g' ./Makefile;
 
     make && make install || return $(_err_line $((LINENO / 2)));
 
@@ -179,7 +186,7 @@ _make_iptables() {
     # Error: No suitable 'libmnl' found: --disable-nftables
     ./configure --enable-static --disable-shared --disable-nftables;
 
-    find . -name Makefile -type f -exec sed -i 's/-O2/ /g' {} \;
+    sed -i 's/-O2/ /g' ./Makefile;
 
     make -j $CORES LDFLAGS="-all-static" || return $(_err_line $((LINENO / 2)));
 
@@ -227,7 +234,7 @@ _make_lvm2() {
         --enable-pkgconfig \
         --enable-udev_sync || return $(_err_line $((LINENO / 2)));
 
-    find . -name make.tmpl -type f -exec sed -i 's/-O2/ /g' {} \;
+    sed -i 's/-O2/ /g' ./make.tmpl;
 
     # Edit make.tmpl
     # DEFAULT_SYS_DIR = /usr/local/etc/lvm
@@ -249,7 +256,7 @@ _make_curl() {
         --enable-threaded-resolver \
         --with-ca-bundle=/usr/local/etc/ssl/certs/ca-certificates.crt || return $(_err_line $((LINENO / 2)));
 
-    find . -name Makefile -type f -exec sed -i 's/-O2/ /g' {} \;
+    sed -i 's/-O2/ /g' ./Makefile;
 
     make && make install || return $(_err_line $((LINENO / 2)));
 
@@ -267,8 +274,7 @@ _make_git() {
         --with-gitconfig=$ROOTFS/usr/local/etc/gitconfig || return $(_err_line $((LINENO / 2)));
         # CFLAGS="${CFLAGS} -static"
 
-    find . -name Makefile -type f -exec sed -i 's/-g -O2/ /g' {} \;
-    find . -name config.mak.autogen -type f -exec sed -i 's/-g -O2/ /g' {} \;
+    sed -i 's/-g -O2/ /g' ./Makefile ./config.mak.autogen;
 
     make PERL_PATH="/usr/local/bin/perl" PYTHON_PATH="/usr/local/bin/python" -j $CORES && \
     make PERL_PATH="/usr/local/bin/perl" PYTHON_PATH="/usr/local/bin/python" install;
@@ -351,7 +357,6 @@ _apply_rootfs() {
     # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
     chroot $ROOTFS sh -xc 'ldconfig && openssl' || return $(_err_line $((LINENO / 2)));
 
-    ln -sT lib $ROOTFS/lib64;
     # ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
 
     # find $ROOTFS -type f -exec strip --strip-all {} \;
