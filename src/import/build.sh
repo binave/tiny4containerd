@@ -132,18 +132,14 @@ _make_openssl() {
     cd $TMP/openssl-$OPENSSL_VERSION;
 
     ./config \
-        --prefix=/usr/local \
-        --openssldir=/usr/local/etc/ssl \
-        shared zlib-dynamic
-
-    ./config \
+        --prefix=/usr \
+        --openssldir=/etc/ssl \
         --install_prefix=$ROOTFS \
-        --prefix=$ROOTFS/usr/local \
-        --openssldir=$ROOTFS/usr/local/etc/ssl no-shared || return $(_err_line $((LINENO / 2)));
+        shared zlib-dynamic || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O3//g' ./Makefile;
 
-    make && make install install_root=$ROOTFS || return $(_err_line $((LINENO / 2)));
+    make && make install || return $(_err_line $((LINENO / 2)));
 
     # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
 }
