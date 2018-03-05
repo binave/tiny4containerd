@@ -43,7 +43,8 @@ _make_glibc() {
     touch $ROOTFS/etc/ld.so.conf;
     cd build;
 
-    echo "CFLAGS += -mtune=generic -Og -pipe" > ./configparms;
+    # fix glibc cannot be compiled without optimization
+    printf "CFLAGS += -mtune=generic -Og -pipe\n" > ./configparms;
     ../configure \
         --prefix=/usr \
         --libexecdir=/usr/lib/glibc \
@@ -58,7 +59,8 @@ _make_glibc() {
     make && make install install_root=$ROOTFS;
     ln -sT lib $ROOTFS/lib64;
 
-    printf %s '/usr/local/lib' | tee $ROOTFS/etc/ld.so.conf;
+    printf %s '/usr/local/lib
+' | tee $ROOTFS/etc/ld.so.conf;
 
     printf %s '# GNU Name Service Switch config.
 # Begin /etc/nsswitch.conf
@@ -81,7 +83,7 @@ rpc: files
 }
 
 _make_busybox() {
-    local busybox_path=$TMP/busybox-$busybox_version symbolic CFLAGS LDFLAGS;
+    local busybox_path=$TMP/busybox-$busybox_version symbolic target CFLAGS LDFLAGS;
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
     cd $busybox_path;
@@ -93,19 +95,19 @@ _make_busybox() {
 
     export LDFLAGS="-L $ROOTFS/lib" CFLAGS="-I $ROOTFS/usr/include";
 
-    cp -v $THIS_DIR/config/busybox_suid.cfg $busybox_path/.config;
-    make && make CONFIG_PREFIX=$ROOTFS install || \
-        return $(_err_line $((LINENO / 2)));
+    cp -v $THIS_DIR/config/busybox_suid.cfg ./.config;
+    make || return $(_err_line $((LINENO / 2)));
+
+    while read symbolic target
+    do
+        symbolic=${symbolic//\/\//\/};
+        printf "relink: '${symbolic##*/}'.\n";
+        rm -f $symbolic && ln -fs $target.suid $symbolic
+    done <<< $(make CONFIG_PREFIX=$ROOTFS install | grep '\->' | awk '{print $1" "$3}');
 
     mv $ROOTFS/bin/busybox $ROOTFS/bin/busybox.suid;
-    for symbolic in $($ROOTFS/bin/busybox.suid | sed ':a;N;$!ba;s/.*functions://g;s/,//g');
-    do
-        symbolic=$(cd $ROOTFS; find . -name "$symbolic");
-        symbolic=$ROOTFS${symbolic#.};
-        rm -f $symbolic && ln -fs /bin/busybox.suid $symbolic
-    done
 
-    cp -v $THIS_DIR/config/busybox_nosuid.cfg $busybox_path/.config;
+    cp -v $THIS_DIR/config/busybox_nosuid.cfg ./.config;
     make && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
@@ -116,8 +118,11 @@ _make_zlib() {
     _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/zlib-$zlib_version;
-    ./configure --prefix=$ROOTFS --shared && \
+    ./configure --prefix=/usr --shared && \
         make && make install || return $(_err_line $((LINENO / 2)));
+
+    cp -adv /usr/lib/libz.so* $ROOTFS/lib;
+    ln -sfv ../../lib/$(readlink /usr/lib/libz.so) $ROOTFS/usr/lib/libz.so;
     # rm -fr $TMP/zlib-$zlib_version # clear
 }
 

@@ -75,6 +75,7 @@ APT_GET_LIST_MAKE="
     pkg-config
     squashfs-tools
     unzip
+    zlib1g-dev
 ";
 
 APT_GET_LIST_ISO="
