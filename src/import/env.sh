@@ -72,11 +72,14 @@ APT_GET_LIST_MAKE="
     bison gawk
     kmod
     libc6 libc6-dev libcap-dev
+    libnss3-tools p11-kit
     pkg-config
+    python
     squashfs-tools
     unzip
     zlib1g-dev
 ";
+    # libssl-dev
 
 APT_GET_LIST_ISO="
     cpio

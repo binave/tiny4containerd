@@ -20,6 +20,10 @@ _make_kernel() {
     # Install the kernel modules in $ROOTFS
     make INSTALL_MOD_PATH=$ROOTFS modules_install firmware_install || return $(_err_line $((LINENO / 2)));
 
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/linux-headers.html
+    make mrproper;
+    make INSTALL_HDR_PATH=$TMP/headers headers_install || return $(_err_line $((LINENO / 2)));
+
     # remove empty link
     rm -fv $ROOTFS/lib/modules/${kernel_version}-tc/build \
         $ROOTFS/lib/modules/${kernel_version}-tc/source;
@@ -49,14 +53,15 @@ _make_glibc() {
         --prefix=/usr \
         --libexecdir=/usr/lib/glibc \
         --enable-kernel=3.2 \
+        --with-headers=$TMP/headers/include \
         --enable-stack-protector=strong \
-        libc_cv_slibdir=/lib \
         --enable-obsolete-rpc  \
-        --disable-werror;
+        --disable-werror \
+        libc_cv_slibdir=/lib || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2//g' ./config.make ./config.status;
 
-    make && make install install_root=$ROOTFS;
+    make && make install_root=$ROOTFS install;
     ln -sT lib $ROOTFS/lib64;
 
     printf %s '/usr/local/lib
@@ -144,33 +149,40 @@ _make_openssl() {
     # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
 }
 
-_make_libcap2() {
-    echo " ------------- make libcap2 -----------------------";
-    _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+# http://www.linuxfromscratch.org/blfs/view/8.1/postlfs/cacerts.html
+# http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
+_make_ca_certificates() {
+    _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    mkdir -p $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
+    cd $TMP/ca-certificates-*;
+    cp $TMP/certdata.txt ./mozilla/;
+    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+    touch $ROOTFS/etc/ca-certificates.conf;
+    # find $ROOTFS/usr/share/ca-certificates/mozilla -type f | sed 's/.*mozilla/mozilla/g' | \
+    #     tee $ROOTFS/etc/ca-certificates.conf;
 
-    cd $TMP/libcap-$libcap2_version;
-    mkdir -p output;
-    sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
-    make && make prefix=`pwd`/output install || return $(_err_line $((LINENO / 2)));
-    mkdir -p $ROOTFS/usr/local/lib;
-    cp -av `pwd`/output/lib64/* $ROOTFS/usr/local/lib;
-    # rm -fr $TMP/libcap-$libcap2_version # clear
 }
 
 _make_openssh() {
+    _wait_file $TMP/openssh.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    cd $TMP/openssh-$openssh_version;
+    local patch_file;
+    patch_file="$(ls $THIS_DIR/patch/openssh-$openssh_version* 2>/dev/null)" && \
+        patch -Np1 -i $patch_file;
     ./configure \
-        --prefix=/usr/local \
+        --prefix=/usr \
         --localstatedir=/var \
-        --sysconfdir=/usr/local/etc/ssh \
-        --libexecdir=/usr/local/lib/openssh \
+        --sysconfdir=/etc/ssh \
+        --libexecdir=/lib/openssh \
+        --with-openssl=$ROOTFS/usr \
         --with-privsep-path=/var/lib/sshd \
         --with-privsep-user=nobody \
-        --with-xauth=/usr/local/bin/xauth \
+        --with-xauth=/bin/xauth \
         --with-md5-passwords || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-g -O2//g' ./Makefile;
 
-    make && make install install_root=$ROOTFS || return $(_err_line $((LINENO / 2)));
+    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
     # _wait_file $TMP/dropbear.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
@@ -184,16 +196,17 @@ _make_openssh() {
     # rm -fr $TMP/dropbear-$dropbear_version # clear
 }
 
-# http://www.linuxfromscratch.org/blfs/view/7.10-systemd/postlfs/cacerts.html
-_make_ca_certificates() {
-    _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-    cd  $TMP/ca-certificates-*
-    make && make install;
-    printf %s 'mozilla/ValiCert_Class_1_VA.crt
-mozilla/ValiCert_Class_2_VA.crt
-mozilla/Verisign_Class_1_Public_Primary_Certification_Authority.crt
-' | tee $ROOTFS/etc/ca-certificates.conf;
+_make_libcap2() {
+    echo " ------------- make libcap2 -----------------------";
+    _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
+    cd $TMP/libcap-$libcap2_version;
+    mkdir -p output;
+    sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
+    make && make prefix=`pwd`/output install || return $(_err_line $((LINENO / 2)));
+    mkdir -p $ROOTFS/usr/local/lib;
+    cp -av `pwd`/output/lib64/* $ROOTFS/usr/local/lib;
+    # rm -fr $TMP/libcap-$libcap2_version # clear
 }
 
 _make_sshfs() {
@@ -214,11 +227,16 @@ _make_iptables() {
 
     cd $TMP/iptables-$iptables_version;
     # Error: No suitable 'libmnl' found: --disable-nftables
-    ./configure --enable-static --disable-shared --disable-nftables;
+    ./configure \
+        --prefix=/usr/local \
+        --disable-static \
+        --localstatedir=/var \
+        --enable-libipq \
+        --disable-nftables;
 
     sed -i 's/-O2/ /g' ./Makefile;
 
-    make -j $CORES LDFLAGS="-all-static" || return $(_err_line $((LINENO / 2)));
+    make -j $CORES && make install || return $(_err_line $((LINENO / 2)));
 
     mv -v $TMP/iptables-$iptables_version/iptables/xtables-multi $ROOTFS/usr/local/sbin;
 
@@ -335,14 +353,9 @@ _apply_rootfs() {
     cd $ROOTFS;
     mkdir -pv \
         dev \
-        etc/init.d \
-        etc/ssl/certs \
-        etc/skel \
-        etc/sysconfig \
+        etc/{init.d,ssl/certs,skel,sysconfig} \
         home lib media mnt proc root sys tmp \
-        usr/local/etc/acpi/events \
-        usr/sbin \
-        usr/share;
+        usr/{local/etc/acpi/events,sbin,share};
         # var run
 
     # Copy our custom rootfs,

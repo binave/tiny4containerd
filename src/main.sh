@@ -39,6 +39,10 @@ _main() {
     _case_version ------------- zlib version -----------------------;
     zlib_version=$(curl -L $ZLIB_DOWNLOAD/ChangeLog.txt 2>/dev/null | grep Changes | awk '{print $3}' | _last_version) || return $((LINENO / 2));
 
+    _case_version ----------- openssh version ----------------------;
+    # dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+    openssh_version=$(curl -L $OPENSSH_DOWNLOAD 2>/dev/null | grep 'tar\.gz"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+
     # _case_version ------------ sshfs version -----------------------;
     # sshfs_version=$(curl -L $SSHFS_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | grep -v rc | _last_version) || return $((LINENO / 2));
 
@@ -47,10 +51,6 @@ _main() {
 
     _case_version ----------- libcap2 version ----------------------;
     libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $3}' | _last_version)
-
-    _case_version ----------- openssh version ----------------------;
-    # dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
-    openssh_version=$(curl -L $OPENSSH_DOWNLOAD 2>/dev/null | grep 'tar\.gz"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
     _case_version ----------- iptables version ---------------------;
     iptables_version=$(curl -L $IPTABLES_DOWNLOAD/downloads.html 2>/dev/null | grep '/iptables.*bz2"' | awk -F[-\"] '{print $5}' | _last_version) || return $((LINENO / 2));
@@ -91,6 +91,7 @@ _main() {
         _message_queue --put "_make_glibc";
         _message_queue --put "_make_zlib";
         _message_queue --put "_make_openssl";
+        _message_queue --put "_make_ca_certificates";
         _message_queue --put "_make_openssh";
         _message_queue --put "_make_iptables";
         _message_queue --put "_make_mdadm";
@@ -112,6 +113,9 @@ _main() {
 
         _downlock $CA_CERTIFICATES_DOWNLOAD || return $((LINENO / 2));
 
+        # _downlock $DROPBEAR_DOWNLOAD/dropbear-$dropbear_version.tar.bz2 || return $((LINENO / 2));
+        _downlock $OPENSSH_DOWNLOAD/openssh-$openssh_version.tar.gz || return $((LINENO / 2));
+
         # _downlock $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz || return $((LINENO / 2));
 
         # _downlock $LIBFUSE_DOWNLOAD/archive/libfuse-$libfuse_version.tar.gz || return $((LINENO / 2));
@@ -119,9 +123,6 @@ _main() {
         _downlock $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz || return $((LINENO / 2));
 
         _message_queue --put "_create_etc";
-
-        # _downlock $DROPBEAR_DOWNLOAD/dropbear-$dropbear_version.tar.bz2 || return $((LINENO / 2));
-        _downlock $OPENSSH_DOWNLOAD/openssh-$openssh_version.tar.gz || return $((LINENO / 2));
 
         _downlock $IPTABLES_DOWNLOAD/files/iptables-$iptables_version.tar.bz2 || return $((LINENO / 2));
 
