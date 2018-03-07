@@ -101,6 +101,13 @@ _hash() {
     return 0
 }
 
+_try_patch() {
+    [ "$1" ] || return 1;
+    cd $TMP/$1 || return 1;
+    find $THIS_DIR/patch -iname "$1*.patch" -exec patch -Np1 -i {} \;
+    return $?
+}
+
 _case_version() {
     printf " $(tr "[:lower:]" "[:upper:]" <<< " ${2}_$3=")" >&2
 }

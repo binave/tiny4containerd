@@ -3,16 +3,15 @@
 
 _make_kernel() {
     echo " ------------ untar kernel ------------------------";
-    local kernel_path=$TMP/linux-$kernel_version;
     # fix: Directory renamed before its status could be extracted
     _untar $TMP/linux.tar.xz || return $(_err_line $((LINENO / 2)));
 
+    _try_patch linux-$kernel_version;
     echo " -------- make bzImage modules --------------------";
     # make ARCH=x86_64 menuconfig # ncurses-dev
-    cp -v $THIS_DIR/config/kernel.cfg $kernel_path/.config;
+    cp -v $THIS_DIR/config/kernel.cfg ./.config;
 
     # put in queue
-    cd $kernel_path;
     make -j $CORES bzImage && make -j $CORES modules || return $(_err_line $((LINENO / 2)))
 
     echo " ------- install modules firmware -----------------";
@@ -20,29 +19,32 @@ _make_kernel() {
     # Install the kernel modules in $ROOTFS
     make INSTALL_MOD_PATH=$ROOTFS modules_install firmware_install || return $(_err_line $((LINENO / 2)));
 
-    # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/linux-headers.html
-    make mrproper;
-    make INSTALL_HDR_PATH=$TMP/headers headers_install || return $(_err_line $((LINENO / 2)));
-
     # remove empty link
     rm -fv $ROOTFS/lib/modules/${kernel_version}-tc/build \
         $ROOTFS/lib/modules/${kernel_version}-tc/source;
 
     echo " --------- bzImage -> vmlinuz64 -------------------";
-    _hash $kernel_path/arch/x86/boot/bzImage;
+    _hash ./arch/x86/boot/bzImage;
 
-    # $kernel_path/arch/x86_64/boot/bzImage -> ../../x86/boot/bzImage
-    mv -v $kernel_path/arch/x86/boot/bzImage $TMP/iso/boot/vmlinuz64;
+    # ./arch/x86_64/boot/bzImage -> ../../x86/boot/bzImage
+    mv -v ./arch/x86/boot/bzImage $TMP/iso/boot/vmlinuz64;
     # rm -f $ROOTFS/linuxrc;
-    # rm -fr $kernel_path # clear
+    # rm -fr $TMP/linux-$kernel_version # clear
 }
 
 # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
 _make_glibc() {
-    _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/glibc-$glibc_version;
+    local args;
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/linux-headers.html
+    cd $TMP/linux-$kernel_version && {
+        echo " ----------- install headers ----------------------";
+        make mrproper;
+        make INSTALL_HDR_PATH=$TMP/headers headers_install || return $(_err_line $((LINENO / 2)));
+        args="--with-headers=$TMP/headers/include"
+    };
 
-    patch -Ntp1 -i $THIS_DIR/patch/glibc-fhs-1.patch;
+    _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch glibc-$glibc_version;
     mkdir -p build $ROOTFS/etc;
     touch $ROOTFS/etc/ld.so.conf;
     cd build;
@@ -52,12 +54,11 @@ _make_glibc() {
     ../configure \
         --prefix=/usr \
         --libexecdir=/usr/lib/glibc \
-        --enable-kernel=3.2 \
-        --with-headers=$TMP/headers/include \
+        --enable-kernel=4.1 \
         --enable-stack-protector=strong \
         --enable-obsolete-rpc  \
         --disable-werror \
-        libc_cv_slibdir=/lib || return $(_err_line $((LINENO / 2)));
+        libc_cv_slibdir=/lib $args || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2//g' ./config.make ./config.status;
 
@@ -88,16 +89,10 @@ rpc: files
 }
 
 _make_busybox() {
-    local busybox_path=$TMP/busybox-$busybox_version symbolic target CFLAGS LDFLAGS;
+    local symbolic target CFLAGS LDFLAGS;
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
-    cd $busybox_path;
-
-    patch -Ntp1 -i $THIS_DIR/patch/busybox-root-path.patch;
-    patch -Ntp1 -i $THIS_DIR/patch/busybox-rpm2cpio.patch;
-    patch -Ntp1 -i $THIS_DIR/patch/busybox-tc-depmod.patch;
-    patch -Ntp1 -i $THIS_DIR/patch/busybox-wget-make-default-timeout-configurable.patch;
-
+    _try_patch busybox-$busybox_version;
     export LDFLAGS="-L $ROOTFS/lib" CFLAGS="-I $ROOTFS/usr/include";
 
     cp -v $THIS_DIR/config/busybox_suid.cfg ./.config;
@@ -116,13 +111,13 @@ _make_busybox() {
     make && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
-    # rm -fr $busybox_path # clear
+    # rm -fr $TMP/busybox-$busybox_version # clear
 }
 
 _make_zlib() {
     _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
-    cd $TMP/zlib-$zlib_version;
+    _try_patch zlib-$zlib_version;
     ./configure --prefix=/usr --shared && \
         make && make install || return $(_err_line $((LINENO / 2)));
 
@@ -134,8 +129,7 @@ _make_zlib() {
 _make_openssl() {
     _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
-    cd $TMP/openssl-$OPENSSL_VERSION;
-
+    _try_patch openssl-$OPENSSL_VERSION;
     ./config \
         --prefix=/usr \
         --openssldir=/etc/ssl \
@@ -154,6 +148,7 @@ _make_openssl() {
 _make_ca_certificates() {
     _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
     mkdir -p $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
+
     cd $TMP/ca-certificates-*;
     cp $TMP/certdata.txt ./mozilla/;
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
@@ -165,15 +160,14 @@ _make_ca_certificates() {
 
 _make_openssh() {
     _wait_file $TMP/openssh.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/openssh-$openssh_version;
-    local patch_file;
-    patch_file="$(ls $THIS_DIR/patch/openssh-$openssh_version* 2>/dev/null)" && \
-        patch -Np1 -i $patch_file;
+
+    _try_patch openssh-$openssh_version;
     ./configure \
         --prefix=/usr \
         --localstatedir=/var \
         --sysconfdir=/etc/ssh \
         --libexecdir=/lib/openssh \
+        --with-ssl-dir=$ROOTFS/usr \
         --with-openssl=$ROOTFS/usr \
         --with-privsep-path=/var/lib/sshd \
         --with-privsep-user=nobody \
@@ -186,7 +180,7 @@ _make_openssh() {
 
     # _wait_file $TMP/dropbear.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
-    # cd $TMP/dropbear-$dropbear_version;
+    # _try_patch dropbear-$dropbear_version;
     # mkdir -p $ROOTFS/usr/local;
 
     # ./configure --prefix=$ROOTFS/usr/local && \
@@ -200,7 +194,7 @@ _make_libcap2() {
     echo " ------------- make libcap2 -----------------------";
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
-    cd $TMP/libcap-$libcap2_version;
+    _try_patch libcap-$libcap2_version;
     mkdir -p output;
     sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
     make && make prefix=`pwd`/output install || return $(_err_line $((LINENO / 2)));
@@ -211,9 +205,11 @@ _make_libcap2() {
 
 _make_sshfs() {
     _wait_file $TMP/sshfs-fuse.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/sshfs-fuse-$sshfs_fuse_version;
 
-    ./configure --prefix=$ROOTFS/usr/local --localstatedir=/var || return $(_err_line $((LINENO / 2)));
+    _try_patch sshfs-fuse-$sshfs_fuse_version;
+    ./configure \
+        --prefix=$ROOTFS/usr/local \
+        --localstatedir=/var || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-g -O2//g' ./Makefile;
 
@@ -225,7 +221,7 @@ _make_sshfs() {
 _make_iptables() {
     _wait_file $TMP/iptables.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
-    cd $TMP/iptables-$iptables_version;
+    _try_patch iptables-$iptables_version;
     # Error: No suitable 'libmnl' found: --disable-nftables
     ./configure \
         --prefix=/usr/local \
@@ -254,7 +250,7 @@ _make_mdadm() {
     echo " ------------- make mdadm -----------------------";
     _wait_file $TMP/mdadm.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
-    cd $TMP/mdadm-$mdadm_version;
+    _try_patch mdadm-$mdadm_version;
     make || return $(_err_line $((LINENO / 2)));
     local md;
     for md in $(make install | awk '{print $6}');
@@ -270,8 +266,7 @@ _make_lvm2() {
     echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
 
-    cd $TMP/LVM$lvm2_version;
-
+    _try_patch LVM$lvm2_version;
     ./configure \
         --prefix=$ROOTFS/usr/local \
         --localstatedir=/var \
@@ -295,8 +290,7 @@ _make_lvm2() {
 _make_curl() {
     _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
-    cd $TMP/curl-$curl_version;
-
+    _try_patch curl-$curl_version;
     ./configure \
         --prefix=$ROOTFS/usr/local \
         --disable-shared \
@@ -312,10 +306,9 @@ _make_curl() {
 }
 
 _make_git() {
-
     _wait_file $TMP/git.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/git-$git_version;
 
+    _try_patch git-$git_version;
     ./configure \
         --prefix=$ROOTFS/usr/local \
         --libexecdir=/usr/local/lib \
@@ -361,14 +354,26 @@ _apply_rootfs() {
     # Copy our custom rootfs,
     cp -frv $THIS_DIR/rootfs/* $ROOTFS;
 
+    # trim suffix
+    local sf;
+    for sf in $(cd $THIS_DIR/rootfs; find . -type f -name "*.sh");
+    do
+        sf="$ROOTFS/${sf#*/}";
+        mv "$sf" "${sf%.*}";
+        # chmod
+    done
+
+    # Make sure init scripts are executable
+    find $ROOTFS/usr/local/sbin \
+        -type f -exec chmod -c +x '{}' +
+
     # # ca-certificates
     # cp /etc/ca-certificates.conf            $ROOTFS/etc;
     # cp -adv /etc/ssl/certs                  $ROOTFS/etc/ssl;
     # cp /usr/sbin/update-ca-certificates     $ROOTFS/usr/sbin;
     # cp -frv /usr/share/ca-certificates      $ROOTFS/usr/share;
-
-    # libc
-    cp /sbin/ldconfig       $ROOTFS/sbin;
+    # # libc
+    # cp /sbin/ldconfig       $ROOTFS/sbin;
 
     # timezone
     cp -vL /usr/share/zoneinfo/UTC $ROOTFS/etc/localtime;
@@ -385,19 +390,6 @@ _apply_rootfs() {
     ln -fs /var/subversion/bin/svnadmin    $ROOTFS/usr/bin/;
     ln -fs /var/subversion/bin/svnlook     $ROOTFS/usr/bin/;
 
-    # trim suffix
-    local sf;
-    for sf in $(cd $THIS_DIR/rootfs; find . -type f -name "*.sh");
-    do
-        sf="$ROOTFS/${sf#*/}";
-        mv "$sf" "${sf%.*}";
-        # chmod
-    done
-
-    # Make sure init scripts are executable
-    find $ROOTFS/usr/local/sbin \
-        -type f -exec chmod -c +x '{}' +
-
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -f $ROOTFS/usr/bin/passwd;
 
@@ -406,7 +398,11 @@ _apply_rootfs() {
 
     # ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
 
-    # find $ROOTFS -type f -exec strip --strip-all {} \;
+    # Take care not to use '--strip-unneeded' on the libraries
+    strip --strip-debug $ROOTFS/lib/*;
+    strip --strip-unneeded $ROOTFS/{,usr/}{,s}bin/*; # --strip-all
+    rm -fr $ROOTFS/{,share}/{info,man,doc};
+    find $ROOTFS/{,usr/}{lib,libexec} -name \*.la -delete
 
 }
 
