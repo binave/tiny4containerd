@@ -54,7 +54,7 @@ _make_glibc() {
     ../configure \
         --prefix=/usr \
         --libexecdir=/usr/lib/glibc \
-        --enable-kernel=4.1 \
+        --enable-kernel=4.2.9 \
         --enable-stack-protector=strong \
         --enable-obsolete-rpc  \
         --disable-werror \
@@ -398,6 +398,7 @@ _apply_rootfs() {
 
     # ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
 
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/stripping.html
     # Take care not to use '--strip-unneeded' on the libraries
     strip --strip-debug $ROOTFS/lib/*;
     strip --strip-unneeded $ROOTFS/{,usr/}{,s}bin/*; # --strip-all
