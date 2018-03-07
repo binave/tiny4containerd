@@ -104,7 +104,7 @@ _hash() {
 _try_patch() {
     [ "$1" ] || return 1;
     cd $TMP/$1 || return 1;
-    find $THIS_DIR/patch -iname "$1*.patch" -exec patch -Np1 -i {} \;
+    find $THIS_DIR/patch -iname "$1*.patch" -exec patch -Ntp1 -i {} \;
     return $?
 }
 

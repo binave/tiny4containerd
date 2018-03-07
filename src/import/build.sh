@@ -20,15 +20,13 @@ _make_kernel() {
     make INSTALL_MOD_PATH=$ROOTFS modules_install firmware_install || return $(_err_line $((LINENO / 2)));
 
     # remove empty link
-    rm -fv $ROOTFS/lib/modules/${kernel_version}-tc/build \
-        $ROOTFS/lib/modules/${kernel_version}-tc/source;
+    rm -fv $ROOTFS/lib/modules/${kernel_version}-tc/{build,source};
 
     echo " --------- bzImage -> vmlinuz64 -------------------";
     _hash ./arch/x86/boot/bzImage;
 
     # ./arch/x86_64/boot/bzImage -> ../../x86/boot/bzImage
     mv -v ./arch/x86/boot/bzImage $TMP/iso/boot/vmlinuz64;
-    # rm -f $ROOTFS/linuxrc;
     # rm -fr $TMP/linux-$kernel_version # clear
 }
 
@@ -399,11 +397,15 @@ _apply_rootfs() {
     # ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/stripping.html
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/strippingagain.html
     # Take care not to use '--strip-unneeded' on the libraries
     strip --strip-debug $ROOTFS/lib/*;
     strip --strip-unneeded $ROOTFS/{,usr/}{,s}bin/*; # --strip-all
     rm -fr $ROOTFS/{,share}/{info,man,doc};
-    find $ROOTFS/{,usr/}{lib,libexec} -name \*.la -delete
+    find $ROOTFS/{,usr/}lib -name \*.la -delete
+
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
+    rm -f /usr/lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a;
 
 }
 
