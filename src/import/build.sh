@@ -63,8 +63,8 @@ _make_glibc() {
     make && make install_root=$ROOTFS install;
     ln -sT lib $ROOTFS/lib64;
 
-    printf %s '/usr/local/lib
-' | tee $ROOTFS/etc/ld.so.conf;
+#     printf %s '/usr/local/lib
+# ' | tee $ROOTFS/etc/ld.so.conf;
 
     printf %s '# GNU Name Service Switch config.
 # Begin /etc/nsswitch.conf
@@ -104,6 +104,7 @@ _make_busybox() {
     done <<< $(make CONFIG_PREFIX=$ROOTFS install | grep '\->' | awk '{print $1" "$3}');
 
     mv $ROOTFS/bin/busybox $ROOTFS/bin/busybox.suid;
+    make mrproper;
 
     cp -v $THIS_DIR/config/busybox_nosuid.cfg ./.config;
     make && make CONFIG_PREFIX=$ROOTFS install || \
@@ -120,7 +121,7 @@ _make_zlib() {
         make && make install || return $(_err_line $((LINENO / 2)));
 
     cp -adv /usr/lib/libz.so* $ROOTFS/lib;
-    ln -sfv ../../lib/$(readlink /usr/lib/libz.so) $ROOTFS/usr/lib/libz.so;
+    # ln -sfv ../../lib/$(readlink /usr/lib/libz.so) $ROOTFS/usr/lib/libz.so;
     # rm -fr $TMP/zlib-$zlib_version # clear
 }
 
@@ -149,24 +150,25 @@ _make_ca_certificates() {
 
     cd $TMP/ca-certificates-*;
     cp $TMP/certdata.txt ./mozilla/;
+    # touch $ROOTFS/etc/ca-certificates.conf;
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
-    touch $ROOTFS/etc/ca-certificates.conf;
-    # find $ROOTFS/usr/share/ca-certificates/mozilla -type f | sed 's/.*mozilla/mozilla/g' | \
-    #     tee $ROOTFS/etc/ca-certificates.conf;
+    find $ROOTFS/usr/share/ca-certificates/mozilla -type f | sed 's/.*mozilla/mozilla/g' | \
+        tee $ROOTFS/etc/ca-certificates.conf;
 
 }
 
 _make_openssh() {
     _wait_file $TMP/openssh.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
-    _try_patch openssh-$openssh_version;
+    # _try_patch openssh-$openssh_version;
+    cd $TMP/openssh-$openssh_version;
+    cp -adv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
     ./configure \
         --prefix=/usr \
         --localstatedir=/var \
         --sysconfdir=/etc/ssh \
         --libexecdir=/lib/openssh \
         --with-ssl-dir=$ROOTFS/usr \
-        --with-openssl=$ROOTFS/usr \
         --with-privsep-path=/var/lib/sshd \
         --with-privsep-user=nobody \
         --with-xauth=/bin/xauth \
@@ -174,7 +176,16 @@ _make_openssh() {
 
     sed -i 's/-g -O2//g' ./Makefile;
 
-    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+    make && make DESTDIR=$ROOTFS install-nokeys || return $(_err_line $((LINENO / 2)));
+
+    # mkdir -p $ROOTFS/dev;
+    # mknod -m 666 $ROOTFS/dev/null c 1 3;
+    # mknod -m 666 $ROOTFS/dev/zero c 1 5;
+    # # fix: PRNG is not seeded
+    # mknod -m 666 $ROOTFS/dev/random c 1 8;
+    # mknod -m 644 $ROOTFS/dev/urandom c 1 9;
+    # ssh-keygen -A;
+    # rm -fr $ROOTFS/dev
 
     # _wait_file $TMP/dropbear.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 

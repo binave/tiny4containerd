@@ -109,7 +109,7 @@ _main() {
 
         _downlock $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz || return $((LINENO / 2));
 
-        curl --retry 10 -LO $CERTDATA_DOWNLOAD || return $((LINENO / 2));
+        curl --retry 10 -L -o $TMP/${CERTDATA_DOWNLOAD##*/} $CERTDATA_DOWNLOAD || return $((LINENO / 2));
 
         _downlock $CA_CERTIFICATES_DOWNLOAD || return $((LINENO / 2));
 
