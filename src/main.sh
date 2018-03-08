@@ -58,6 +58,11 @@ _main() {
     _case_version ------------- mdadm version ----------------------;
     mdadm_version=$(curl -L $MDADM_DOWNLOAD 2>/dev/null | grep "mdadm-.*.xz" | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
+    util_linux_version=$(curl -L $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION 2>/dev/null | grep 'util-linux-.*tar.xz"' | grep -v '\-rc' | awk -F[-\"] '{print $4}' | _last_version) || return $((LINENO / 2));
+
+    _case_version ------------- eudev version ----------------------;
+    eudev_version=$(curl -L $EUDEV_DOWNLOAD 2>/dev/null | grep 'eudev-.*.tar.gz>' | awk -F[-\>\<] '{print $7}' | _last_version) || return $((LINENO / 2));
+
     _case_version -------------- lvm2 version ----------------------;
     lvm2_version=$(curl -L $LVM2_DOWNLOAD 2>/dev/null | grep 'tgz"' | awk -F[\"] '{print $2}' | _last_version) || return $((LINENO / 2));
 
@@ -95,6 +100,7 @@ _main() {
         _message_queue --put "_make_openssh";
         _message_queue --put "_make_iptables";
         _message_queue --put "_make_mdadm";
+        _message_queue --put "_make_eudev";
         _message_queue --put "_make_lvm2";
         _message_queue --put "_make_curl";
         _message_queue --put "_make_libcap2";
@@ -127,6 +133,10 @@ _main() {
         _downlock $IPTABLES_DOWNLOAD/files/iptables-$iptables_version.tar.bz2 || return $((LINENO / 2));
 
         _downlock $MDADM_DOWNLOAD/mdadm-$mdadm_version.tar.xz || return $((LINENO / 2));
+
+        _downlock $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION/util-linux-$util_linux_version.tar.xz || return $((LINENO / 2));
+
+        _downlock $EUDEV_DOWNLOAD/eudev-$eudev_version.tar.gz || return $((LINENO / 2));
 
         _downlock $LVM2_DOWNLOAD/LVM$lvm2_version.tgz || return $((LINENO / 2));
 

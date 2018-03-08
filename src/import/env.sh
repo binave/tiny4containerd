@@ -35,7 +35,12 @@ OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable;
 IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
 
 # http://neil.brown.name/blog/mdadm
-MDADM_DOWNLOAD=https://www.kernel.org/pub/linux/utils/raid/mdadm;
+MDADM_DOWNLOAD=https://cdn.kernel.org/pub/linux/utils/raid/mdadm;
+
+: ${UTIL_LINUX_MAJOR_VERSION:=2.31};
+UTIL_LINUX_DOWNLOAD=https://www.kernel.org/pub/linux/utils/util-linux;
+
+EUDEV_DOWNLOAD=https://dev.gentoo.org/~blueness/eudev;
 
 LVM2_DOWNLOAD=http://mirrors.kernel.org/sourceware/lvm2;
 
@@ -69,7 +74,7 @@ APT_GET_LIST_MAKE="
     bc bsdtar build-essential
     curl
     file
-    bison gawk
+    bison gawk gperf
     kmod
     libc6 libc6-dev libcap-dev
     libnss3-tools p11-kit
@@ -93,5 +98,4 @@ APT_GET_LIST_ISO="
 # make allnoconfig
 # make ARCH=x86_64 menuconfig
 
-# CC="gcc -flto -fuse-linker-plugin -mtune=generic -Os -pipe";
-# CXX="g++ -flto -fuse-linker-plugin -mtune=generic -Os -pipe -fno-exceptions -fno-rtti";
+export LDFLAGS="-L $ROOTFS/lib" CFLAGS="-I $ROOTFS/usr/include";

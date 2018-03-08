@@ -87,11 +87,10 @@ rpc: files
 }
 
 _make_busybox() {
-    local symbolic target CFLAGS LDFLAGS;
+    local symbolic target;
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch busybox-$busybox_version;
-    export LDFLAGS="-L $ROOTFS/lib" CFLAGS="-I $ROOTFS/usr/include";
 
     cp -v $THIS_DIR/config/busybox_suid.cfg ./.config;
     make || return $(_err_line $((LINENO / 2)));
@@ -244,6 +243,51 @@ _make_mdadm() {
     # rm -fr $TMP/mdadm-$mdadm_version # clear
 }
 
+_make_libblkid() {
+    _wait_file $TMP/util-linux.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+
+    cd $TMP/util-linux-$util_linux_version;
+
+    ./configure --prefix=/usr \
+        --disable-all-programs \
+        --enable-libblkid && \
+        make || return $(_err_line $((LINENO / 2)));
+
+    cp -adv ./.libs/libblkid.so* $ROOTFS/lib;
+    ln -sv ./.libs/libblkid.so* $ROOTFS/lib
+}
+
+_make_eudev() {
+    _wait_file $TMP/eudev.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch eudev-$eudev_version;
+
+    sed -r -i 's|/usr(/bin/test)|\1|' test/udev-test.pl; # fix a test script
+
+    printf %s "HAVE_BLKID=1
+BLKID_LIBS=\"-lblkid\"
+BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
+" | tee -a config.cache;
+
+    ./configure --prefix=/usr \
+        --bindir=/sbin \
+        --sbindir=/sbin \
+        --libdir=/usr/lib \
+        --sysconfdir=/etc \
+        --libexecdir=/lib \
+        --with-rootprefix= \
+        --with-rootlibdir=/lib \
+        --enable-manpages \
+        --disable-static \
+        --config-cache || return $(_err_line $((LINENO / 2)));
+
+    mkdir -pv $ROOTFS/{etc,lib}/udev/rules.d;
+
+    LIBRARY_PATH=$ROOTFS/lib make && \
+        make LD_LIBRARY_PATH=$ROOTFS/lib DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+
+
+}
+
 # kernel version 4.4.2 or above.
 _make_lvm2() {
     echo " -------------- make lvm2 -----------------------";
@@ -258,6 +302,7 @@ _make_lvm2() {
         --enable-applib \
         --enable-cmdlib \
         --enable-pkgconfig \
+        --with-udev-prefix=$ROOTFS \
         --enable-udev_sync || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./make.tmpl;
