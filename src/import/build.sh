@@ -121,7 +121,7 @@ _make_zlib() {
         make && make install || return $(_err_line $((LINENO / 2)));
 
     cp -adv /usr/lib/libz.so* $ROOTFS/lib;
-    # ln -sfv ../../lib/$(readlink /usr/lib/libz.so) $ROOTFS/usr/lib/libz.so;
+    ln -sv ../../lib/$(readlink $ROOTFS/lib/libz.so) $ROOTFS/usr/lib/libz.so;
     # rm -fr $TMP/zlib-$zlib_version # clear
 }
 
@@ -162,7 +162,8 @@ _make_openssh() {
 
     # _try_patch openssh-$openssh_version;
     cd $TMP/openssh-$openssh_version;
-    cp -adv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
+    ln -sv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
+    # cp -adv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
     ./configure \
         --prefix=/usr \
         --localstatedir=/var \
@@ -187,16 +188,6 @@ _make_openssh() {
     # ssh-keygen -A;
     # rm -fr $ROOTFS/dev
 
-    # _wait_file $TMP/dropbear.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-
-    # _try_patch dropbear-$dropbear_version;
-    # mkdir -p $ROOTFS/usr/local;
-
-    # ./configure --prefix=$ROOTFS/usr/local && \
-    #     make STATIC=1 PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" && \
-    #     make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" install;
-
-    # rm -fr $TMP/dropbear-$dropbear_version # clear
 }
 
 _make_libcap2() {
@@ -204,12 +195,79 @@ _make_libcap2() {
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch libcap-$libcap2_version;
-    mkdir -p output;
+    mkdir -p build;
+    sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
     sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
-    make && make prefix=`pwd`/output install || return $(_err_line $((LINENO / 2)));
-    mkdir -p $ROOTFS/usr/local/lib;
-    cp -av `pwd`/output/lib64/* $ROOTFS/usr/local/lib;
+    make && make RAISE_SETFCAP=no prefix=`pwd`/build install || return $(_err_line $((LINENO / 2)));
+    mkdir -p $ROOTFS{,/usr}/lib;
+    cp -adv ./build/lib64/* $ROOTFS/lib;
+    ln -sv ../../lib/$(readlink $ROOTFS/lib/libcap.so) $ROOTFS/usr/lib/libcap.so
     # rm -fr $TMP/libcap-$libcap2_version # clear
+}
+
+# TODO _nftables
+_make_iptables() {
+    local file;
+    _wait_file $TMP/iptables.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+
+    _try_patch iptables-$iptables_version;
+    # Error: No suitable 'libmnl' found: --disable-nftables
+    ./configure \
+        --prefix=/usr \
+        --sbindir=/sbin \
+        --enable-libipq \
+        --localstatedir=/var \
+        --with-xtlibdir=/lib/xtables \
+        --disable-nftables;
+
+    sed -i 's/-O2/ /g' ./Makefile;
+
+    ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
+    ln -sv $ROOTFS/lib/{libc.so.*,ld-linux-x86-64.so.*} /lib;
+
+    make -j $CORES && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+    for file in ip4tc ip6tc ipq iptc xtables;
+    do
+        mv -v $ROOTFS/usr/lib/lib${file}.so.* $ROOTFS/lib && \
+        ln -sv ../../lib/$(readlink $ROOTFS/usr/lib/lib${file}.so) $ROOTFS/usr/lib/lib${file}.so
+    done
+    # rm -fr $TMP/iptables-$iptables_version # clear
+}
+
+# kernel version 4.4.2 or above.
+_make_mdadm() {
+    echo " ------------- make mdadm -----------------------";
+    _wait_file $TMP/mdadm.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+
+    _try_patch mdadm-$mdadm_version;
+    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+    # rm -fr $TMP/mdadm-$mdadm_version # clear
+}
+
+# kernel version 4.4.2 or above.
+_make_lvm2() {
+    echo " -------------- make lvm2 -----------------------";
+    _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
+
+    _try_patch LVM$lvm2_version;
+    ./configure \
+        --prefix=/usr \
+        --localstatedir=/var \
+        --sysconfdir=/etc \
+        --with-confdir=/etc \
+        --enable-applib \
+        --enable-cmdlib \
+        --enable-pkgconfig \
+        --enable-udev_sync || return $(_err_line $((LINENO / 2)));
+
+    sed -i 's/-O2/ /g' ./make.tmpl;
+
+    # Edit make.tmpl
+    # DEFAULT_SYS_DIR = /usr/local/etc/lvm
+
+    make && make install || return $(_err_line $((LINENO / 2)));
+
+    # rm -fr $TMP/LVM$lvm2_version # clear
 }
 
 _make_sshfs() {
@@ -224,76 +282,6 @@ _make_sshfs() {
 
     make && make install || return $(_err_line $((LINENO / 2)));
 
-}
-
-# TODO _nftables
-_make_iptables() {
-    _wait_file $TMP/iptables.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-
-    _try_patch iptables-$iptables_version;
-    # Error: No suitable 'libmnl' found: --disable-nftables
-    ./configure \
-        --prefix=/usr/local \
-        --disable-static \
-        --localstatedir=/var \
-        --enable-libipq \
-        --disable-nftables;
-
-    sed -i 's/-O2/ /g' ./Makefile;
-
-    make -j $CORES && make install || return $(_err_line $((LINENO / 2)));
-
-    mv -v $TMP/iptables-$iptables_version/iptables/xtables-multi $ROOTFS/usr/local/sbin;
-
-    # Valid subcommands
-    local subcommand;
-    for subcommand in $($ROOTFS/usr/local/sbin/xtables-multi 2>&1 | grep '\*' | awk '{print $2}');
-    do
-        ln -fs /usr/local/sbin/xtables-multi    $ROOTFS/usr/local/sbin/$subcommand;
-    done
-
-    # rm -fr $TMP/iptables-$iptables_version # clear
-}
-
-_make_mdadm() {
-    echo " ------------- make mdadm -----------------------";
-    _wait_file $TMP/mdadm.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-
-    _try_patch mdadm-$mdadm_version;
-    make || return $(_err_line $((LINENO / 2)));
-    local md;
-    for md in $(make install | awk '{print $6}');
-    do
-        mkdir -p $ROOTFS${md%/*};
-        cp -v $md $ROOTFS$md;
-    done
-
-    # rm -fr $TMP/mdadm-$mdadm_version # clear
-}
-
-_make_lvm2() {
-    echo " -------------- make lvm2 -----------------------";
-    _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
-
-    _try_patch LVM$lvm2_version;
-    ./configure \
-        --prefix=$ROOTFS/usr/local \
-        --localstatedir=/var \
-        --sysconfdir=/usr/local/etc \
-        --with-confdir=/usr/local/etc \
-        --enable-applib \
-        --enable-cmdlib \
-        --enable-pkgconfig \
-        --enable-udev_sync || return $(_err_line $((LINENO / 2)));
-
-    sed -i 's/-O2/ /g' ./make.tmpl;
-
-    # Edit make.tmpl
-    # DEFAULT_SYS_DIR = /usr/local/etc/lvm
-
-    make && make install || return $(_err_line $((LINENO / 2)));
-
-    # rm -fr $TMP/LVM$lvm2_version # clear
 }
 
 _make_curl() {
