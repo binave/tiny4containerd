@@ -67,7 +67,6 @@ APT_GET_LIST_MAKE="
     unzip
     zlib1g-dev
 ";
-    # libssl-dev
 
 APT_GET_LIST_ISO="
     cpio

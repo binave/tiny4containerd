@@ -260,6 +260,7 @@ _make_libblkid() {
     ln -sv $ROOTFS/usr/lib/lib{blkid,uuid}.so* /usr/lib
 }
 
+# for _make_lvm2
 _make_readline() {
     _wait_file $TMP/readline.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
@@ -316,11 +317,11 @@ BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
 
     # ????????
     ln -sv $ROOTFS/lib/lib{m.so.6,mvec.so.1,pthread.so.0} /lib;
-    ln -sv $ROOTFS/usr/lib/lib{mvec_nonshared.a,pthread_nonshared.a} /usr/lib;
-
+    ln -sv $ROOTFS/usr/lib/lib{mvec_nonshared.a,pthread_nonshared.a} /usr/lib
 
 }
 
+# for _make_lvm2, need: gettext
 _make_xfsprogs() {
     _wait_file $TMP/xfsprogs.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch xfsprogs-$xfsprogs_version;
@@ -332,8 +333,8 @@ _make_xfsprogs() {
             --enable-readline \
             --enable-lib64=no";
 
-    make install
-    make install-dev
+    make DESTDIR=$ROOTFS install;
+    make DESTDIR=$ROOTFS install-dev;
 
 }
 
@@ -358,7 +359,7 @@ _make_lvm2() {
         --enable-udev_sync || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./make.tmpl;
-    make && make install || return $(_err_line $((LINENO / 2)))
+    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)))
 
     # rm -fr $TMP/LVM$lvm2_version # clear
 }
@@ -372,7 +373,7 @@ _make_sshfs() {
         --localstatedir=/var || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-g -O2//g' ./Makefile;
-    make && make install || return $(_err_line $((LINENO / 2)));
+    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
 }
 
@@ -381,14 +382,12 @@ _make_curl() {
 
     _try_patch curl-$curl_version;
     ./configure \
-        --prefix=$ROOTFS/usr/local \
-        --disable-shared \
-        --enable-static \
+        --prefix=/usr \
         --enable-threaded-resolver \
         --with-ca-bundle=/usr/local/etc/ssl/certs/ca-certificates.crt || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./Makefile;
-    make && make install || return $(_err_line $((LINENO / 2)));
+    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
     # rm -fr $TMP/curl-$curl_version # clear
 }
@@ -398,15 +397,13 @@ _make_git() {
 
     _try_patch git-$git_version;
     ./configure \
-        --prefix=$ROOTFS/usr/local \
+        --prefix=/usr \
         --libexecdir=/usr/local/lib \
         --with-gitconfig=$ROOTFS/usr/local/etc/gitconfig || return $(_err_line $((LINENO / 2)));
-        # CFLAGS="${CFLAGS} -static"
 
     sed -i 's/-g -O2/ /g' ./Makefile ./config.mak.autogen;
-
     make PERL_PATH="/usr/local/bin/perl" PYTHON_PATH="/usr/local/bin/python" -j $CORES && \
-    make PERL_PATH="/usr/local/bin/perl" PYTHON_PATH="/usr/local/bin/python" install;
+    make PERL_PATH="/usr/local/bin/perl" PYTHON_PATH="/usr/local/bin/python" make DESTDIR=$ROOTFS install;
     make install-doc;
 
     rm -fr $TMP/git-$git_version # clear
@@ -427,9 +424,6 @@ _apt_get_install() {
 }
 
 _apply_rootfs() {
-
-    # remove glibc include
-    rm -fr $ROOTFS/usr/include;
 
     cd $ROOTFS;
     mkdir -pv \
@@ -491,7 +485,8 @@ _apply_rootfs() {
     # Take care not to use '--strip-unneeded' on the libraries
     strip --strip-debug $ROOTFS/lib/*;
     strip --strip-unneeded $ROOTFS/{,usr/}{,s}bin/*; # --strip-all
-    rm -fr $ROOTFS/{,share}/{info,man,doc};
+
+    rm -fr $ROOTFS/usr/include $ROOTFS/{,share}/{info,man,doc};
     find $ROOTFS/{,usr/}lib -name \*.la -delete
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
