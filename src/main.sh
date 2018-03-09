@@ -103,6 +103,7 @@ _main() {
         _message_queue --put "_make_iptables";
         _message_queue --put "_make_mdadm";
         _message_queue --put "_make_libblkid";
+        _message_queue --put "_make_readline";
         _message_queue --put "_make_eudev";
         _message_queue --put "_make_lvm2";
         _message_queue --put "_make_libcap2";

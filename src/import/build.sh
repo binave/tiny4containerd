@@ -260,8 +260,16 @@ _make_libblkid() {
 
     make DESTDIR=$ROOTFS install;
 
-    cp -adv ./.libs/libblkid.so* $ROOTFS/lib;
-    ln -sv $ROOTFS/lib/libblkid.so* /lib
+    cp -adv ./.libs/*.so* $ROOTFS/lib;
+    ln -sv $ROOTFS/lib/lib{blkid,uuid}.so* /lib
+}
+
+_make_readline() {
+    _wait_file $TMP/readline.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch readline-$readline_version;
+    ./configure \
+        --prefix=/usr \
+        --enable-shared && make || return $(_err_line $((LINENO / 2)));
 }
 
 # for _make_lvm2
