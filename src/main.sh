@@ -77,8 +77,8 @@ _main() {
     _case_version -------------- curl version ----------------------;
     curl_version=$(curl -L $CURL_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
 
-    # _case_version ------------- git version ------------------------;
-    # git_version=$(curl -L $GIT_DOWNLOAD 2>/dev/null | grep 'git-[0-9].*tar.xz' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+    _case_version ------------- git version ------------------------;
+    git_version=$(curl -L $GIT_DOWNLOAD 2>/dev/null | grep 'git-[0-9].*tar.xz' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
     echo;
 
     # clear for rebuild

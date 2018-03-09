@@ -179,6 +179,8 @@ _make_openssh() {
     sed -i 's/-g -O2//g' ./Makefile;
     make && make DESTDIR=$ROOTFS install-nokeys || return $(_err_line $((LINENO / 2)));
 
+    echo "PermitRootLogin no" >> $ROOTFS/etc/ssh/sshd_config;
+
     # mkdir -pv $ROOTFS/dev;
     # mknod -m 666 $ROOTFS/dev/null c 1 3;
     # mknod -m 666 $ROOTFS/dev/zero c 1 5;
