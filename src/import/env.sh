@@ -10,49 +10,29 @@ LABEL=`date +tc-%y%m%d-%H`;
 ROOTFS=$TMP/rootfs;
 
 # linux
+KERNEL_PUB=https://cdn.kernel.org/pub;
 : ${KERNEL_MAJOR_VERSION:=4.9};
-KERNEL_DOWNLOAD=https://cdn.kernel.org/pub/linux/kernel;
-
-BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
-
-GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
-
-# SSHFS_DOWNLOAD=https://github.com/libfuse/libfuse;
-
-# LIBFUSE_DOWNLOAD=https://github.com/libfuse/sshfs;
-
-CERTDATA_DOWNLOAD=http://anduin.linuxfromscratch.org/BLFS/other/certdata.txt;
-
-CA_CERTIFICATES_DOWNLOAD=https://salsa.debian.org/debian/ca-certificates/repository/master/archive.tar.bz2;
-
-LIBCAP2_DOWNLOAD=https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2;
-
-ZLIB_DOWNLOAD=http://www.zlib.net;
-
-DROPBEAR_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
-OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable;
-
-IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
-
-# http://neil.brown.name/blog/mdadm
-MDADM_DOWNLOAD=https://cdn.kernel.org/pub/linux/utils/raid/mdadm;
-
 : ${UTIL_LINUX_MAJOR_VERSION:=2.31};
-UTIL_LINUX_DOWNLOAD=https://www.kernel.org/pub/linux/utils/util-linux;
-
-EUDEV_DOWNLOAD=https://dev.gentoo.org/~blueness/eudev;
-
-LVM2_DOWNLOAD=http://mirrors.kernel.org/sourceware/lvm2;
-
+KERNEL_DOWNLOAD=$KERNEL_PUB/linux/kernel;
+UTIL_LINUX_DOWNLOAD=$KERNEL_PUB/linux/utils/util-linux;
+LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
+MDADM_DOWNLOAD=$KERNEL_PUB/linux/utils/raid/mdadm; # http://neil.brown.name/blog/mdadm
+GIT_DOWNLOAD=$KERNEL_PUB/software/scm/git;
+BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
+GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
+SSHFS_DOWNLOAD=https://github.com/libfuse/libfuse;
+LIBFUSE_DOWNLOAD=https://github.com/libfuse/sshfs;
+CERTDATA_DOWNLOAD=http://anduin.linuxfromscratch.org/BLFS/other/certdata.txt;
+CA_CERTIFICATES_DOWNLOAD=https://salsa.debian.org/debian/ca-certificates/repository/master/archive.tar.bz2;
+ZLIB_DOWNLOAD=http://www.zlib.net;
 OPENSSL_VERSION=1.0.2n;
 OPENSSL_DOWNLOAD=https://www.openssl.org/source;
-
+OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable; # DROPBEAR_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
+IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
+EUDEV_DOWNLOAD=https://dev.gentoo.org/~blueness/eudev;
+LVM2_DOWNLOAD=http://mirrors.kernel.org/sourceware/lvm2;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
-
-# docker
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64;
-
-GIT_DOWNLOAD=https://www.kernel.org/pub/software/scm/git;
 
 # debian sources
 DEBIAN_SOURCE='deb http://deb.debian.org/debian stretch main
@@ -97,5 +77,3 @@ APT_GET_LIST_ISO="
 # apt-get install -y ncurses-dev
 # make allnoconfig
 # make ARCH=x86_64 menuconfig
-
-export LDFLAGS="-L $ROOTFS/lib" CFLAGS="-I $ROOTFS/usr/include";

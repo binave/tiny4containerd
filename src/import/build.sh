@@ -22,49 +22,45 @@ _make_kernel() {
     # remove empty link
     rm -fv $ROOTFS/lib/modules/${kernel_version}-tc/{build,source};
 
+    echo " ----------- install headers ----------------------";
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/linux-headers.html
+    make INSTALL_HDR_PATH=$TMP headers_install || return $(_err_line $((LINENO / 2)));
+
     echo " --------- bzImage -> vmlinuz64 -------------------";
     _hash ./arch/x86/boot/bzImage;
 
     # ./arch/x86_64/boot/bzImage -> ../../x86/boot/bzImage
-    mv -v ./arch/x86/boot/bzImage $TMP/iso/boot/vmlinuz64;
-    # rm -fr $TMP/linux-$kernel_version # clear
+    cp -v ./arch/x86/boot/bzImage $TMP/iso/boot/vmlinuz64
+
 }
 
 # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
 _make_glibc() {
-    local args;
-    # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/linux-headers.html
-    cd $TMP/linux-$kernel_version && {
-        echo " ----------- install headers ----------------------";
-        make mrproper;
-        make INSTALL_HDR_PATH=$TMP/headers headers_install || return $(_err_line $((LINENO / 2)));
-        args="--with-headers=$TMP/headers/include"
-    };
-
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+
     _try_patch glibc-$glibc_version;
     mkdir -p build $ROOTFS/etc;
-    touch $ROOTFS/etc/ld.so.conf;
     cd build;
+    touch $ROOTFS/etc/ld.so.conf;
 
     # fix glibc cannot be compiled without optimization
     printf "CFLAGS += -mtune=generic -Og -pipe\n" > ./configparms;
     ../configure \
         --prefix=/usr \
         --libexecdir=/usr/lib/glibc \
-        --enable-kernel=4.2.9 \
+        --enable-kernel=4.4.2 \
         --enable-stack-protector=strong \
         --enable-obsolete-rpc  \
         --disable-werror \
-        libc_cv_slibdir=/lib $args || return $(_err_line $((LINENO / 2)));
+        --with-headers=$TMP/include \
+        libc_cv_slibdir=/lib || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2//g' ./config.make ./config.status;
 
     make && make install_root=$ROOTFS install;
     ln -sT lib $ROOTFS/lib64;
 
-#     printf %s '/usr/local/lib
-# ' | tee $ROOTFS/etc/ld.so.conf;
+    printf '/usr/local/lib\n' | tee $ROOTFS/etc/ld.so.conf;
 
     printf %s '# GNU Name Service Switch config.
 # Begin /etc/nsswitch.conf
@@ -82,7 +78,9 @@ ethers: files
 rpc: files
 
 # End /etc/nsswitch.conf
-' | tee $ROOTFS/etc/nsswitch.conf
+' | tee $ROOTFS/etc/nsswitch.conf;
+
+    export CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib"
 
 }
 
@@ -149,10 +147,11 @@ _make_ca_certificates() {
 
     cd $TMP/ca-certificates-*;
     cp $TMP/certdata.txt ./mozilla/;
-    # touch $ROOTFS/etc/ca-certificates.conf;
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
     find $ROOTFS/usr/share/ca-certificates/mozilla -type f | sed 's/.*mozilla/mozilla/g' | \
         tee $ROOTFS/etc/ca-certificates.conf;
+
+    # rm -fr
 
 }
 
@@ -161,8 +160,9 @@ _make_openssh() {
 
     # _try_patch openssh-$openssh_version;
     cd $TMP/openssh-$openssh_version;
+    echo "CFLAGS=$CFLAGS, LDFLAGS=$LDFLAGS";
+
     ln -sv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
-    # cp -adv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
     ./configure \
         --prefix=/usr \
         --localstatedir=/var \
@@ -200,7 +200,7 @@ _make_libcap2() {
     make && make RAISE_SETFCAP=no prefix=`pwd`/build install || return $(_err_line $((LINENO / 2)));
     mkdir -p $ROOTFS{,/usr}/lib;
     cp -adv ./build/lib64/* $ROOTFS/lib;
-    ln -sv ../../lib/$(readlink $ROOTFS/lib/libcap.so) $ROOTFS/usr/lib/libcap.so
+    ln -sv ../../lib/$(readlink $ROOTFS/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
     # rm -fr $TMP/libcap-$libcap2_version # clear
 }
 
@@ -217,6 +217,7 @@ _make_iptables() {
         --enable-libipq \
         --localstatedir=/var \
         --with-xtlibdir=/lib/xtables \
+        --with-kernel=$TMP/linux-$kernel_version \
         --disable-nftables;
 
     sed -i 's/-O2/ /g' ./Makefile;
@@ -228,9 +229,9 @@ _make_iptables() {
     for file in ip4tc ip6tc ipq iptc xtables;
     do
         mv -v $ROOTFS/usr/lib/lib${file}.so.* $ROOTFS/lib && \
-        ln -sv ../../lib/$(readlink $ROOTFS/usr/lib/lib${file}.so) $ROOTFS/usr/lib/lib${file}.so
+        ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/lib${file}.so) $ROOTFS/usr/lib/lib${file}.so
     done
-    # rm -fr $TMP/iptables-$iptables_version # clear
+    # rm -fr $TMP/iptables-$iptables_version $TMP/linux-$kernel_version # clear
 }
 
 # kernel version 4.4.2 or above.
@@ -243,20 +244,24 @@ _make_mdadm() {
     # rm -fr $TMP/mdadm-$mdadm_version # clear
 }
 
+# for _make_eudev
 _make_libblkid() {
-    _wait_file $TMP/util-linux.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-
+    _wait_file $TMP/util.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     cd $TMP/util-linux-$util_linux_version;
 
     ./configure --prefix=/usr \
         --disable-all-programs \
-        --enable-libblkid && \
+        --enable-libblkid \
+        --with-sysroot=$ROOTFS && \
         make || return $(_err_line $((LINENO / 2)));
 
+    make DESTDIR=$ROOTFS install;
+
     cp -adv ./.libs/libblkid.so* $ROOTFS/lib;
-    ln -sv ./.libs/libblkid.so* $ROOTFS/lib
+    ln -sv $ROOTFS/lib/libblkid.so* /lib
 }
 
+# for _make_lvm2
 _make_eudev() {
     _wait_file $TMP/eudev.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch eudev-$eudev_version;
@@ -268,7 +273,8 @@ BLKID_LIBS=\"-lblkid\"
 BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
 " | tee -a config.cache;
 
-    ./configure --prefix=/usr \
+    ./configure \
+        --prefix=/usr \
         --bindir=/sbin \
         --sbindir=/sbin \
         --libdir=/usr/lib \
@@ -278,22 +284,30 @@ BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
         --with-rootlibdir=/lib \
         --enable-manpages \
         --disable-static \
+        --includedir=$TMP/util-linux-$util_linux_version/libblkid/src \
         --config-cache || return $(_err_line $((LINENO / 2)));
 
     mkdir -pv $ROOTFS/{etc,lib}/udev/rules.d;
 
     LIBRARY_PATH=$ROOTFS/lib make && \
-        make LD_LIBRARY_PATH=$ROOTFS/lib DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
-
+        make DESTDIR=$ROOTFS install || \
+        return $(_err_line $((LINENO / 2)))
 
 }
 
 # kernel version 4.4.2 or above.
 _make_lvm2() {
+    local UDEV_CFLAGS UDEV_LIBS;
     echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch LVM$lvm2_version;
+    export UDEV_CFLAGS="-I$ROOTFS/usr/include \
+        -I$TMP/LVM$lvm2_version/lib/misc \
+        -I$TMP/LVM$lvm2_version/lib/log \
+        -I$TMP/LVM$lvm2_version/libdm \
+        -I$TMP/LVM$lvm2_version/libdm/misc \
+        -I$ROOTFS/tmp/util-linux-$util_linux_version/libblkid/src" UDEV_LIBS="-L$ROOTFS/usr/lib";
     ./configure \
         --prefix=/usr \
         --localstatedir=/var \
@@ -302,13 +316,12 @@ _make_lvm2() {
         --enable-applib \
         --enable-cmdlib \
         --enable-pkgconfig \
-        --with-udev-prefix=$ROOTFS \
         --enable-udev_sync || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./make.tmpl;
 
-    # Edit make.tmpl
-    # DEFAULT_SYS_DIR = /usr/local/etc/lvm
+    ln -sv $ROOTFS/lib/lib{m.so.6,mvec.so.1,pthread.so.0} /lib;
+    ln -sv $ROOTFS/usr/lib/lib{mvec_nonshared.a,pthread_nonshared.a} /usr/lib;
 
     make && make install || return $(_err_line $((LINENO / 2)));
 
