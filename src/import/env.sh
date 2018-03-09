@@ -31,6 +31,7 @@ OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable; # DROPBEAR
 IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
 EUDEV_DOWNLOAD=https://dev.gentoo.org/~blueness/eudev;
 READLINE_DOWNLOAD=http://ftp.gnu.org/gnu/readline;
+XFSPROGS_DOWNLOAD=https://www.kernel.org/pub/linux/utils/fs/xfs/xfsprogs;
 LVM2_DOWNLOAD=https://sourceware.org/ftp/lvm2/releases;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64;
@@ -56,6 +57,7 @@ APT_GET_LIST_MAKE="
     curl
     file
     bison gawk gperf
+    gettext
     kmod
     libc6 libc6-dev libcap-dev
     libnss3-tools p11-kit

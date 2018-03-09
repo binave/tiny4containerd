@@ -65,6 +65,8 @@ _main() {
 
     readline_version=$(curl -L $READLINE_DOWNLOAD 2>/dev/null | grep 'readline-[0-9].*.tar.gz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
 
+    xfsprogs_version=$(curl -L $XFSPROGS_DOWNLOAD 2>/dev/null  | grep 'xfsprogs-.*.tar.xz"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+
     _case_version -------------- lvm2 version ----------------------;
     lvm2_version=$(curl -L $LVM2_DOWNLOAD 2>/dev/null | grep 'tgz"' | awk -F[\"] '{print $8}' | _last_version) || return $((LINENO / 2));
 
@@ -142,6 +144,8 @@ _main() {
         _downlock $READLINE_DOWNLOAD/readline-$readline_version.tar.gz || return $((LINENO / 2));
 
         _downlock $EUDEV_DOWNLOAD/eudev-$eudev_version.tar.gz || return $((LINENO / 2));
+
+        _downlock $XFSPROGS_DOWNLOAD/xfsprogs-$xfsprogs_version.tar.xz || return $((LINENO / 2));
 
         _downlock $LVM2_DOWNLOAD/LVM$lvm2_version.tgz || return $((LINENO / 2));
 

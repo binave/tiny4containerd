@@ -56,10 +56,9 @@ _make_glibc() {
         libc_cv_slibdir=/lib || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2//g' ./config.make ./config.status;
-
     make && make install_root=$ROOTFS install;
-    ln -sT lib $ROOTFS/lib64;
 
+    ln -sT lib $ROOTFS/lib64;
     printf '/usr/local/lib\n' | tee $ROOTFS/etc/ld.so.conf;
 
     printf %s '# GNU Name Service Switch config.
@@ -80,6 +79,9 @@ rpc: files
 # End /etc/nsswitch.conf
 ' | tee $ROOTFS/etc/nsswitch.conf;
 
+    # share lib
+    ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
+    ln -sv $ROOTFS/lib/{libc.so.*,ld-linux-x86-64.so.*} /lib;
     export CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib"
 
 }
@@ -175,7 +177,6 @@ _make_openssh() {
         --with-md5-passwords || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-g -O2//g' ./Makefile;
-
     make && make DESTDIR=$ROOTFS install-nokeys || return $(_err_line $((LINENO / 2)));
 
     # mkdir -pv $ROOTFS/dev;
@@ -194,11 +195,10 @@ _make_libcap2() {
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch libcap-$libcap2_version;
-    mkdir -pv build;
+    mkdir -pv build $ROOTFS{,/usr}/lib;
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
     sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
     make && make RAISE_SETFCAP=no prefix=`pwd`/build install || return $(_err_line $((LINENO / 2)));
-    mkdir -pv $ROOTFS{,/usr}/lib;
     cp -adv ./build/lib64/* $ROOTFS/lib;
     ln -sv ../../lib/$(readlink $ROOTFS/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
     # rm -fr $TMP/libcap-$libcap2_version # clear
@@ -221,10 +221,6 @@ _make_iptables() {
         --disable-nftables;
 
     sed -i 's/-O2/ /g' ./Makefile;
-
-    ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
-    ln -sv $ROOTFS/lib/{libc.so.*,ld-linux-x86-64.so.*} /lib;
-
     make -j $CORES && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
     for file in ip4tc ip6tc ipq iptc xtables;
     do
@@ -266,8 +262,8 @@ _make_libblkid() {
 
 _make_readline() {
     _wait_file $TMP/readline.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch readline-$readline_version;
 
+    _try_patch readline-$readline_version;
     sed -i '/MV.*old/d' Makefile.in;
     sed -i '/{OLDSUFF}/c:' support/shlib-install;
 
@@ -279,7 +275,7 @@ _make_readline() {
     # install local
     mv -v $ROOTFS/usr/lib/lib{readline,history}.so.* $ROOTFS/lib;
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libreadline.so) $ROOTFS/usr/lib/libreadline.so;
-    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libhistory.so ) $ROOTFS/usr/lib/libhistory.so;
+    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libhistory.so) $ROOTFS/usr/lib/libhistory.so;
 
     ln -sv $ROOTFS/lib/lib{readline,history}.so* /lib;
     ln -sv $ROOTFS/usr/lib/lib{readline,history}.so* /usr/lib
@@ -288,10 +284,9 @@ _make_readline() {
 # for _make_lvm2
 _make_eudev() {
     _wait_file $TMP/eudev.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+
     _try_patch eudev-$eudev_version;
-
     sed -r -i 's|/usr(/bin/test)|\1|' test/udev-test.pl; # fix a test script
-
     printf %s "HAVE_BLKID=1
 BLKID_LIBS=\"-lblkid\"
 BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
@@ -308,7 +303,6 @@ BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
         --with-rootlibdir=/lib \
         --enable-manpages \
         --disable-static \
-        --includedir=$TMP/util-linux-$util_linux_version/libblkid/src \
         --config-cache || return $(_err_line $((LINENO / 2)));
 
     mkdir -pv $ROOTFS/{etc,lib}/udev/rules.d;
@@ -320,25 +314,39 @@ BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
     ln -sv $ROOTFS/lib/libudev.so* /lib;
     ln -sv $ROOTFS/usr/lib/libudev.so* /usr/lib
 
+    # ????????
+    ln -sv $ROOTFS/lib/lib{m.so.6,mvec.so.1,pthread.so.0} /lib;
+    ln -sv $ROOTFS/usr/lib/lib{mvec_nonshared.a,pthread_nonshared.a} /usr/lib;
+
+
+}
+
+_make_xfsprogs() {
+    _wait_file $TMP/xfsprogs.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch xfsprogs-$xfsprogs_version;
+
+    make DEBUG=-DNDEBUG INSTALL_USER=root INSTALL_GROUP=root \
+        LOCAL_CONFIGURE_OPTIONS="--prefix=/usr/local \
+            --disable-static \
+            --localstatedir=/var \
+            --enable-readline \
+            --enable-lib64=no";
+
+    make install
+    make install-dev
+
 }
 
 # kernel version 4.4.2 or above.
 _make_lvm2() {
     local UDEV_CFLAGS UDEV_LIBS;
 
-    ln -sv $ROOTFS/lib/*.so* /lib;
-    ln -sv $ROOTFS/usr/lib/*.so* /usr/lib;
-
     echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch LVM$lvm2_version;
-    export UDEV_CFLAGS="-I$ROOTFS/usr/include \
-        -I$TMP/LVM$lvm2_version/lib/misc \
-        -I$TMP/LVM$lvm2_version/lib/log \
-        -I$TMP/LVM$lvm2_version/libdm \
-        -I$TMP/LVM$lvm2_version/libdm/misc \
-        -I$ROOTFS/tmp/util-linux-$util_linux_version/libblkid/src" UDEV_LIBS="-L$ROOTFS/usr/lib";
+    export UDEV_CFLAGS="-I$ROOTFS/usr/include" UDEV_LIBS="-L$ROOTFS/usr/lib";
+
     ./configure \
         --prefix=/usr \
         --localstatedir=/var \
@@ -350,11 +358,7 @@ _make_lvm2() {
         --enable-udev_sync || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./make.tmpl;
-
-    ln -sv $ROOTFS/lib/lib{m.so.6,mvec.so.1,pthread.so.0} /lib;
-    ln -sv $ROOTFS/usr/lib/lib{mvec_nonshared.a,pthread_nonshared.a} /usr/lib;
-
-    make && make install || return $(_err_line $((LINENO / 2)));
+    make && make install || return $(_err_line $((LINENO / 2)))
 
     # rm -fr $TMP/LVM$lvm2_version # clear
 }
@@ -368,7 +372,6 @@ _make_sshfs() {
         --localstatedir=/var || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-g -O2//g' ./Makefile;
-
     make && make install || return $(_err_line $((LINENO / 2)));
 
 }
@@ -385,7 +388,6 @@ _make_curl() {
         --with-ca-bundle=/usr/local/etc/ssl/certs/ca-certificates.crt || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./Makefile;
-
     make && make install || return $(_err_line $((LINENO / 2)));
 
     # rm -fr $TMP/curl-$curl_version # clear
