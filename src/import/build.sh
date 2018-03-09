@@ -24,7 +24,7 @@ _make_kernel() {
 
     echo " ----------- install headers ----------------------";
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/linux-headers.html
-    make INSTALL_HDR_PATH=$TMP headers_install || return $(_err_line $((LINENO / 2)));
+    make INSTALL_HDR_PATH=$ROOTFS/usr headers_install || return $(_err_line $((LINENO / 2)));
 
     echo " --------- bzImage -> vmlinuz64 -------------------";
     _hash ./arch/x86/boot/bzImage;
@@ -52,7 +52,7 @@ _make_glibc() {
         --enable-stack-protector=strong \
         --enable-obsolete-rpc  \
         --disable-werror \
-        --with-headers=$TMP/include \
+        --with-headers=$ROOTFS/usr/include \
         libc_cv_slibdir=/lib || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2//g' ./config.make ./config.status;
@@ -325,6 +325,10 @@ BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
 # kernel version 4.4.2 or above.
 _make_lvm2() {
     local UDEV_CFLAGS UDEV_LIBS;
+
+    ln -sv $ROOTFS/lib/*.so* /lib;
+    ln -sv $ROOTFS/usr/lib/*.so* /usr/lib;
+
     echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
 
