@@ -80,8 +80,8 @@ rpc: files
 ' | tee $ROOTFS/etc/nsswitch.conf;
 
     # share lib
+    ln -sv $ROOTFS/lib/{libc,ld-linux-x86-64}.so.* /lib;
     ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
-    ln -sv $ROOTFS/lib/{libc.so.*,ld-linux-x86-64.so.*} /lib;
     export CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib"
 
 }
@@ -91,20 +91,17 @@ _make_busybox() {
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch busybox-$busybox_version;
-
     cp -v $THIS_DIR/config/busybox_suid.cfg ./.config;
     make || return $(_err_line $((LINENO / 2)));
-
-    while read symbolic target
+    while read symbolic target;
     do
         printf "  $symbolic -> $target.suid\n";
         symbolic=${symbolic//\/\//\/};
         rm -f $symbolic && ln -fs $target.suid $symbolic
     done <<< $(make CONFIG_PREFIX=$ROOTFS install | grep '\->' | awk '{print $1" "$3}');
-
     mv $ROOTFS/bin/busybox $ROOTFS/bin/busybox.suid;
-    make mrproper;
 
+    make mrproper;
     cp -v $THIS_DIR/config/busybox_nosuid.cfg ./.config;
     make && make CONFIG_PREFIX=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
@@ -116,10 +113,12 @@ _make_zlib() {
     _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch zlib-$zlib_version;
-    ./configure --prefix=/usr --shared && \
-        make && make install || return $(_err_line $((LINENO / 2)));
+    ./configure \
+        --prefix=/usr \
+        --shared && \
+        make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv /usr/lib/libz.so* $ROOTFS/lib;
+    # cp -adv /usr/local/lib/libz.so* $ROOTFS/lib;
     ln -sv ../../lib/$(readlink $ROOTFS/lib/libz.so) $ROOTFS/usr/lib/libz.so;
     # rm -fr $TMP/zlib-$zlib_version # clear
 }

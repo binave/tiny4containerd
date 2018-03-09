@@ -75,7 +75,3 @@ APT_GET_LIST_ISO="
     syslinux
     xorriso xz-utils
 ";
-
-# apt-get install -y ncurses-dev
-# make allnoconfig
-# make ARCH=x86_64 menuconfig
