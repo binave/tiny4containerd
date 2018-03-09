@@ -39,7 +39,7 @@ _make_glibc() {
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch glibc-$glibc_version;
-    mkdir -p build $ROOTFS/etc;
+    mkdir -pv build $ROOTFS/etc;
     cd build;
     touch $ROOTFS/etc/ld.so.conf;
 
@@ -133,7 +133,6 @@ _make_openssl() {
         shared zlib-dynamic || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O3//g' ./Makefile;
-
     make && make install || return $(_err_line $((LINENO / 2)));
 
     # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
@@ -143,7 +142,7 @@ _make_openssl() {
 # http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
 _make_ca_certificates() {
     _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-    mkdir -p $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
+    mkdir -pv $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
 
     cd $TMP/ca-certificates-*;
     cp -v $TMP/certdata.txt ./mozilla/;
@@ -179,7 +178,7 @@ _make_openssh() {
 
     make && make DESTDIR=$ROOTFS install-nokeys || return $(_err_line $((LINENO / 2)));
 
-    # mkdir -p $ROOTFS/dev;
+    # mkdir -pv $ROOTFS/dev;
     # mknod -m 666 $ROOTFS/dev/null c 1 3;
     # mknod -m 666 $ROOTFS/dev/zero c 1 5;
     # # fix: PRNG is not seeded
@@ -195,11 +194,11 @@ _make_libcap2() {
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch libcap-$libcap2_version;
-    mkdir -p build;
+    mkdir -pv build;
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
     sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
     make && make RAISE_SETFCAP=no prefix=`pwd`/build install || return $(_err_line $((LINENO / 2)));
-    mkdir -p $ROOTFS{,/usr}/lib;
+    mkdir -pv $ROOTFS{,/usr}/lib;
     cp -adv ./build/lib64/* $ROOTFS/lib;
     ln -sv ../../lib/$(readlink $ROOTFS/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
     # rm -fr $TMP/libcap-$libcap2_version # clear
@@ -253,23 +252,37 @@ _make_libblkid() {
     ./configure \
         --prefix=/usr \
         --disable-all-programs \
-        --enable-libblkid \
+        --disable-makeinstall-chown \
         --enable-libuuid \
+        --enable-libblkid \
+        --without-python \
         --with-sysroot=$ROOTFS && \
-        make || return $(_err_line $((LINENO / 2)));
+        make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
-    make DESTDIR=$ROOTFS install;
-
-    cp -adv ./.libs/*.so* $ROOTFS/lib;
-    ln -sv $ROOTFS/lib/lib{blkid,uuid}.so* /lib
+    # install local
+    ln -sv $ROOTFS/lib/lib{blkid,uuid}.so* /lib;
+    ln -sv $ROOTFS/usr/lib/lib{blkid,uuid}.so* /usr/lib
 }
 
 _make_readline() {
     _wait_file $TMP/readline.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch readline-$readline_version;
+
+    sed -i '/MV.*old/d' Makefile.in;
+    sed -i '/{OLDSUFF}/c:' support/shlib-install;
+
     ./configure \
         --prefix=/usr \
-        --enable-shared && make || return $(_err_line $((LINENO / 2)));
+        --enable-shared && \
+        make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+
+    # install local
+    mv -v $ROOTFS/usr/lib/lib{readline,history}.so.* $ROOTFS/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libreadline.so) $ROOTFS/usr/lib/libreadline.so;
+    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libhistory.so ) $ROOTFS/usr/lib/libhistory.so;
+
+    ln -sv $ROOTFS/lib/lib{readline,history}.so* /lib;
+    ln -sv $ROOTFS/usr/lib/lib{readline,history}.so* /usr/lib
 }
 
 # for _make_lvm2
@@ -302,7 +315,10 @@ BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
 
     LIBRARY_PATH=$ROOTFS/lib make && \
         make DESTDIR=$ROOTFS install || \
-        return $(_err_line $((LINENO / 2)))
+        return $(_err_line $((LINENO / 2)));
+
+    ln -sv $ROOTFS/lib/libudev.so* /lib;
+    ln -sv $ROOTFS/usr/lib/libudev.so* /usr/lib
 
 }
 

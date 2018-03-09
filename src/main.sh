@@ -83,7 +83,7 @@ _main() {
     rm -fr $TMP/*.lock $TMP/.error $ROOTFS;
 
     # Make the rootfs, Prepare the build directory ($TMP/iso)
-    mkdir -p $ROOTFS $TMP/iso/boot;
+    mkdir -pv $ROOTFS $TMP/iso/boot;
 
     echo " ------------- put in queue -----------------------"
     _message_queue --init;
@@ -168,7 +168,7 @@ _main() {
     _create_config;
 
     echo " ------------ install docker ----------------------";
-    mkdir $ROOTFS/usr/local/bin;
+    mkdir -pv $ROOTFS/usr/local/bin;
     tar -zxvf $TMP/docker.tgz -C $ROOTFS/usr/local/bin --strip-components=1;
 
     # test docker command
