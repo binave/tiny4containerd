@@ -95,8 +95,8 @@ _make_busybox() {
 
     while read symbolic target
     do
+        printf "  $symbolic -> $target.suid\n";
         symbolic=${symbolic//\/\//\/};
-        printf "relink: '${symbolic##*/}'.\n";
         rm -f $symbolic && ln -fs $target.suid $symbolic
     done <<< $(make CONFIG_PREFIX=$ROOTFS install | grep '\->' | awk '{print $1" "$3}');
 
@@ -146,7 +146,7 @@ _make_ca_certificates() {
     mkdir -p $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
 
     cd $TMP/ca-certificates-*;
-    cp $TMP/certdata.txt ./mozilla/;
+    cp -v $TMP/certdata.txt ./mozilla/;
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
     find $ROOTFS/usr/share/ca-certificates/mozilla -type f | sed 's/.*mozilla/mozilla/g' | \
         tee $ROOTFS/etc/ca-certificates.conf;
@@ -160,7 +160,8 @@ _make_openssh() {
 
     # _try_patch openssh-$openssh_version;
     cd $TMP/openssh-$openssh_version;
-    echo "CFLAGS=$CFLAGS, LDFLAGS=$LDFLAGS";
+    echo "CFLAGS='$CFLAGS', LDFLAGS='$LDFLAGS'";
+    [ "$LDFLAGS" ] || return $(_err_line $((LINENO / 2)));
 
     ln -sv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
     ./configure \
@@ -249,9 +250,11 @@ _make_libblkid() {
     _wait_file $TMP/util.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     cd $TMP/util-linux-$util_linux_version;
 
-    ./configure --prefix=/usr \
+    ./configure \
+        --prefix=/usr \
         --disable-all-programs \
         --enable-libblkid \
+        --enable-libuuid \
         --with-sysroot=$ROOTFS && \
         make || return $(_err_line $((LINENO / 2)));
 

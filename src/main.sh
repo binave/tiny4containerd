@@ -44,10 +44,10 @@ _main() {
     # dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
     _case_version ------------ sshfs version -----------------------;
-    sshfs_version=$(curl -L $SSHFS_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | grep -v rc | _last_version) || return $((LINENO / 2));
+    sshfs_version=$(curl -L $SSHFS_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | _last_version) || return $((LINENO / 2));
 
     _case_version ----------- libfuse version ----------------------;
-    libfuse_version=$(curl -L $LIBFUSE_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | grep -v rc | _last_version) || return $((LINENO / 2));
+    libfuse_version=$(curl -L $LIBFUSE_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | _last_version) || return $((LINENO / 2));
 
     _case_version ----------- libcap2 version ----------------------;
     libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $3}' | _last_version)
@@ -58,13 +58,15 @@ _main() {
     _case_version ------------- mdadm version ----------------------;
     mdadm_version=$(curl -L $MDADM_DOWNLOAD 2>/dev/null | grep "mdadm-.*.xz" | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
-    util_linux_version=$(curl -L $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION 2>/dev/null | grep 'util-linux-.*tar.xz"' | grep -v '\-rc' | awk -F[-\"] '{print $4}' | _last_version) || return $((LINENO / 2));
+    util_linux_version=$(curl -L $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION 2>/dev/null | grep 'util-linux-.*tar.xz"' | awk -F[-\"] '{print $4}' | _last_version) || return $((LINENO / 2));
 
     _case_version ------------- eudev version ----------------------;
     eudev_version=$(curl -L $EUDEV_DOWNLOAD 2>/dev/null | grep 'eudev-.*.tar.gz>' | awk -F[-\>\<] '{print $7}' | _last_version) || return $((LINENO / 2));
 
+    readline_version=$(curl -L $READLINE_DOWNLOAD 2>/dev/null | grep 'readline-[0-9].*.tar.gz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
+
     _case_version -------------- lvm2 version ----------------------;
-    lvm2_version=$(curl -L $LVM2_DOWNLOAD 2>/dev/null | grep 'tgz"' | awk -F[\"] '{print $2}' | _last_version) || return $((LINENO / 2));
+    lvm2_version=$(curl -L $LVM2_DOWNLOAD 2>/dev/null | grep 'tgz"' | awk -F[\"] '{print $8}' | _last_version) || return $((LINENO / 2));
 
     _case_version ------------- docker version ---------------------;
     # get docker stable version
@@ -135,6 +137,8 @@ _main() {
         _downlock $MDADM_DOWNLOAD/mdadm-$mdadm_version.tar.xz || return $((LINENO / 2));
 
         _downlock $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION/util-linux-$util_linux_version.tar.xz || return $((LINENO / 2));
+
+        _downlock $READLINE_DOWNLOAD/readline-$readline_version.tar.gz || return $((LINENO / 2));
 
         _downlock $EUDEV_DOWNLOAD/eudev-$eudev_version.tar.gz || return $((LINENO / 2));
 

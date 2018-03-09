@@ -30,7 +30,8 @@ OPENSSL_DOWNLOAD=https://www.openssl.org/source;
 OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable; # DROPBEAR_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
 IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
 EUDEV_DOWNLOAD=https://dev.gentoo.org/~blueness/eudev;
-LVM2_DOWNLOAD=http://mirrors.kernel.org/sourceware/lvm2;
+READLINE_DOWNLOAD=http://ftp.gnu.org/gnu/readline;
+LVM2_DOWNLOAD=https://sourceware.org/ftp/lvm2/releases;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64;
 
