@@ -5,8 +5,8 @@ _make_kernel() {
     echo " ------------ untar kernel ------------------------";
     # fix: Directory renamed before its status could be extracted
     _untar $TMP/linux.tar.xz || return $(_err_line $((LINENO / 2)));
-
     _try_patch linux-$kernel_version;
+
     echo " -------- make bzImage modules --------------------";
     # make ARCH=x86_64 menuconfig # ncurses-dev
     cp -v $THIS_DIR/config/kernel.cfg ./.config;
@@ -15,7 +15,6 @@ _make_kernel() {
     make -j $CORES bzImage && make -j $CORES modules || return $(_err_line $((LINENO / 2)))
 
     echo " ------- install modules firmware -----------------";
-    # The post kernel build process
     # Install the kernel modules in $ROOTFS
     make INSTALL_MOD_PATH=$ROOTFS modules_install firmware_install || return $(_err_line $((LINENO / 2)));
 
@@ -37,11 +36,11 @@ _make_kernel() {
 # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
 _make_glibc() {
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-
     _try_patch glibc-$glibc_version;
+
     mkdir -pv build $ROOTFS/etc;
-    cd build;
     touch $ROOTFS/etc/ld.so.conf;
+    cd build;
 
     # fix glibc cannot be compiled without optimization
     printf "CFLAGS += -mtune=generic -Og -pipe\n" > ./configparms;
@@ -77,23 +76,21 @@ ethers: files
 rpc: files
 
 # End /etc/nsswitch.conf
-' | tee $ROOTFS/etc/nsswitch.conf;
-
-    # share lib
-    ln -sv $ROOTFS/lib/{libc,ld-linux-x86-64}.so.* /lib;
-    ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
+' | tee $ROOTFS/etc/nsswitch.conf
 
 }
 
 _make_busybox() {
-    local symbolic target CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch busybox-$busybox_version;
+
+    # Optional
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
-    _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-
-    _try_patch busybox-$busybox_version;
     cp -v $THIS_DIR/config/busybox_suid.cfg ./.config;
     make || return $(_err_line $((LINENO / 2)));
+    local symbolic target;
     while read symbolic target;
     do
         printf "  $symbolic -> $target.suid\n";
@@ -112,11 +109,12 @@ _make_busybox() {
 
 _make_zlib() {
     _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch zlib-$zlib_version;
 
+    # Optional
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
-    _try_patch zlib-$zlib_version;
     ./configure \
         --prefix=/usr \
         --shared && \
@@ -129,11 +127,11 @@ _make_zlib() {
 
 _make_openssl() {
     _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch openssl-$OPENSSL_VERSION;
 
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
-    _try_patch openssl-$OPENSSL_VERSION;
     ./config \
         --prefix=/usr \
         --openssldir=/etc/ssl \
@@ -143,23 +141,21 @@ _make_openssl() {
     sed -i 's/-O3//g' ./Makefile;
     make && make install || return $(_err_line $((LINENO / 2)));
 
-    ln -sv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
-
     # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
 }
 
 # http://www.linuxfromscratch.org/blfs/view/8.1/postlfs/cacerts.html
 # http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
 _make_ca_certificates() {
+    mkdir -pv $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
     _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    cd $TMP/ca-certificates-*;
+    cp -v $TMP/certdata.txt ./mozilla/;
 
+    # Optional
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
-    mkdir -pv $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
-
-    cd $TMP/ca-certificates-*;
-    cp -v $TMP/certdata.txt ./mozilla/;
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
     find $ROOTFS/usr/share/ca-certificates/mozilla -type f | sed 's/.*mozilla/mozilla/g' | \
         tee $ROOTFS/etc/ca-certificates.conf;
@@ -170,12 +166,13 @@ _make_ca_certificates() {
 
 _make_openssh() {
     _wait_file $TMP/openssh.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-
-    # _try_patch openssh-$openssh_version;
     cd $TMP/openssh-$openssh_version;
 
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
+
+    # link 'openssl' lib
+    ln -sv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
 
     ./configure \
         --prefix=/usr \
@@ -189,6 +186,9 @@ _make_openssh() {
 
     sed -i 's/-g -O2//g' ./Makefile;
     make && make DESTDIR=$ROOTFS install-nokeys || return $(_err_line $((LINENO / 2)));
+
+    # # remove 'openssl' lib
+    # rm -f /usr/lib/lib{crypto,ssl}.*;
 
     echo "PermitRootLogin no" >> $ROOTFS/etc/ssh/sshd_config;
 
@@ -206,11 +206,12 @@ _make_openssh() {
 _make_libcap2() {
     echo " ------------- make libcap2 -----------------------";
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-
     _try_patch libcap-$libcap2_version;
+
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
     sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
 
+    # Optional
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
@@ -224,12 +225,13 @@ _make_libcap2() {
 
 # TODO _nftables
 _make_iptables() {
-    local file CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    _wait_file $TMP/iptables.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch iptables-$iptables_version;
+
+    # Optional
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
-    _wait_file $TMP/iptables.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-
-    _try_patch iptables-$iptables_version;
     # Error: No suitable 'libmnl' found: --disable-nftables
     ./configure \
         --prefix=/usr \
@@ -240,8 +242,17 @@ _make_iptables() {
         --with-kernel=$TMP/linux-$kernel_version \
         --disable-nftables;
 
+    # link 'glibc' lib
+    ln -sv $ROOTFS/lib/{libc,ld-linux-x86-64}.so.* /lib;
+    ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
+
     sed -i 's/-O2/ /g' ./Makefile;
     make -j $CORES && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+
+    # remove 'glibc' lib
+    rm -fv /lib/{libc,ld-linux-x86-64}.so.* /usr/lib/libc_nonshared.a;
+
+    local file;
     for file in ip4tc ip6tc ipq iptc xtables;
     do
         mv -v $ROOTFS/usr/lib/lib${file}.so.* $ROOTFS/lib && \
@@ -253,22 +264,23 @@ _make_iptables() {
 # kernel version 4.4.2 or above.
 _make_mdadm() {
     echo " ------------- make mdadm -----------------------";
-
     _wait_file $TMP/mdadm.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-
-    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
-    export CFLAGS LDFLAGS;
-
     _try_patch mdadm-$mdadm_version;
+
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
     # rm -fr $TMP/mdadm-$mdadm_version # clear
 }
 
 # for _make_eudev
-_make_libblkid() {
+_make_util_linux() {
     _wait_file $TMP/util.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     cd $TMP/util-linux-$util_linux_version;
 
+    # link 'glibc' lib
+    ln -sv $ROOTFS/lib/{libc,ld-linux-x86-64}.so.* /lib;
+    ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
+
+    # Optional
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
@@ -281,19 +293,20 @@ _make_libblkid() {
         --without-python && \
         make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
-    # install local
-    ln -sv $ROOTFS/lib/lib{blkid,uuid}.so* /lib;
-    ln -sv $ROOTFS/usr/lib/lib{blkid,uuid}.so* /usr/lib
+    # # remove 'glibc' lib
+    # rm -fv /lib/{libc,ld-linux-x86-64}.so.* /usr/lib/libc_nonshared.a;
+
 }
 
 # for _make_lvm2
 _make_readline() {
     _wait_file $TMP/readline.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-
     _try_patch readline-$readline_version;
+
     sed -i '/MV.*old/d' Makefile.in;
     sed -i '/{OLDSUFF}/c:' support/shlib-install;
 
+    # Optional
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
@@ -306,22 +319,20 @@ _make_readline() {
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libreadline.so) $ROOTFS/usr/lib/libreadline.so;
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libhistory.so) $ROOTFS/usr/lib/libhistory.so;
 
-    # install local
-    ln -sv $ROOTFS/lib/lib{readline,history}.so* /lib;
-    ln -sv $ROOTFS/usr/lib/lib{readline,history}.so* /usr/lib
 }
 
 # for _make_lvm2
 _make_eudev() {
     _wait_file $TMP/eudev.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-
     _try_patch eudev-$eudev_version;
+
     sed -r -i 's|/usr(/bin/test)|\1|' test/udev-test.pl; # fix a test script
     printf %s "HAVE_BLKID=1
 BLKID_LIBS=\"-lblkid\"
 BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
 " | tee -a config.cache;
 
+    # Optional
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
@@ -338,16 +349,15 @@ BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
         --disable-static \
         --config-cache || return $(_err_line $((LINENO / 2)));
 
+    # link 'util-linux' local
+    ln -sv $ROOTFS/lib/lib{blkid,uuid}.so* /lib;
+    ln -sv $ROOTFS/usr/lib/lib{blkid,uuid}.so* /usr/lib;
+
     LIBRARY_PATH=$ROOTFS/lib make && \
         make DESTDIR=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
-    ln -sv $ROOTFS/lib/libudev.so* /lib;
-    ln -sv $ROOTFS/usr/lib/libudev.so* /usr/lib;
-
-    # ????????
-    ln -sv $ROOTFS/lib/lib{m,mvec,pthread}.so.* /lib;
-    ln -sv $ROOTFS/usr/lib/lib{mvec,pthread}_nonshared.a /usr/lib
+    rm -fv /lib/lib{blkid,uuid}.so* /usr/lib/lib{blkid,uuid}.so*
 
 }
 
@@ -356,7 +366,28 @@ _make_xfsprogs() {
     _wait_file $TMP/xfsprogs.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch xfsprogs-$xfsprogs_version;
 
+    # Optional
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     sed -i 's/-g -O2//g' ./configure;
+
+    # # link 'readline' lib
+    # ln -sv $ROOTFS/lib/lib{readline,history}.so* /lib;
+    # ln -sv $ROOTFS/usr/lib/lib{readline,history}.so* /usr/lib
+
+    # # link 'eudev' lib
+    # ln -sv $ROOTFS/lib/libudev.so* /lib;
+    # ln -sv $ROOTFS/usr/lib/libudev.so* /usr/lib;
+
+    # # link 'glibc' lib
+    # ln -sv $ROOTFS/lib/lib{m,mvec,pthread}.so.* /lib;
+    # ln -sv $ROOTFS/usr/lib/lib{mvec,pthread}_nonshared.a /usr/lib
+
+    # # link 'util-linux' local
+    # ln -sv $ROOTFS/lib/lib{blkid,uuid}.so* /lib;
+    # ln -sv $ROOTFS/usr/lib/lib{blkid,uuid}.so* /usr/lib;
+
     make \
         CFLAGS="-I$ROOTFS/usr/include" \
         LDFLAGS="-L$ROOTFS/lib -lncurses" \
@@ -376,10 +407,8 @@ _make_xfsprogs() {
 
 # kernel version 4.4.2 or above.
 _make_lvm2() {
-
     echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
-
     _try_patch LVM$lvm2_version;
 
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib" \
@@ -404,7 +433,6 @@ _make_lvm2() {
 
 _make_sshfs() {
     _wait_file $TMP/sshfs-fuse.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-
     _try_patch sshfs-fuse-$sshfs_fuse_version;
 
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
@@ -421,7 +449,6 @@ _make_sshfs() {
 
 _make_curl() {
     _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-
     _try_patch curl-$curl_version;
 
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
@@ -440,7 +467,6 @@ _make_curl() {
 
 _make_git() {
     _wait_file $TMP/git.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-
     _try_patch git-$git_version;
 
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
