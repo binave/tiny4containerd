@@ -82,12 +82,13 @@ rpc: files
     # share lib
     ln -sv $ROOTFS/lib/{libc,ld-linux-x86-64}.so.* /lib;
     ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
-    export CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib"
 
 }
 
 _make_busybox() {
-    local symbolic target;
+    local symbolic target CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch busybox-$busybox_version;
@@ -112,19 +113,25 @@ _make_busybox() {
 _make_zlib() {
     _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
 
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     _try_patch zlib-$zlib_version;
     ./configure \
         --prefix=/usr \
         --shared && \
         make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
-    # cp -adv /usr/local/lib/libz.so* $ROOTFS/lib;
-    ln -sv ../../lib/$(readlink $ROOTFS/lib/libz.so) $ROOTFS/usr/lib/libz.so;
+    mv -v $ROOTFS/usr/lib/libz.so.* $ROOTFS/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libz.so) $ROOTFS/usr/lib/libz.so
     # rm -fr $TMP/zlib-$zlib_version # clear
 }
 
 _make_openssl() {
     _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
 
     _try_patch openssl-$OPENSSL_VERSION;
     ./config \
@@ -136,6 +143,8 @@ _make_openssl() {
     sed -i 's/-O3//g' ./Makefile;
     make && make install || return $(_err_line $((LINENO / 2)));
 
+    ln -sv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
+
     # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
 }
 
@@ -143,6 +152,10 @@ _make_openssl() {
 # http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
 _make_ca_certificates() {
     _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     mkdir -pv $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
 
     cd $TMP/ca-certificates-*;
@@ -160,16 +173,15 @@ _make_openssh() {
 
     # _try_patch openssh-$openssh_version;
     cd $TMP/openssh-$openssh_version;
-    echo "CFLAGS='$CFLAGS', LDFLAGS='$LDFLAGS'";
-    [ "$LDFLAGS" ] || return $(_err_line $((LINENO / 2)));
 
-    ln -sv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     ./configure \
         --prefix=/usr \
         --localstatedir=/var \
         --sysconfdir=/etc/ssh \
         --libexecdir=/lib/openssh \
-        --with-ssl-dir=$ROOTFS/usr \
         --with-privsep-path=/var/lib/sshd \
         --with-privsep-user=nobody \
         --with-xauth=/bin/xauth \
@@ -196,18 +208,25 @@ _make_libcap2() {
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch libcap-$libcap2_version;
-    mkdir -pv build $ROOTFS{,/usr}/lib;
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
     sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
-    make && make RAISE_SETFCAP=no prefix=`pwd`/build install || return $(_err_line $((LINENO / 2)));
-    cp -adv ./build/lib64/* $ROOTFS/lib;
-    ln -sv ../../lib/$(readlink $ROOTFS/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
+
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
+    make && make RAISE_SETFCAP=no lib=lib prefix=$ROOTFS/usr install || return $(_err_line $((LINENO / 2)));
+
+    mv -v $ROOTFS/usr/lib/libcap.so.* $ROOTFS/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
+
     # rm -fr $TMP/libcap-$libcap2_version # clear
 }
 
 # TODO _nftables
 _make_iptables() {
-    local file;
+    local file CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     _wait_file $TMP/iptables.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch iptables-$iptables_version;
@@ -234,7 +253,11 @@ _make_iptables() {
 # kernel version 4.4.2 or above.
 _make_mdadm() {
     echo " ------------- make mdadm -----------------------";
+
     _wait_file $TMP/mdadm.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
 
     _try_patch mdadm-$mdadm_version;
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
@@ -246,14 +269,16 @@ _make_libblkid() {
     _wait_file $TMP/util.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     cd $TMP/util-linux-$util_linux_version;
 
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     ./configure \
         --prefix=/usr \
         --disable-all-programs \
         --disable-makeinstall-chown \
         --enable-libuuid \
         --enable-libblkid \
-        --without-python \
-        --with-sysroot=$ROOTFS && \
+        --without-python && \
         make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
     # install local
@@ -269,16 +294,19 @@ _make_readline() {
     sed -i '/MV.*old/d' Makefile.in;
     sed -i '/{OLDSUFF}/c:' support/shlib-install;
 
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     ./configure \
         --prefix=/usr \
         --enable-shared && \
         make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
-    # install local
     mv -v $ROOTFS/usr/lib/lib{readline,history}.so.* $ROOTFS/lib;
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libreadline.so) $ROOTFS/usr/lib/libreadline.so;
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libhistory.so) $ROOTFS/usr/lib/libhistory.so;
 
+    # install local
     ln -sv $ROOTFS/lib/lib{readline,history}.so* /lib;
     ln -sv $ROOTFS/usr/lib/lib{readline,history}.so* /usr/lib
 }
@@ -294,6 +322,9 @@ BLKID_LIBS=\"-lblkid\"
 BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
 " | tee -a config.cache;
 
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     ./configure \
         --prefix=/usr \
         --bindir=/sbin \
@@ -307,18 +338,16 @@ BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
         --disable-static \
         --config-cache || return $(_err_line $((LINENO / 2)));
 
-    mkdir -pv $ROOTFS/{etc,lib}/udev/rules.d;
-
     LIBRARY_PATH=$ROOTFS/lib make && \
         make DESTDIR=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
     ln -sv $ROOTFS/lib/libudev.so* /lib;
-    ln -sv $ROOTFS/usr/lib/libudev.so* /usr/lib
+    ln -sv $ROOTFS/usr/lib/libudev.so* /usr/lib;
 
     # ????????
-    ln -sv $ROOTFS/lib/lib{m.so.6,mvec.so.1,pthread.so.0} /lib;
-    ln -sv $ROOTFS/usr/lib/lib{mvec_nonshared.a,pthread_nonshared.a} /usr/lib
+    ln -sv $ROOTFS/lib/lib{m,mvec,pthread}.so.* /lib;
+    ln -sv $ROOTFS/usr/lib/lib{mvec,pthread}_nonshared.a /usr/lib
 
 }
 
@@ -327,8 +356,14 @@ _make_xfsprogs() {
     _wait_file $TMP/xfsprogs.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch xfsprogs-$xfsprogs_version;
 
-    make DEBUG=-DNDEBUG INSTALL_USER=root INSTALL_GROUP=root \
-        LOCAL_CONFIGURE_OPTIONS="--prefix=/usr/local \
+    sed -i 's/-g -O2//g' ./configure;
+    make \
+        CFLAGS="-I$ROOTFS/usr/include" \
+        LDFLAGS="-L$ROOTFS/lib -lncurses" \
+        DEBUG=-DNDEBUG \
+        INSTALL_USER=root \
+        INSTALL_GROUP=root \
+        LOCAL_CONFIGURE_OPTIONS="--prefix=/usr \
             --disable-static \
             --localstatedir=/var \
             --enable-readline \
@@ -341,13 +376,15 @@ _make_xfsprogs() {
 
 # kernel version 4.4.2 or above.
 _make_lvm2() {
-    local UDEV_CFLAGS UDEV_LIBS;
 
     echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch LVM$lvm2_version;
-    export UDEV_CFLAGS="-I$ROOTFS/usr/include" UDEV_LIBS="-L$ROOTFS/usr/lib";
+
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib" \
+        UDEV_CFLAGS="-I$ROOTFS/usr/include" UDEV_LIBS="-L$ROOTFS/usr/lib";
+    export CFLAGS LDFLAGS UDEV_CFLAGS UDEV_LIBS;
 
     ./configure \
         --prefix=/usr \
@@ -369,6 +406,10 @@ _make_sshfs() {
     _wait_file $TMP/sshfs-fuse.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch sshfs-fuse-$sshfs_fuse_version;
+
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     ./configure \
         --prefix=$ROOTFS/usr/local \
         --localstatedir=/var || return $(_err_line $((LINENO / 2)));
@@ -382,6 +423,10 @@ _make_curl() {
     _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch curl-$curl_version;
+
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     ./configure \
         --prefix=/usr \
         --enable-threaded-resolver \
@@ -397,6 +442,10 @@ _make_git() {
     _wait_file $TMP/git.tar.xz.lock || return $(_err_line $((LINENO / 2)));
 
     _try_patch git-$git_version;
+
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     ./configure \
         --prefix=/usr \
         --libexecdir=/usr/local/lib \

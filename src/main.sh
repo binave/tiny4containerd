@@ -129,7 +129,7 @@ _main() {
 
         _downlock $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz || return $((LINENO / 2));
 
-        _downlock $LIBFUSE_DOWNLOAD/archive/libfuse-$libfuse_version.tar.gz || return $((LINENO / 2));
+        _downlock $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz || return $((LINENO / 2));
 
         _downlock $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz || return $((LINENO / 2));
 
