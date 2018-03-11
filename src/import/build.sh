@@ -23,7 +23,7 @@ _make_kernel() {
 
     echo " ----------- install headers ----------------------";
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/linux-headers.html
-    make INSTALL_HDR_PATH=$ROOTFS/usr headers_install || return $(_err_line $((LINENO / 2)));
+    make INSTALL_HDR_PATH=$TMP/kernel-header headers_install || return $(_err_line $((LINENO / 2)));
 
     echo " --------- bzImage -> vmlinuz64 -------------------";
     _hash ./arch/x86/boot/bzImage;
@@ -51,7 +51,7 @@ _make_glibc() {
         --enable-stack-protector=strong \
         --enable-obsolete-rpc  \
         --disable-werror \
-        --with-headers=$ROOTFS/usr/include \
+        --with-headers=$TMP/kernel-header/include \
         libc_cv_slibdir=/lib || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2//g' ./config.make ./config.status;
@@ -84,11 +84,12 @@ _make_busybox() {
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
     _try_patch busybox-$busybox_version;
 
+    cp -v $THIS_DIR/config/busybox_suid.cfg ./.config;
+
     # Optional
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
-    cp -v $THIS_DIR/config/busybox_suid.cfg ./.config;
     make || return $(_err_line $((LINENO / 2)));
     local symbolic target;
     while read symbolic target;
@@ -215,7 +216,11 @@ _make_libcap2() {
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
     export CFLAGS LDFLAGS;
 
-    make && make RAISE_SETFCAP=no lib=lib prefix=$ROOTFS/usr install || return $(_err_line $((LINENO / 2)));
+    make && make \
+        RAISE_SETFCAP=no \
+        lib=lib \
+        prefix=$ROOTFS/usr \
+        install || return $(_err_line $((LINENO / 2)));
 
     mv -v $ROOTFS/usr/lib/libcap.so.* $ROOTFS/lib;
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
@@ -249,8 +254,8 @@ _make_iptables() {
     sed -i 's/-O2/ /g' ./Makefile;
     make -j $CORES && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
-    # remove 'glibc' lib
-    rm -fv /lib/{libc,ld-linux-x86-64}.so.* /usr/lib/libc_nonshared.a;
+    # # remove 'glibc' lib
+    # rm -fv /lib/{libc,ld-linux-x86-64}.so.* /usr/lib/libc_nonshared.a;
 
     local file;
     for file in ip4tc ip6tc ipq iptc xtables;
@@ -267,6 +272,10 @@ _make_mdadm() {
     _wait_file $TMP/mdadm.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch mdadm-$mdadm_version;
 
+    # Optional
+    local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
+    export CFLAGS LDFLAGS;
+
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
     # rm -fr $TMP/mdadm-$mdadm_version # clear
 }
@@ -276,9 +285,9 @@ _make_util_linux() {
     _wait_file $TMP/util.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     cd $TMP/util-linux-$util_linux_version;
 
-    # link 'glibc' lib
-    ln -sv $ROOTFS/lib/{libc,ld-linux-x86-64}.so.* /lib;
-    ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
+    # # link 'glibc' lib
+    # ln -sv $ROOTFS/lib/{libc,ld-linux-x86-64}.so.* /lib;
+    # ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
 
     # Optional
     local CFLAGS="-I$ROOTFS/usr/include" LDFLAGS="-L$ROOTFS/lib";
@@ -357,7 +366,7 @@ BLKID_CFLAGS=\"-I$ROOTFS/usr/include\"
         make DESTDIR=$ROOTFS install || \
         return $(_err_line $((LINENO / 2)));
 
-    rm -fv /lib/lib{blkid,uuid}.so* /usr/lib/lib{blkid,uuid}.so*
+    # rm -fv /lib/lib{blkid,uuid}.so* /usr/lib/lib{blkid,uuid}.so*
 
 }
 
@@ -372,9 +381,9 @@ _make_xfsprogs() {
 
     sed -i 's/-g -O2//g' ./configure;
 
-    # # link 'readline' lib
-    # ln -sv $ROOTFS/lib/lib{readline,history}.so* /lib;
-    # ln -sv $ROOTFS/usr/lib/lib{readline,history}.so* /usr/lib
+    # link 'readline' lib
+    ln -sv $ROOTFS/lib/lib{readline,history}.so* /lib;
+    ln -sv $ROOTFS/usr/lib/lib{readline,history}.so* /usr/lib
 
     # # link 'eudev' lib
     # ln -sv $ROOTFS/lib/libudev.so* /lib;
