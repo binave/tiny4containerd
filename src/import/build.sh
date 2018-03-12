@@ -139,7 +139,7 @@ _make_ca_certificates() {
 
 _make_openssh() {
     _wait_file $TMP/openssh.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch openssh-;
+    _try_patch openssh- openssl-$OPENSSL_VERSION; # e.g. openssh-7.6p1-openssl-1.1.0-1.patch
 
     # link 'openssl' lib
     ln -sv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
@@ -330,6 +330,7 @@ _make_fuse() {
     cd build;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
+    # TODO shared build
     ninja install && DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
 }
 
@@ -343,6 +344,7 @@ _make_sshfs() {
     cd build;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
+    # TODO shared build
     DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
 
 }
