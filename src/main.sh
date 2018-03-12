@@ -139,9 +139,9 @@ _main() {
 
         _downlock $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz || return $((LINENO / 2));
 
-        git clone -b release --depth 1 $NINJA_REPOSITORY $TMP/ninja || return $((LINENO / 2));
+        git clone -b release --depth 1 $NINJA_REPOSITORY $TMP/ninja-release || return $((LINENO / 2));
 
-        git clone --depth 1 $MESON_REPOSITORY $TMP/meson || return $((LINENO / 2));
+        git clone --depth 1 $MESON_REPOSITORY $TMP/meson-master || return $((LINENO / 2));
 
         _downlock $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz || return $((LINENO / 2));
 

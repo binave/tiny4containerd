@@ -314,16 +314,16 @@ __make_libcap2() {
 
 # for _make_fuse _make_sshfs
 _build_meson() {
-    cd $TMP/ninja && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
+    cd $TMP/ninja-release && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
     cp -v ./ninja /usr/bin;
 
-    cd $TMP/meson && python3 ./setup.py install || return $(_err_line $((LINENO / 2)));
+    cd $TMP/meson-master && python3 ./setup.py install || return $(_err_line $((LINENO / 2)));
 
 }
 
 _make_fuse() {
     local DESTDIR;
-    _wait_file fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file $TMP/fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch libfuse-;
 
     mkdir -p build;
@@ -379,7 +379,7 @@ _make_git() {
     make PERL_PATH="/usr/local/bin/perl" PYTHON_PATH="/usr/local/bin/python" make DESTDIR=$ROOTFS install;
     make install-doc;
 
-    rm -fr $TMP/git-$git_version # clear
+    # rm -fr $TMP/git-$git_version # clear
 }
 
 _apt_get_install() {
