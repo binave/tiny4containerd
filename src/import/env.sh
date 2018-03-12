@@ -18,9 +18,11 @@ UTIL_LINUX_DOWNLOAD=$KERNEL_PUB/linux/utils/util-linux;
 LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
 MDADM_DOWNLOAD=$KERNEL_PUB/linux/utils/raid/mdadm; # http://neil.brown.name/blog/mdadm
 GIT_DOWNLOAD=$KERNEL_PUB/software/scm/git;
-XFSPROGS_DOWNLOAD=$KERNEL_PUB/linux/utils/fs/xfs/xfsprogs;
+# XFSPROGS_DOWNLOAD=$KERNEL_PUB/linux/utils/fs/xfs/xfsprogs;
 BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
+NINJA_REPOSITORY=https://github.com/ninja-build/ninja.git; # release
+MESON_REPOSITORY=https://github.com/mesonbuild/meson.git; # master
 SSHFS_DOWNLOAD=https://github.com/libfuse/sshfs;
 LIBFUSE_DOWNLOAD=https://github.com/libfuse/libfuse;
 CERTDATA_DOWNLOAD=http://anduin.linuxfromscratch.org/BLFS/other/certdata.txt;
@@ -31,7 +33,7 @@ OPENSSL_DOWNLOAD=https://www.openssl.org/source;
 OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable; # DROPBEAR_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
 IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
 EUDEV_DOWNLOAD=https://dev.gentoo.org/~blueness/eudev;
-READLINE_DOWNLOAD=http://ftp.gnu.org/gnu/readline;
+# READLINE_DOWNLOAD=http://ftp.gnu.org/gnu/readline;
 LVM2_DOWNLOAD=https://sourceware.org/ftp/lvm2/releases;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64;
@@ -55,19 +57,12 @@ APT_GET_LIST_MAKE="
     curl
     file
     bison gawk
+    git-core
     gperf
+    pkg-config
     python
+    python3 python-docutils re2c libglib2.0-dev
 ";
-    # gettext
-    # gperf
-    # automake
-    # libcurl-devel
-    # kmod
-    # libc6 libc6-dev libcap-dev
-    # libnss3-tools p11-kit
-    # squashfs-tools
-    # unzip
-    # zlib1g-dev
 
 APT_GET_LIST_ISO="
     cpio

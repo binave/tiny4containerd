@@ -264,11 +264,7 @@ BLKID_CFLAGS=\"-I/usr/include\"
         --disable-static \
         --config-cache || return $(_err_line $((LINENO / 2)));
 
-    make && make DESTDIR=$ROOTFS install && make install || return $(_err_line $((LINENO / 2)));
-
-    # # for lvm2 runtime
-    # cp -adv /usr/lib/libudev.so* $ROOTFS/usr/lib;
-    # cp -adv /lib/libudev.so* $ROOTFS/lib;
+    make && make DESTDIR=$ROOTFS install && make install || return $(_err_line $((LINENO / 2)))
 
 }
 
@@ -316,17 +312,38 @@ __make_libcap2() {
     # rm -fr $TMP/libcap-$libcap2_version # clear
 }
 
+# for _make_fuse _make_sshfs
+_build_meson() {
+    cd $TMP/ninja && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
+    cp -v ./ninja /usr/bin;
+
+    cd $TMP/meson && python3 ./setup.py install || return $(_err_line $((LINENO / 2)));
+
+}
+
+_make_fuse() {
+    local DESTDIR;
+    _wait_file fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    cd $TMP/libfuse-*;
+
+    mkdir -p build;
+    cd build;
+    meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
+
+    ninja install && DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
+}
+
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/sshfs.html
 _make_sshfs() {
-    _wait_file $TMP/sshfs-fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch sshfs-fuse-$sshfs_fuse_version;
+    local DESTDIR;
+    _wait_file $TMP/sshfs.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch $TMP/sshfs-*;
 
-    ./configure \
-        --prefix=/usr \
-        --localstatedir=/var || return $(_err_line $((LINENO / 2)));
+    mkdir -p build;
+    cd build;
+    meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
-    sed -i 's/-g -O2//g' ./Makefile;
-    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+    ninja install && DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
 
 }
 
