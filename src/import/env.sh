@@ -50,23 +50,24 @@ deb http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-fr
 deb-src http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-free
 ';
 
-# libcurl-devel
 APT_GET_LIST_MAKE="
-    automake
     bc bsdtar build-essential
     curl
     file
-    bison gawk gperf
-    gettext
-    kmod
-    libc6 libc6-dev libcap-dev
-    libnss3-tools p11-kit
-    pkg-config
+    bison gawk
+    gperf
     python
-    squashfs-tools
-    unzip
-    zlib1g-dev
 ";
+    # gettext
+    # gperf
+    # automake
+    # libcurl-devel
+    # kmod
+    # libc6 libc6-dev libcap-dev
+    # libnss3-tools p11-kit
+    # squashfs-tools
+    # unzip
+    # zlib1g-dev
 
 APT_GET_LIST_ISO="
     cpio

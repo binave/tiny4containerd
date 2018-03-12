@@ -3,6 +3,28 @@
 _create_etc() {
     echo " ------------- create etc -------------------------";
 
+    # glibc
+    printf '/usr/local/lib\n' | tee $ROOTFS/etc/ld.so.conf;
+
+    # glibc
+    printf %s '# GNU Name Service Switch config.
+# Begin /etc/nsswitch.conf
+
+passwd: files
+group: files
+shadow: files
+
+hosts: files dns
+networks: files
+
+protocols: files
+services: files
+ethers: files
+rpc: files
+
+# End /etc/nsswitch.conf
+' | tee $ROOTFS/etc/nsswitch.conf
+
     # sysctl
     printf %s 'net.ipv4.ip_forward=1
 # net.ipv6.conf.all.forwarding=1
