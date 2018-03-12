@@ -5,7 +5,7 @@ _make_kernel() {
     echo " ------------ untar kernel ------------------------";
     # fix: Directory renamed before its status could be extracted
     _untar $TMP/linux.tar.xz || return $(_err_line $((LINENO / 2)));
-    _try_patch linux-$kernel_version;
+    _try_patch linux-;
 
     echo " -------- make bzImage modules --------------------";
     # make ARCH=x86_64 menuconfig # ncurses-dev
@@ -36,7 +36,7 @@ _make_kernel() {
 # need: bison gawk http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
 _make_glibc() {
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch glibc-$glibc_version;
+    _try_patch glibc-;
 
     mkdir -pv build $ROOTFS/etc;
     touch $ROOTFS/etc/ld.so.conf;
@@ -63,7 +63,7 @@ _make_glibc() {
 
 _make_busybox() {
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch busybox-$busybox_version;
+    _try_patch busybox-;
 
     cp -v $THIS_DIR/config/busybox_suid.cfg ./.config;
 
@@ -88,7 +88,7 @@ _make_busybox() {
 # for openssl build, openssh runtime
 __make_zlib() {
     _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch zlib-$zlib_version;
+    _try_patch zlib-;
 
     ./configure \
         --prefix=/usr \
@@ -103,7 +103,7 @@ __make_zlib() {
 
 _make_openssl() {
     _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch openssl-$OPENSSL_VERSION;
+    _try_patch openssl-;
 
     ./config \
         --prefix=/usr \
@@ -126,7 +126,7 @@ _make_openssl() {
 _make_ca_certificates() {
     mkdir -pv $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
     _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/ca-certificates-*;
+    _try_patch ca-certificates-;
     cp -v $TMP/certdata.txt ./mozilla/;
 
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
@@ -139,7 +139,7 @@ _make_ca_certificates() {
 
 _make_openssh() {
     _wait_file $TMP/openssh.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/openssh-$openssh_version;
+    _try_patch openssh-;
 
     # link 'openssl' lib
     ln -sv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
@@ -176,7 +176,7 @@ _make_openssh() {
 # TODO _nftables
 _make_iptables() {
     _wait_file $TMP/iptables.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch iptables-$iptables_version;
+    _try_patch iptables-;
 
     # Error: No suitable 'libmnl' found: --disable-nftables
     ./configure \
@@ -213,7 +213,7 @@ _make_iptables() {
 _make_mdadm() {
     echo " ------------- make mdadm -----------------------";
     _wait_file $TMP/mdadm.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch mdadm-$mdadm_version;
+    _try_patch mdadm-;
 
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
     # rm -fr $TMP/mdadm-$mdadm_version # clear
@@ -222,7 +222,7 @@ _make_mdadm() {
 # for _make_eudev
 __make_util_linux() {
     _wait_file $TMP/util.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/util-linux-$util_linux_version;
+    cd $TMP/util-linux-;
 
     ./configure \
         --prefix=/usr \
@@ -243,7 +243,7 @@ __make_util_linux() {
 # need: gperf
 _make_eudev() {
     _wait_file $TMP/eudev.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch eudev-$eudev_version;
+    _try_patch eudev-;
 
     sed -r -i 's|/usr(/bin/test)|\1|' test/udev-test.pl; # fix a test script
     printf %s "HAVE_BLKID=1
@@ -273,7 +273,7 @@ BLKID_CFLAGS=\"-I/usr/include\"
 _make_lvm2() {
     echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch LVM$lvm2_version;
+    _try_patch LVM2;
 
     ./configure \
         --prefix=/usr \
@@ -294,7 +294,7 @@ _make_lvm2() {
 __make_libcap2() {
     echo " ------------- make libcap2 -----------------------";
     _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch libcap-$libcap2_version;
+    _try_patch libcap-;
 
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
     sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
@@ -324,7 +324,7 @@ _build_meson() {
 _make_fuse() {
     local DESTDIR;
     _wait_file fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/libfuse-*;
+    _try_patch libfuse-;
 
     mkdir -p build;
     cd build;
@@ -337,19 +337,19 @@ _make_fuse() {
 _make_sshfs() {
     local DESTDIR;
     _wait_file $TMP/sshfs.tar.gz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch $TMP/sshfs-*;
+    _try_patch sshfs-;
 
     mkdir -p build;
     cd build;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
-    ninja install && DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
+    DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
 
 }
 
 _make_curl() {
     _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch curl-$curl_version;
+    _try_patch curl-;
 
     ./configure \
         --prefix=/usr \
@@ -365,7 +365,7 @@ _make_curl() {
 # http://linuxfromscratch.org/blfs/view/stable/general/git.html
 _make_git() {
     _wait_file $TMP/git.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch git-$git_version;
+    _try_patch git-;
 
     ./configure \
         --prefix=/usr \
