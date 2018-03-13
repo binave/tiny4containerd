@@ -108,8 +108,11 @@ _main() {
         _message_queue --put "_make_eudev";
         _message_queue --put "_make_lvm2";
         _message_queue --put "__make_libcap2";
+        _message_queue --put "_build_meson";
+        _message_queue --put "_make_fuse";
         _message_queue --put "_make_sshfs";
         _message_queue --put "_make_curl";
+        _message_queue --put "_make_git";
         _message_queue --put "_apply_rootfs";
 
         _downlock $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz || return $((LINENO / 2));
