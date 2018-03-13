@@ -13,6 +13,7 @@ ROOTFS=$TMP/rootfs;
 KERNEL_PUB=https://cdn.kernel.org/pub;
 : ${KERNEL_MAJOR_VERSION:=4.9};
 : ${UTIL_LINUX_MAJOR_VERSION:=2.31};
+: ${GLIB_MAJOR_VERSION:=2.55};
 KERNEL_DOWNLOAD=$KERNEL_PUB/linux/kernel;
 UTIL_LINUX_DOWNLOAD=$KERNEL_PUB/linux/utils/util-linux;
 LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
@@ -23,6 +24,8 @@ BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
 NINJA_REPOSITORY=https://github.com/ninja-build/ninja.git; # release
 MESON_REPOSITORY=https://github.com/mesonbuild/meson.git; # master
+GLIB_DOWNLOAD=http://ftp.gnome.org/pub/gnome/sources/glib;
+PCRE_DOWNLOAD=https://ftp.pcre.org/pub/pcre; # not pcre2
 SSHFS_DOWNLOAD=https://github.com/libfuse/sshfs;
 LIBFUSE_DOWNLOAD=https://github.com/libfuse/libfuse;
 CERTDATA_DOWNLOAD=http://anduin.linuxfromscratch.org/BLFS/other/certdata.txt;
@@ -59,6 +62,7 @@ APT_GET_LIST_MAKE="
     bison gawk
     git-core
     gperf
+    libbz2-dev libreadline-dev
     pkg-config
     python
     python3 python-docutils re2c libglib2.0-dev

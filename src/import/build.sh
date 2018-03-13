@@ -33,7 +33,8 @@ _make_kernel() {
 
 }
 
-# need: bison gawk http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
+# http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
+# need: bison, gawk
 _make_glibc() {
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch glibc-;
@@ -222,7 +223,7 @@ _make_mdadm() {
 # for _make_eudev
 __make_util_linux() {
     _wait_file $TMP/util.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    cd $TMP/util-linux-;
+    _try_patch util-linux-;
 
     ./configure \
         --prefix=/usr \
@@ -239,8 +240,8 @@ __make_util_linux() {
 
 }
 
-# for _make_lvm2 http://linuxfromscratch.org/lfs/view/stable/chapter06/eudev.html
-# need: gperf
+# http://linuxfromscratch.org/lfs/view/stable/chapter06/eudev.html
+# for _make_lvm2, need: gperf
 _make_eudev() {
     _wait_file $TMP/eudev.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch eudev-;
@@ -268,8 +269,8 @@ BLKID_CFLAGS=\"-I/usr/include\"
 
 }
 
-# kernel version 4.4.2 or above. http://linuxfromscratch.org/blfs/view/stable/postlfs/lvm2.html
-# need: pkg-config
+# http://linuxfromscratch.org/blfs/view/stable/postlfs/lvm2.html
+# kernel version 4.4.2 or above. need: pkg-config
 _make_lvm2() {
     echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
@@ -317,10 +318,11 @@ _build_meson() {
     cd $TMP/ninja-release && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
     cp -v ./ninja /usr/bin;
 
-    cd $TMP/meson-master && python3 ./setup.py install || return $(_err_line $((LINENO / 2)));
+    cd $TMP/meson-master && python3 ./setup.py install || return $(_err_line $((LINENO / 2)))
 
 }
 
+# for _make_sshfs build, need ninja, meson
 _make_fuse() {
     local DESTDIR;
     _wait_file $TMP/fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
@@ -330,11 +332,62 @@ _make_fuse() {
     cd build;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
-    # TODO shared build
     ninja install && DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
 }
 
+
+# for _make_sshfs runtime, need: libffi-dev, gettext
+__make_glib() {
+    _wait_file $TMP/glib.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch glib-;
+    ./configure \
+        --prefix=/usr \
+        --localstatedir=/var \
+        --enable-shared \
+        --with-pcre=system \
+        --disable-libmount || return $(_err_line $((LINENO / 2)));
+
+    sed -i 's/-g -O2//g' ./Makefile;
+
+    # link 'glibc' lib
+    ln -sv $ROOTFS/lib/l{d-linux-x86-64,ibpthread,ibc}.so* /lib;
+    ln -sv $ROOTFS/usr/lib/lib{c,pthread}_nonshared.a /usr/lib;
+
+    make && make install || return $(_err_line $((LINENO / 2)));
+
+    # TOOD
+
+    # remove 'glibc' lib
+    rm -fv /lib/l{d-linux-x86-64,ibpthread,ibc}.so* /usr/lib/lib{c,pthread}_nonshared.a
+
+}
+
+# for _make_sshfs, need: libbz2-dev libreadline-dev
+__make_pcre() {
+    _wait_file $TMP/pcre.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch pcre-;
+    ./configure \
+        --prefix=/usr \
+        --docdir=/usr/share/doc/pcre-8.41 \
+        --enable-unicode-properties \
+        --enable-pcre16 \
+        --enable-pcre32 \
+        --enable-pcregrep-libz \
+        --enable-pcregrep-libbz2 \
+        --enable-pcretest-libreadline \
+        --enable-shared || return $(_err_line $((LINENO / 2)));
+
+    make && make install || return $(_err_line $((LINENO / 2)));
+
+    cp -adv /usr/lib/libpcre.so* $ROOTFS/usr/lib;
+    mv -v $ROOTFS/usr/lib/libpcre.so.* $ROOTFS/lib;
+    ln -sv $(readlink $ROOTFS/lib/libpcre.so) $ROOTFS/lib/libpcre.so.3;
+    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libpcre.so) $ROOTFS/usr/lib/libpcre.so
+
+}
+
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/sshfs.html
+# need: fuse
 _make_sshfs() {
     local DESTDIR;
     _wait_file $TMP/sshfs.tar.gz.lock || return $(_err_line $((LINENO / 2)));
@@ -344,8 +397,10 @@ _make_sshfs() {
     cd build;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
-    # TODO shared build
-    DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
+    DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)));
+
+    mv -v $ROOTFS/usr/lib/x86_64-linux-gnu/* $ROOTFS/lib;
+    rm -frv $ROOTFS/usr/lib/x86_64-linux-gnu;
 
 }
 
@@ -403,6 +458,7 @@ _apply_rootfs() {
         dev \
         etc/{init.d,ssl/certs,skel,sysconfig} \
         home lib media mnt proc root sys tmp \
+        root \
         usr/{local/etc/acpi/events,sbin,share};
         # var run
 

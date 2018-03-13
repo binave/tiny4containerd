@@ -49,6 +49,7 @@ _main() {
     _case_version ------------- mdadm version ----------------------;
     mdadm_version=$(curl -L $MDADM_DOWNLOAD 2>/dev/null | grep "mdadm-.*.xz" | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
+    _case_version ----------- util-linux version -------------------;
     util_linux_version=$(curl -L $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION 2>/dev/null | grep 'util-linux-.*tar.xz"' | awk -F[-\"] '{print $4}' | _last_version) || return $((LINENO / 2));
 
     _case_version ------------- eudev version ----------------------;
@@ -60,11 +61,17 @@ _main() {
     _case_version ----------- libcap2 version ----------------------;
     libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
-    _case_version ------------ sshfs version -----------------------;
-    sshfs_version=$(curl -L $SSHFS_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | _last_version) || return $((LINENO / 2));
-
     _case_version ----------- libfuse version ----------------------;
     libfuse_version=$(curl -L $LIBFUSE_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | _last_version) || return $((LINENO / 2));
+
+    _case_version ------------- glib version -----------------------;
+    glib_version=$(curl -L $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
+
+    _case_version ------------- pcre version -----------------------;
+    pcre_version=$(curl -L $PCRE_DOWNLOAD 2>/dev/null | grep 'pcre-.*bz2"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+
+    _case_version ------------ sshfs version -----------------------;
+    sshfs_version=$(curl -L $SSHFS_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | _last_version) || return $((LINENO / 2));
 
     # readline_version=$(curl -L $READLINE_DOWNLOAD 2>/dev/null | grep 'readline-[0-9].*.tar.gz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
 
@@ -95,22 +102,34 @@ _main() {
         # Fetch the kernel sources
         _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz - || return $((LINENO / 2));
 
+        # rootfs
         _message_queue --put "_make_kernel"; # this may use most time
         _message_queue --put "_make_glibc"; # this may use long time
         _message_queue --put "_make_busybox";
+
+        # ssl
         _message_queue --put "__make_zlib";
         _message_queue --put "_make_openssl";
         _message_queue --put "_make_ca_certificates";
         _message_queue --put "_make_openssh";
+
         _message_queue --put "_make_iptables";
+
+        # dev
         _message_queue --put "_make_mdadm";
         _message_queue --put "__make_util_linux";
         _message_queue --put "_make_eudev";
         _message_queue --put "_make_lvm2";
+
         _message_queue --put "__make_libcap2";
+
+        # sshfs
         _message_queue --put "_build_meson";
         _message_queue --put "_make_fuse";
+        _message_queue --put "__make_glib";
+        _message_queue --put "__make_pcre";
         _message_queue --put "_make_sshfs";
+
         _message_queue --put "_make_curl";
         _message_queue --put "_make_git";
         _message_queue --put "_apply_rootfs";
@@ -147,6 +166,10 @@ _main() {
         git clone --depth 1 $MESON_REPOSITORY $TMP/meson-master || return $((LINENO / 2));
 
         _downlock $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz || return $((LINENO / 2));
+
+        _downlock $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION/glib-$glib_version.tar.xz || return $((LINENO / 2));
+
+        _downlock $PCRE_DOWNLOAD/pcre-$pcre_version.tar.bz2 || return $((LINENO / 2));
 
         _downlock $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz || return $((LINENO / 2));
 
