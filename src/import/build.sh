@@ -470,8 +470,7 @@ _apply_rootfs() {
     done
 
     # add executable
-    find $ROOTFS/usr/local/{,s}bin \
-        -type f -exec chmod -c +x '{}' +
+    find $ROOTFS/usr/local/{,s}bin -type f -exec chmod -c +x '{}' +
 
     # copy timezone
     cp -vL /usr/share/zoneinfo/UTC $ROOTFS/etc/localtime;
@@ -481,38 +480,22 @@ _apply_rootfs() {
     ln -fsv /var/subversion/bin/svnadmin    $ROOTFS/usr/bin/;
     ln -fsv /var/subversion/bin/svnlook     $ROOTFS/usr/bin/;
 
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -frv \
         $ROOTFS/usr/bin/passwd \
         $ROOTFS/etc/ssl/man \
         $ROOTFS/usr/{,local/}include \
-        $ROOTFS/usr/{,local/}share/{info,man,doc};
+        $ROOTFS/usr/{,local/}share/{info,man,doc} \
+        $ROOTFS/{,usr/}lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a
+
+    find $ROOTFS/{,usr/}lib -name \*.la -delete;
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/stripping.html
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/strippingagain.html
     # Take care not to use '--strip-unneeded' on the libraries
     strip --strip-debug $ROOTFS/lib/*;
     strip --strip-unneeded $ROOTFS/{,usr/}{,s}bin/*; # --strip-all
-
-    find $ROOTFS/{,usr/}lib -name \*.la -delete;
-
-    # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
-    rm -fv $ROOTFS/{,usr/}lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a;
-
-    # test
-    mkdir -pv $ROOTFS/dev;
-    mknod -m 666 $ROOTFS/dev/null c 1 3;
-    mknod -m 666 $ROOTFS/dev/zero c 1 5;
-
-    # fix: PRNG is not seeded
-    mknod -m 666 $ROOTFS/dev/random c 1 8;
-    mknod -m 644 $ROOTFS/dev/urandom c 1 9;
-
-    # init glibc cache
-    chroot $ROOTFS sh -xc 'ldconfig && ssh-keygen -A && openssl --help' || return $(_err_line $((LINENO / 2)))
-
-    # clear dev
-    rm -frv $ROOTFS/{dev,var}
 
 }
 

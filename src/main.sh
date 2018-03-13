@@ -190,6 +190,18 @@ _main() {
     mkdir -pv $ROOTFS/usr/local/bin;
     tar -zxvf $TMP/docker.tgz -C $ROOTFS/usr/local/bin --strip-components=1;
 
+    mkdir -pv $ROOTFS/dev;
+
+    mknod -m 666 $ROOTFS/dev/null c 1 3;
+    mknod -m 666 $ROOTFS/dev/zero c 1 5;
+
+    # fix: PRNG is not seeded
+    mknod -m 666 $ROOTFS/dev/random c 1 8;
+    mknod -m 644 $ROOTFS/dev/urandom c 1 9;
+
+    # create ssh key
+    chroot $ROOTFS sh -xc 'ldconfig && ssh-keygen -A';
+
     # test docker command
     chroot $ROOTFS docker -v || return $((LINENO / 2));
 
@@ -208,6 +220,9 @@ _main() {
     chroot $ROOTFS addgroup tc docker;
     chroot $ROOTFS sh -xc 'printf "tc:tcuser" | /usr/sbin/chpasswd -m';
 	printf "tc\tALL=NOPASSWD: ALL" >> /etc/sudoers;
+
+    # clear dev
+    rm -frv $ROOTFS/{dev,var}/*;
 
     # for iso label
     printf %s "
