@@ -3,8 +3,8 @@
 _create_etc() {
     echo " ------------- create etc -------------------------";
 
-    # glibc
-    printf '/usr/local/lib\n' | tee $ROOTFS/etc/ld.so.conf;
+    # glibc default configuration, `ldconfig`
+    printf '/usr/lib\n' | tee $ROOTFS/etc/ld.so.conf;
 
     # glibc
     printf %s '# GNU Name Service Switch config.
@@ -129,7 +129,7 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
 
 " | tee $ROOTFS/etc/skel/.profile;
 
-    touch $ROOTFS/etc/skel/.ashrc $ROOTFS/etc/skel/.ash_history $ROOTFS/etc/motd;
+    touch $ROOTFS/etc/{skel/.ashrc,skel/.ash_history,motd};
 
     # fix "su -"
     echo root > $ROOTFS/etc/sysconfig/superuser;
@@ -137,19 +137,13 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
     # add some timezone files so we're explicit about being UTC
     echo 'UTC' | tee $ROOTFS/etc/timezone;
 
-    # ldconfig
-    printf %s '
-# libc default configuration
-/usr/local/lib
-' | tee $ROOTFS/etc/ld.so.conf;
-
 }
 
 _create_config() {
     echo " ------------ create config -----------------------";
-    mkdir $ROOTFS/usr/local/etc/acpi/events;
+    mkdir $ROOTFS/etc/acpi/events;
     printf %s 'event=button/power*
 action=/sbin/poweroff
-' | tee $ROOTFS/usr/local/etc/acpi/events/all;
+' | tee $ROOTFS/etc/acpi/events/all;
 
 }

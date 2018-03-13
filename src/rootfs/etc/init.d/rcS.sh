@@ -11,8 +11,8 @@ printf "\n\n[`date`]\nRunning init script...\n";
 /usr/local/sbin/mdisk init;
 
 # Laptop options enabled (AC, Battery and PCMCIA).
-modprobe ac && modprobe battery 2>/dev/null;
-modprobe yenta_socket >/dev/null 2>&1 || modprobe i82365 >/dev/null 2>&1;
+/sbin/modprobe ac && /sbin/modprobe battery 2>/dev/null;
+/sbin/modprobe yenta_socket >/dev/null 2>&1 || /sbin/modprobe i82365 >/dev/null 2>&1;
 
 # for find/crond/log
 /bin/mkdir -p \
