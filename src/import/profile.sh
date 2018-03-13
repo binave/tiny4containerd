@@ -115,6 +115,8 @@ for i in /etc/profile.d/*.sh; do [ -r \$i ] && . \$i; done
 unset i
 " | tee $ROOTFS/etc/profile;
 
+    mkdir -pv $ROOTFS/etc/{skel,sysconfig};
+
     # .profile
     printf %s "# ~/.profile: Executed by Bourne-compatible login SHells.
 PS1='\u@\h:\W\$ '
@@ -141,7 +143,7 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
 
 _create_config() {
     echo " ------------ create config -----------------------";
-    mkdir $ROOTFS/etc/acpi/events;
+    mkdir -pv $ROOTFS/etc/acpi/events;
     printf %s 'event=button/power*
 action=/sbin/poweroff
 ' | tee $ROOTFS/etc/acpi/events/all;

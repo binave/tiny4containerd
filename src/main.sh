@@ -122,6 +122,8 @@ _main() {
 
         _message_queue --put "_make_curl";
         _message_queue --put "__make_libcap2";
+
+        _message_queue --put "_create_etc";
         _message_queue --put "_apply_rootfs";
 
         _downlock $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz || return $((LINENO / 2));
@@ -164,8 +166,6 @@ _main() {
         _downlock $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz || return $((LINENO / 2));
 
         _downlock $CURL_DOWNLOAD/curl-$curl_version.tar.xz || return $((LINENO / 2));
-
-        _message_queue --put "_create_etc";
 
     fi
 
