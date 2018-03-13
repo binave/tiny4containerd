@@ -484,9 +484,9 @@ _apply_rootfs() {
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -frv \
         $ROOTFS/usr/bin/passwd \
-        $ROOTFS/etc/ssl/man;
+        $ROOTFS/etc/ssl/man \
         $ROOTFS/usr/{,local/}include \
-        $ROOTFS/usr/{,local/}share/{info,man,doc} \
+        $ROOTFS/usr/{,local/}share/{info,man,doc};
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/stripping.html
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/strippingagain.html
