@@ -55,23 +55,5 @@ deb http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-fr
 deb-src http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-free
 ';
 
-APT_GET_LIST_MAKE="
-    bc bsdtar build-essential
-    curl
-    file
-    bison gawk
-    git-core
-    gperf
-    libbz2-dev libreadline-dev
-    pkg-config
-    python
-    python3 python-docutils re2c libglib2.0-dev
-";
-
-APT_GET_LIST_ISO="
-    cpio
-    genisoimage
-    isolinux
-    syslinux
-    xorriso xz-utils
-";
+# APT_GET_LIST_MAKE
+    # file

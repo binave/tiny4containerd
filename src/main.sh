@@ -21,9 +21,11 @@ _main() {
         return 0
     };
 
-    echo " --------------- apt-get --------------------------";
+    echo " ------------- init apt-get ------------------------";
     # install pkg
-    _apt_get_install || return $((LINENO / 2));
+    _init_install || return $((LINENO / 2));
+
+    _install bsdtar build-essential curl git-core || return $((LINENO / 2));
 
     echo;
     _case_version ------------ kernel version ----------------------;
@@ -187,7 +189,7 @@ _main() {
     # Get the Docker binaries with version.
     _downlock "$DOCKER_DOWNLOAD/docker-$docker_version.tgz" - || return $((LINENO / 2));
 
-    apt-get -y install $APT_GET_LIST_ISO;
+    _install cpio genisoimage isolinux syslinux xorriso xz-utils || return $((LINENO / 2));
 
     _message_queue --destroy; # close queue
 

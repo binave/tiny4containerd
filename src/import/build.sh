@@ -1,7 +1,10 @@
 #!/bin/bash
 # functions
 
+# need: bc
 _make_kernel() {
+    _install bc || return $(_err_line $((LINENO / 2)));
+
     echo " ------------ untar kernel ------------------------";
     # fix: Directory renamed before its status could be extracted
     _untar $TMP/linux.tar.xz || return $(_err_line $((LINENO / 2)));
@@ -36,6 +39,8 @@ _make_kernel() {
 # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
 # need: bison, gawk
 _make_glibc() {
+    _install bison gawk || return $(_err_line $((LINENO / 2)));
+
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch glibc-;
 
@@ -47,7 +52,6 @@ _make_glibc() {
     printf "CFLAGS += -mtune=generic -Og -pipe\n" > ./configparms;
     ../configure \
         --prefix=/usr \
-        --libexecdir=/usr/lib/glibc \
         --enable-kernel=4.4.2 \
         --enable-stack-protector=strong \
         --enable-obsolete-rpc  \
@@ -125,6 +129,8 @@ _make_openssl() {
 # http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
 # need: python build
 _make_ca_certificates() {
+    _install python || return $(_err_line $((LINENO / 2)));
+
     mkdir -pv $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
     _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
     _try_patch ca-certificates-;
@@ -149,7 +155,6 @@ _make_openssh() {
         --prefix=/usr \
         --localstatedir=/var \
         --sysconfdir=/etc/ssh \
-        --libexecdir=/lib/openssh \
         --with-privsep-path=/var/lib/sshd \
         --with-privsep-user=nobody \
         --with-xauth=/bin/xauth \
@@ -243,6 +248,8 @@ __make_util_linux() {
 # http://linuxfromscratch.org/lfs/view/stable/chapter06/eudev.html
 # for _make_lvm2, need: gperf
 _make_eudev() {
+    _install gperf || return $(_err_line $((LINENO / 2)));
+
     _wait_file $TMP/eudev.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch eudev-;
 
@@ -258,7 +265,6 @@ BLKID_CFLAGS=\"-I/usr/include\"
         --sbindir=/sbin \
         --libdir=/usr/lib \
         --sysconfdir=/etc \
-        --libexecdir=/lib \
         --with-rootprefix= \
         --with-rootlibdir=/lib \
         --enable-manpages \
@@ -272,6 +278,8 @@ BLKID_CFLAGS=\"-I/usr/include\"
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/lvm2.html
 # kernel version 4.4.2 or above. need: pkg-config
 _make_lvm2() {
+    _install pkg-config || return $(_err_line $((LINENO / 2)));
+
     echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch LVM2;
@@ -315,6 +323,8 @@ __make_libcap2() {
 
 # for _make_fuse _make_sshfs
 _build_meson() {
+    _install python3 python-docutils re2c libglib2.0-dev || return $(_err_line $((LINENO / 2)));
+
     cd $TMP/ninja-release && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
     cp -v ./ninja /usr/bin;
 
@@ -338,6 +348,8 @@ _make_fuse() {
 
 # for _make_sshfs runtime, need: libffi-dev, gettext
 __make_glib() {
+    _install libffi-dev gettext || return $(_err_line $((LINENO / 2)));
+
     _wait_file $TMP/glib.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch glib-;
     ./configure \
@@ -364,6 +376,8 @@ __make_glib() {
 
 # for _make_sshfs, need: libbz2-dev libreadline-dev
 __make_pcre() {
+    _install libbz2-dev libreadline-dev || return $(_err_line $((LINENO / 2)));
+
     _wait_file $TMP/pcre.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
     _try_patch pcre-;
     ./configure \
@@ -381,7 +395,6 @@ __make_pcre() {
 
     cp -adv /usr/lib/libpcre.so* $ROOTFS/usr/lib;
     mv -v $ROOTFS/usr/lib/libpcre.so.* $ROOTFS/lib;
-    ln -sv $(readlink $ROOTFS/lib/libpcre.so) $ROOTFS/lib/libpcre.so.3;
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libpcre.so) $ROOTFS/usr/lib/libpcre.so
 
 }
@@ -410,49 +423,42 @@ _make_curl() {
 
     ./configure \
         --prefix=/usr \
+        --enable-shared \
         --enable-threaded-resolver \
-        --with-ca-bundle=/usr/local/etc/ssl/certs/ca-certificates.crt || return $(_err_line $((LINENO / 2)));
+        --with-ca-path=/etc/ssl/certs || return $(_err_line $((LINENO / 2)));
+        # --with-ca-bundle=/usr/local/etc/ssl/certs/ca-certificates.crt || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./Makefile;
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+
+    mv -v $ROOTFS/usr/local/lib/libcurl* $ROOTFS/usr/lib;
+    mv -v $ROOTFS/usr/lib/libcurl.so.* $ROOTFS/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcurl.so) $ROOTFS/usr/lib/libcurl.so
 
     # rm -fr $TMP/curl-$curl_version # clear
 }
 
 # http://linuxfromscratch.org/blfs/view/stable/general/git.html
+# need: asciidoc (man)
 _make_git() {
+    _install asciidoc || return $(_err_line $((LINENO / 2)));
+
     _wait_file $TMP/git.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch git-;
 
     ./configure \
         --prefix=/usr \
-        --libexecdir=/usr/local/lib \
-        --with-gitconfig=/usr/local/etc/gitconfig || return $(_err_line $((LINENO / 2)));
+        --with-gitconfig=/etc/gitconfig || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-g -O2/ /g' ./Makefile ./config.mak.autogen;
-    make PERL_PATH="/usr/local/bin/perl" PYTHON_PATH="/usr/local/bin/python" -j $CORES && \
-    make PERL_PATH="/usr/local/bin/perl" PYTHON_PATH="/usr/local/bin/python" make DESTDIR=$ROOTFS install;
-    make install-doc;
+
+    make && make DESTDIR=$ROOTFS install;
+    make DESTDIR=$ROOTFS install-man;
 
     # rm -fr $TMP/git-$git_version # clear
 }
 
-_apt_get_install() {
-    # clear work path
-    rm -fr /var/lib/apt/lists/*;
-    {
-        curl -L --connect-timeout 1 http://www.google.com >/dev/null 2>&1 && {
-            printf %s "$DEBIAN_SOURCE";
-            :
-        } || printf %s "$DEBIAN_CN_SOURCE"
-    } | tee /etc/apt/sources.list;
-    apt-get update && apt-get -y install $APT_GET_LIST_MAKE;
-
-    return $?
-}
-
 _apply_rootfs() {
-
     cd $ROOTFS;
     mkdir -pv \
         dev \
