@@ -10,9 +10,6 @@ THIS_DIR=$(cd `dirname $0`; pwd);
 . $THIS_DIR/import/profile.sh;
 
 _main() {
-    # set work path
-    local kernel_version busybox_version glibc_version libcap2_version zlib_version openssh_version iptables_version mdadm_version lvm2_version docker_version curl_version;
-
     # test complete, then pack it
     [ -s $TMP/iso/version ] && {
         cat $TMP/iso/version 2>/dev/null;
@@ -78,11 +75,8 @@ _main() {
     _case_version -------------- curl version ----------------------;
     curl_version=$(curl -L $CURL_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
 
-    # _case_version ------------- git version ------------------------;
-    # git_version=$(curl -L $GIT_DOWNLOAD 2>/dev/null | grep 'git-[0-9].*tar.xz' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
-
-    _case_version ------------- docker version ---------------------;
     # get docker stable version
+    _case_version ------------- docker version ---------------------;
     docker_version=$(curl -L $DOCKER_DOWNLOAD 2>/dev/null | grep 'docker-' | awk -F[-\"] '{print $3"-"$4}' | _last_version) || return $((LINENO / 2));
     echo;
 
