@@ -173,7 +173,7 @@ _main() {
 
         _message_queue --put "_create_etc";
 
-   fi
+    fi
 
     # Get the Docker binaries with version.
     _downlock "$DOCKER_DOWNLOAD/docker-$docker_version.tgz" - || return $((LINENO / 2));
@@ -238,7 +238,7 @@ STATUS_CODE=0;
     # $((LINENO / 2)) -> return|exit code: [0, 256)
     if time _main; then
         # clean
-        rm -fr $TMP/tmp/*.*
+        rm -fr $TMP/*-* $TMP/LVM2*
     else
         echo "[ERROR]: build.sh: $(($? * 2)) line." >&2;
         STATUS_CODE=1
