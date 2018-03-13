@@ -75,15 +75,11 @@ _main() {
     _case_version ------------ sshfs version -----------------------;
     sshfs_version=$(curl -L $SSHFS_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | _last_version) || return $((LINENO / 2));
 
-    # readline_version=$(curl -L $READLINE_DOWNLOAD 2>/dev/null | grep 'readline-[0-9].*.tar.gz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
-
-    # xfsprogs_version=$(curl -L $XFSPROGS_DOWNLOAD 2>/dev/null  | grep 'xfsprogs-.*.tar.xz"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
-
     _case_version -------------- curl version ----------------------;
     curl_version=$(curl -L $CURL_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
 
-    _case_version ------------- git version ------------------------;
-    git_version=$(curl -L $GIT_DOWNLOAD 2>/dev/null | grep 'git-[0-9].*tar.xz' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
+    # _case_version ------------- git version ------------------------;
+    # git_version=$(curl -L $GIT_DOWNLOAD 2>/dev/null | grep 'git-[0-9].*tar.xz' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
     _case_version ------------- docker version ---------------------;
     # get docker stable version
@@ -123,17 +119,15 @@ _main() {
         _message_queue --put "_make_eudev";
         _message_queue --put "_make_lvm2";
 
-        _message_queue --put "__make_libcap2";
-
         # sshfs
         _message_queue --put "_build_meson";
         _message_queue --put "_make_fuse";
-        _message_queue --put "__make_glib";
         _message_queue --put "__make_pcre";
+        _message_queue --put "__make_glib";
         _message_queue --put "_make_sshfs";
 
         _message_queue --put "_make_curl";
-        _message_queue --put "_make_git";
+        _message_queue --put "__make_libcap2";
         _message_queue --put "_apply_rootfs";
 
         _downlock $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz || return $((LINENO / 2));
@@ -177,14 +171,9 @@ _main() {
 
         _downlock $CURL_DOWNLOAD/curl-$curl_version.tar.xz || return $((LINENO / 2));
 
-        _downlock $GIT_DOWNLOAD/git-$git_version.tar.xz || return $((LINENO / 2));
-
         _message_queue --put "_create_etc";
 
-        # _downlock $READLINE_DOWNLOAD/readline-$readline_version.tar.gz || return $((LINENO / 2));
-
-        # _downlock $XFSPROGS_DOWNLOAD/xfsprogs-$xfsprogs_version.tar.xz || return $((LINENO / 2));
-    fi
+   fi
 
     # Get the Docker binaries with version.
     _downlock "$DOCKER_DOWNLOAD/docker-$docker_version.tgz" - || return $((LINENO / 2));

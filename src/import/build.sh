@@ -1,7 +1,7 @@
 #!/bin/bash
 # functions
 
-# need: bc
+# [need]: bc
 _make_kernel() {
     _install bc || return $(_err_line $((LINENO / 2)));
 
@@ -37,16 +37,16 @@ _make_kernel() {
 }
 
 # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
-# need: bison, gawk
+# [need]: bison, gawk
 _make_glibc() {
     _install bison gawk || return $(_err_line $((LINENO / 2)));
 
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch glibc-;
 
-    mkdir -pv build $ROOTFS/etc;
+    mkdir -pv _build $ROOTFS/etc;
     touch $ROOTFS/etc/ld.so.conf;
-    cd build;
+    cd _build;
 
     # fix glibc cannot be compiled without optimization
     printf "CFLAGS += -mtune=generic -Og -pipe\n" > ./configparms;
@@ -106,6 +106,7 @@ __make_zlib() {
     # rm -fr $TMP/zlib-$zlib_version # clear
 }
 
+# [need]: zlib
 _make_openssl() {
     _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch openssl-;
@@ -127,7 +128,7 @@ _make_openssl() {
 
 # http://www.linuxfromscratch.org/blfs/view/8.1/postlfs/cacerts.html
 # http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
-# need: python build
+# [need]: python build
 _make_ca_certificates() {
     _install python || return $(_err_line $((LINENO / 2)));
 
@@ -144,6 +145,7 @@ _make_ca_certificates() {
 
 }
 
+# [need]: zlib
 _make_openssh() {
     _wait_file $TMP/openssh.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch openssh- openssl-$OPENSSL_VERSION; # e.g. openssh-7.6p1-openssl-1.1.0-1.patch
@@ -163,19 +165,10 @@ _make_openssh() {
     sed -i 's/-g -O2//g' ./Makefile;
     make && make DESTDIR=$ROOTFS install-nokeys || return $(_err_line $((LINENO / 2)));
 
-    # remove 'openssl' lib
+    # unlink 'openssl' lib
     rm -fv /usr/lib/lib{crypto,ssl}.*;
 
-    echo "PermitRootLogin no" >> $ROOTFS/etc/ssh/sshd_config;
-
-    # mkdir -pv $ROOTFS/dev;
-    # mknod -m 666 $ROOTFS/dev/null c 1 3;
-    # mknod -m 666 $ROOTFS/dev/zero c 1 5;
-    # # fix: PRNG is not seeded
-    # mknod -m 666 $ROOTFS/dev/random c 1 8;
-    # mknod -m 644 $ROOTFS/dev/urandom c 1 9;
-    # ssh-keygen -A;
-    # rm -fr $ROOTFS/dev
+    echo "PermitRootLogin no" >> $ROOTFS/etc/ssh/sshd_config
 
 }
 
@@ -209,7 +202,7 @@ _make_iptables() {
         ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/lib${file}.so) $ROOTFS/usr/lib/lib${file}.so
     done
 
-    # clean 'glibc' lib
+    # unlink 'glibc' lib
     rm -fv /lib/{libc,ld-linux-x86-64}.so.* /usr/lib/libc_nonshared.a;
 
     # rm -fr $TMP/iptables-$iptables_version $TMP/linux-$kernel_version # clear
@@ -246,7 +239,7 @@ __make_util_linux() {
 }
 
 # http://linuxfromscratch.org/lfs/view/stable/chapter06/eudev.html
-# for _make_lvm2, need: gperf
+# for _make_lvm2, [need]: gperf, util-linux
 _make_eudev() {
     _install gperf || return $(_err_line $((LINENO / 2)));
 
@@ -276,7 +269,7 @@ BLKID_CFLAGS=\"-I/usr/include\"
 }
 
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/lvm2.html
-# kernel version 4.4.2 or above. need: pkg-config
+# kernel version 4.4.2 or above. [need]: pkg-config, udev
 _make_lvm2() {
     _install pkg-config || return $(_err_line $((LINENO / 2)));
 
@@ -300,81 +293,38 @@ _make_lvm2() {
     # rm -fr $TMP/LVM$lvm2_version # clear
 }
 
-__make_libcap2() {
-    echo " ------------- make libcap2 -----------------------";
-    _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch libcap-;
-
-    sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
-    sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
-
-    make && make \
-        RAISE_SETFCAP=no \
-        lib=lib \
-        prefix=/usr \
-        install || return $(_err_line $((LINENO / 2)));
-
-    cp -adv /usr/lib/libcap.so* $ROOTFS/usr/lib;
-    mv -v $ROOTFS/usr/lib/libcap.so.* $ROOTFS/lib;
-    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
-
-    # rm -fr $TMP/libcap-$libcap2_version # clear
-}
-
 # for _make_fuse _make_sshfs
 _build_meson() {
-    _install python3 python-docutils re2c libglib2.0-dev || return $(_err_line $((LINENO / 2)));
+    _install re2c || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/ninja-release && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
     cp -v ./ninja /usr/bin;
+
+    _install python3 || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/meson-master && python3 ./setup.py install || return $(_err_line $((LINENO / 2)))
 
 }
 
-# for _make_sshfs build, need ninja, meson
+# for _make_sshfs build, [need]: ninja, meson, udev
 _make_fuse() {
     local DESTDIR;
     _wait_file $TMP/fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch libfuse-;
 
-    mkdir -p build;
-    cd build;
+    mkdir -pv _build;
+    cd _build;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
     ninja install && DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
-}
 
-
-# for _make_sshfs runtime, need: libffi-dev, gettext
-__make_glib() {
-    _install libffi-dev gettext || return $(_err_line $((LINENO / 2)));
-
-    _wait_file $TMP/glib.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch glib-;
-    ./configure \
-        --prefix=/usr \
-        --localstatedir=/var \
-        --enable-shared \
-        --with-pcre=system \
-        --disable-libmount || return $(_err_line $((LINENO / 2)));
-
-    sed -i 's/-g -O2//g' ./Makefile;
-
-    # link 'glibc' lib
-    ln -sv $ROOTFS/lib/l{d-linux-x86-64,ibpthread,ibc}.so* /lib;
-    ln -sv $ROOTFS/usr/lib/lib{c,pthread}_nonshared.a /usr/lib;
-
-    make && make install || return $(_err_line $((LINENO / 2)));
-
-    # TOOD
-
-    # remove 'glibc' lib
-    rm -fv /lib/l{d-linux-x86-64,ibpthread,ibc}.so* /usr/lib/lib{c,pthread}_nonshared.a
+    # uninstall 'util-linux' 'eudev'
+    cd $TMP/util-linux-* && make uninstall;
+    cd $TMP/eudev-* && make uninstall
 
 }
 
-# for _make_sshfs, need: libbz2-dev libreadline-dev
+# for __make_glib, [need]: libbz2-dev libreadline-dev
 __make_pcre() {
     _install libbz2-dev libreadline-dev || return $(_err_line $((LINENO / 2)));
 
@@ -399,21 +349,58 @@ __make_pcre() {
 
 }
 
+# for _make_sshfs runtime, [need]: zlib, libffi-dev, gettext
+__make_glib() {
+    _install libffi-dev gettext || return $(_err_line $((LINENO / 2)));
+
+    _wait_file $TMP/glib.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch glib-;
+    ./configure \
+        --prefix=/usr \
+        --localstatedir=/var \
+        --enable-shared \
+        --with-pcre=system \
+        --disable-libmount || return $(_err_line $((LINENO / 2)));
+
+    sed -i 's/-g -O2//g' ./Makefile;
+
+    # link 'glibc' lib
+    ln -sv $ROOTFS/lib/l{d-linux-x86-64,ibpthread,ibc}.so* /lib;
+    ln -sv $ROOTFS/usr/lib/lib{c,pthread}_nonshared.a /usr/lib;
+
+    make && make install || return $(_err_line $((LINENO / 2)));
+
+    cp -adv /usr/lib/libglib-* $ROOTFS/usr/lib;
+
+    # unlink 'glibc' lib
+    rm -fv /lib/l{d-linux-x86-64,ibpthread,ibc}.so* /usr/lib/lib{c,pthread}_nonshared.a;
+
+    # uninstall 'zlib'
+    cd $TMP/zlib-* && make uninstall
+
+}
+
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/sshfs.html
-# need: fuse
+# [need]: fuse, python-docutils
 _make_sshfs() {
+    _install python-docutils || return $(_err_line $((LINENO / 2)));
+
     local DESTDIR;
     _wait_file $TMP/sshfs.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch sshfs-;
 
-    mkdir -p build;
-    cd build;
+    mkdir -pv _build;
+    cd _build;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
     DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)));
 
     mv -v $ROOTFS/usr/lib/x86_64-linux-gnu/* $ROOTFS/lib;
     rm -frv $ROOTFS/usr/lib/x86_64-linux-gnu;
+
+    # uninstall 'pcre', 'glib'
+    cd $TMP/pcre-* && make uninstall;
+    cd $TMP/glib-* && make uninstall;
 
 }
 
@@ -432,40 +419,42 @@ _make_curl() {
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
 
     mv -v $ROOTFS/usr/local/lib/libcurl* $ROOTFS/usr/lib;
+
+    # relink
     mv -v $ROOTFS/usr/lib/libcurl.so.* $ROOTFS/lib;
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcurl.so) $ROOTFS/usr/lib/libcurl.so
 
     # rm -fr $TMP/curl-$curl_version # clear
 }
 
-# http://linuxfromscratch.org/blfs/view/stable/general/git.html
-# need: asciidoc (man)
-_make_git() {
-    _install asciidoc || return $(_err_line $((LINENO / 2)));
+__make_libcap2() {
+    echo " ------------- make libcap2 -----------------------";
+    _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch libcap-;
 
-    _wait_file $TMP/git.tar.xz.lock || return $(_err_line $((LINENO / 2)));
-    _try_patch git-;
+    sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
+    sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
 
-    ./configure \
-        --prefix=/usr \
-        --with-gitconfig=/etc/gitconfig || return $(_err_line $((LINENO / 2)));
+    make && make \
+        RAISE_SETFCAP=no \
+        lib=lib \
+        prefix=/usr \
+        install || return $(_err_line $((LINENO / 2)));
 
-    sed -i 's/-g -O2/ /g' ./Makefile ./config.mak.autogen;
+    cp -adv /usr/lib/libcap.so* $ROOTFS/usr/lib;
+    mv -v $ROOTFS/usr/lib/libcap.so.* $ROOTFS/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
 
-    make && make DESTDIR=$ROOTFS install;
-    make DESTDIR=$ROOTFS install-man;
-
-    # rm -fr $TMP/git-$git_version # clear
+    # rm -fr $TMP/libcap-$libcap2_version # clear
 }
 
 _apply_rootfs() {
     cd $ROOTFS;
     mkdir -pv \
         dev \
-        etc/{init.d,ssl/certs,skel,sysconfig} \
+        etc/{acpi/events,init.d,ssl/certs,skel,sysconfig} \
         home lib media mnt proc root sys tmp \
-        root \
-        usr/{local/etc/acpi/events,sbin,share};
+        usr/{sbin,share};
         # var run
 
     # Copy our custom rootfs,
@@ -480,40 +469,24 @@ _apply_rootfs() {
         # chmod
     done
 
-    # Make sure init scripts are executable
-    find $ROOTFS/usr/local/sbin \
+    # add executable
+    find $ROOTFS/usr/local/{,s}bin \
         -type f -exec chmod -c +x '{}' +
 
-    # # ca-certificates
-    # cp /etc/ca-certificates.conf            $ROOTFS/etc;
-    # cp -adv /etc/ssl/certs                  $ROOTFS/etc/ssl;
-    # cp /usr/sbin/update-ca-certificates     $ROOTFS/usr/sbin;
-    # cp -frv /usr/share/ca-certificates      $ROOTFS/usr/share;
-    # # libc
-    # cp /sbin/ldconfig       $ROOTFS/sbin;
-
-    # timezone
+    # copy timezone
     cp -vL /usr/share/zoneinfo/UTC $ROOTFS/etc/localtime;
 
-    # setup acpi config dir
-    # tcl6's sshd is compiled without `/usr/local/sbin` in the path, need `ip`, link it elsewhere
-    # Make some handy symlinks (so these things are easier to find), visudo, Subversion link, after /opt/bin in $PATH
-    ln -svT /usr/local/etc/acpi     $ROOTFS/etc/acpi;
-    ln -svT /usr/local/sbin/ip      $ROOTFS/usr/sbin/ip;
-    ln -fs  /bin/vi                 $ROOTFS/usr/bin/;
-
     # subversion
-    ln -fs /var/subversion/bin/svn         $ROOTFS/usr/bin/;
-    ln -fs /var/subversion/bin/svnadmin    $ROOTFS/usr/bin/;
-    ln -fs /var/subversion/bin/svnlook     $ROOTFS/usr/bin/;
+    ln -fsv /var/subversion/bin/svn         $ROOTFS/usr/bin/;
+    ln -fsv /var/subversion/bin/svnadmin    $ROOTFS/usr/bin/;
+    ln -fsv /var/subversion/bin/svnlook     $ROOTFS/usr/bin/;
 
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
-    rm -f $ROOTFS/usr/bin/passwd;
-
-    # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
-    chroot $ROOTFS sh -xc 'ldconfig && openssl' || return $(_err_line $((LINENO / 2)));
-
-    # ln -sT ../usr/local/etc/ssl $ROOTFS/etc/ssl
+    rm -frv \
+        $ROOTFS/usr/bin/passwd \
+        $ROOTFS/etc/ssl/man;
+        $ROOTFS/usr/{,local/}include \
+        $ROOTFS/usr/{,local/}share/{info,man,doc} \
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/stripping.html
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/strippingagain.html
@@ -521,11 +494,25 @@ _apply_rootfs() {
     strip --strip-debug $ROOTFS/lib/*;
     strip --strip-unneeded $ROOTFS/{,usr/}{,s}bin/*; # --strip-all
 
-    rm -fr $ROOTFS/usr/include $ROOTFS/{,share}/{info,man,doc};
-    find $ROOTFS/{,usr/}lib -name \*.la -delete
+    find $ROOTFS/{,usr/}lib -name \*.la -delete;
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
-    rm -f /usr/lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a;
+    rm -fv $ROOTFS/{,usr/}lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a;
+
+    # test
+    mkdir -pv $ROOTFS/dev;
+    mknod -m 666 $ROOTFS/dev/null c 1 3;
+    mknod -m 666 $ROOTFS/dev/zero c 1 5;
+
+    # fix: PRNG is not seeded
+    mknod -m 666 $ROOTFS/dev/random c 1 8;
+    mknod -m 644 $ROOTFS/dev/urandom c 1 9;
+
+    # init glibc cache
+    chroot $ROOTFS sh -xc 'ldconfig && ssh-keygen -A && openssl --help' || return $(_err_line $((LINENO / 2)))
+
+    # clear dev
+    rm -frv $ROOTFS/{dev,var}
 
 }
 

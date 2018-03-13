@@ -18,8 +18,6 @@ KERNEL_DOWNLOAD=$KERNEL_PUB/linux/kernel;
 UTIL_LINUX_DOWNLOAD=$KERNEL_PUB/linux/utils/util-linux;
 LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
 MDADM_DOWNLOAD=$KERNEL_PUB/linux/utils/raid/mdadm; # http://neil.brown.name/blog/mdadm
-GIT_DOWNLOAD=$KERNEL_PUB/software/scm/git;
-# XFSPROGS_DOWNLOAD=$KERNEL_PUB/linux/utils/fs/xfs/xfsprogs;
 BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
 NINJA_REPOSITORY=https://github.com/ninja-build/ninja.git; # release
@@ -36,7 +34,6 @@ OPENSSL_DOWNLOAD=https://www.openssl.org/source;
 OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable; # DROPBEAR_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
 IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
 EUDEV_DOWNLOAD=https://dev.gentoo.org/~blueness/eudev;
-# READLINE_DOWNLOAD=http://ftp.gnu.org/gnu/readline;
 LVM2_DOWNLOAD=https://sourceware.org/ftp/lvm2/releases;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64;
@@ -54,6 +51,3 @@ deb-src http://ftp.cn.debian.org/debian stretch-updates main contrib non-free
 deb http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-free
 deb-src http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-free
 ';
-
-# APT_GET_LIST_MAKE
-    # file

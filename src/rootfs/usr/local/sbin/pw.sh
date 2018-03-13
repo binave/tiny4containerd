@@ -14,7 +14,7 @@
 #   limitations under the License.
 
 _load() {
-    # load MD5-based password, use: openssl passwd -1 [string]
+    # load MD5-based password, use: /usr/bin/openssl passwd -1 [string]
     [ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; return 1; }
 
     # import settings from env
@@ -23,7 +23,7 @@ _load() {
     : ${PW_CONFIG:='/var/tiny/etc/passwd'};
 
     [ -s $PW_CONFIG ] || printf \
-        "# [username]:[MD5-based password (openssl passwd -1 [password])]\n\n" > $PW_CONFIG;
+        "# [username]:[MD5-based password (/usr/bin/openssl passwd -1 [password])]\n\n" > $PW_CONFIG;
 
     /usr/bin/awk -F# '{print $1}' $PW_CONFIG | /bin/grep '[a-z]\+:[$a-zA-Z\.]\+' | /usr/sbin/chpasswd -e 2>&1 | \
         /bin/grep -q 'password.*changed' || return 1;
@@ -41,7 +41,7 @@ _load() {
 }
 
 _string() {
-    openssl rand -base64 ${1:-9} | /usr/bin/tr -d '\n' | /bin/sed "s/[^0-9A-Za-z]/${RANDOM:0:1}/g";
+    /usr/bin/openssl rand -base64 ${1:-9} | /usr/bin/tr -d '\n' | /bin/sed "s/[^0-9A-Za-z]/${RANDOM:0:1}/g";
     printf "\n"
 }
 

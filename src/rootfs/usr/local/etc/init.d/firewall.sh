@@ -45,32 +45,32 @@ _init() {
     echo 0 > /proc/sys/net/ipv4/tcp_ecn;
 
     # Set a known state
-    /usr/local/sbin/iptables -P INPUT   DROP;
-    /usr/local/sbin/iptables -P FORWARD DROP;
-    /usr/local/sbin/iptables -P OUTPUT  ACCEPT;
+    /sbin/iptables -P INPUT   DROP;
+    /sbin/iptables -P FORWARD DROP;
+    /sbin/iptables -P OUTPUT  ACCEPT;
 
     # These lines are here in case rules are already in place and the
     # script is ever rerun on the fly. We want to remove all rules and
     # pre-existing user defined chains before we implement new rules.
-    /usr/local/sbin/iptables -F;
-    /usr/local/sbin/iptables -X;
-    /usr/local/sbin/iptables -Z;
+    /sbin/iptables -F;
+    /sbin/iptables -X;
+    /sbin/iptables -Z;
 
-    /usr/local/sbin/iptables -t nat -F;
+    /sbin/iptables -t nat -F;
 
     # Allow local-only connections
-    /usr/local/sbin/iptables -A INPUT  -i lo -j ACCEPT;
+    /sbin/iptables -A INPUT  -i lo -j ACCEPT;
 
     # Permit answers on already established connections
     # and permit new connections related to established ones
     # (e.g. port mode ftp)
-    /usr/local/sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT;
+    /sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT;
 
     # Speed up some ftp / IM
-    # /usr/local/sbin/iptables -A INPUT  -p tcp --dport 113 -j REJECT --reject-with tcp-reset;
+    # /sbin/iptables -A INPUT  -p tcp --dport 113 -j REJECT --reject-with tcp-reset;
 
     # Log everything else. What's Windows' latest exploitable vulnerability?
-    # /usr/local/sbin/iptables -A INPUT -j LOG --log-prefix "FIREWALL:INPUT ";
+    # /sbin/iptables -A INPUT -j LOG --log-prefix "FIREWALL:INPUT ";
 
     # if [ "$1" != "noprompt" ]; then
 
@@ -91,7 +91,7 @@ _init() {
 _status() {
     printf "\033[1;34m";
     # To display numeric values, type
-    /usr/local/sbin/iptables -vnL;
+    /sbin/iptables -vnL;
     printf "\033[0;39m"
 }
 
