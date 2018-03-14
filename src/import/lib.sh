@@ -14,7 +14,8 @@
 #   limitations under the License.
 
 _log() {
-    awk '{print strftime("'"$1"'") $0};fflush(stdout)'
+    [ "$1" ] || return 1
+    which gawk >/dev/null && gawk '{print strftime("'"$1"'") $0};fflush(stdout)'
 }
 
 # Message Queue
@@ -27,7 +28,8 @@ _message_queue() {
             # make handler
             {
                 local cmd;
-                time while read -u 6 cmd; do
+                time while read -u 6 cmd;
+                do
                     [ "$cmd" == "0" ] && {
                         exec 6>&-;
                         exec 6<&-;
@@ -211,7 +213,7 @@ _init_install() {
         curl -L --connect-timeout 1 http://www.google.com >/dev/null 2>&1 && \
             printf %s "$DEBIAN_SOURCE" || printf %s "$DEBIAN_CN_SOURCE"
     } | tee /etc/apt/sources.list;
-    apt-get update 2>&1 | _log "%F %T init install, ";
+    apt-get update;
 
     return $?
 }

@@ -26,7 +26,7 @@ _main() {
 
     echo " ------------- init apt-get ------------------------";
     # install pkg
-    _init_install && _install bsdtar build-essential curl git-core || return $((LINENO / 2));
+    _init_install && _install gawk && _install build-essential bsdtar curl git-core || return $((LINENO / 2));
 
     echo;
     _last_version "kernel_version=$(curl -L $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x 2>/dev/null | grep "linux-$KERNEL_MAJOR_VERSION.*xz" | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
