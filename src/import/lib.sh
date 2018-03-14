@@ -32,8 +32,12 @@ _message_queue() {
                         printf "queue close.\n";
                         break
                     };
-                    # run command
-                    eval ${cmd//%34/\\\"}
+
+                    eval set ${cmd//%34/\\\"} >/dev/null;
+
+                    # run command with log
+                    "$@" 2>&1 | awk '{print strftime("%F %T'"${1//_/ }"', ") $0};fflush(stdout)'
+
                 done
             } &
             printf "queue open.\n"
