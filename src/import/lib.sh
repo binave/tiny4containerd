@@ -62,7 +62,7 @@ _err_line() {
     return 1
 }
 
-# [file] [count_max]
+# Usage: _wait_file [file]
 _wait_file(){
     [ -s $TMP/.error ] && return 1;
     [ -f "$1" ] || return 0;
@@ -101,6 +101,7 @@ _hash() {
     return 0
 }
 
+# Usage: _try_patch [prefix_name]-
 _try_patch() {
     [ "$1" ] || return 1;
     cd $TMP/$1* || return 1;
@@ -108,21 +109,22 @@ _try_patch() {
     return $?
 }
 
-_case_version() {
-    printf " $(tr "[:lower:]" "[:upper:]" <<< " ${2}_$3=")" >&2
-}
-
+# Usage: _last_version "[key]=[value_colume]"
 _last_version() {
-    local ver=$(grep -v 'beta\|-rc\|-RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | sort --version-sort | tail -1);
-    [[ $ver == [0-9]*\.*[0-9]* ]] && {
-        printf $ver;
-        printf "$ver\n" >&2;
+    local key="${@%%=*}" value="${@#*=}";
+    [ "$key" == "$value" ] && return 1;
+    value=$(grep '[0-9]' <<< "$value" | grep -v 'beta\|-rc\|-RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | sort --version-sort | tail -1);
+    printf " $(tr "[:lower:]" "[:upper:]" <<< "$key")=";
+    [[ $value == [0-9]*\.*[0-9]* ]] && {
+        eval $key=$value;
+        printf "$value\n";
         return 0
     };
     printf "UNKNOWN\n";
     return 1
 }
 
+# Usage: _downlock [url]
 _downlock() {
     local prefix=${1##*/} suffix=${1##*.} swp;
     prefix=${prefix%.*}; # trim last suffix
@@ -165,10 +167,8 @@ _init_install() {
     # clear work path
     rm -fr /var/lib/apt/lists/*;
     {
-        curl -L --connect-timeout 1 http://www.google.com >/dev/null 2>&1 && {
-            printf %s "$DEBIAN_SOURCE";
-            :
-        } || printf %s "$DEBIAN_CN_SOURCE"
+        curl -L --connect-timeout 1 http://www.google.com >/dev/null 2>&1 && \
+            printf %s "$DEBIAN_SOURCE" || printf %s "$DEBIAN_CN_SOURCE"
     } | tee /etc/apt/sources.list;
     apt-get update;
 
