@@ -13,10 +13,22 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-_log() {
-    [ "$1" ] || return 1
-    which gawk >/dev/null && gawk '{print strftime("'"$1"'") $0};fflush(stdout)'
+# Tag prefix each line, support `date` format
+_prefix() {
+    [ "$1" ] || return 1;
+    if [ "${1/\%/}" == "$1" ]; then
+        awk '{print '"$1"' $0};fflush(stdout)'
+    else
+        if which gawk >/dev/null; then
+            gawk '{print strftime("'"$1"'") $0};fflush(stdout)';
+        elif which perl >/dev/null; then
+            perl -ne 'use POSIX qw(strftime); print strftime("'"$1"'", localtime), $_'
+        else
+            return 1;
+        fi
+    fi
 }
+
 
 # Message Queue
 _message_queue() {
@@ -41,7 +53,7 @@ _message_queue() {
                     eval set ${cmd//%34/\\\"} >/dev/null;
 
                     # run command with log
-                    "$@" 2>&1 | _log "%F %T${1//_/ } "
+                    "$@" 2>&1 | _prefix "%F %T${1//_/ }, "
 
                 done
             } &
@@ -195,7 +207,7 @@ _downlock() {
             return 1
         };
         mv $TMP/$swp $TMP/$prefix$suffix
-    fi 2>&1 | _log "%F %T download $prefix, "
+    fi 2>&1 | _prefix "%F %T download '$prefix', "
 
     [ "$2" ] || touch $TMP/$prefix$suffix.lock;
     return 0
@@ -203,7 +215,7 @@ _downlock() {
 
 _install() {
     [ -s $TMP/.error ] && return 1;
-    apt-get -y install $* 2>&1 | _log "%F %T install $1.., "
+    apt-get -y install $* 2>&1 | _prefix "%F %T install ${1:0:5}.., "
 }
 
 _init_install() {

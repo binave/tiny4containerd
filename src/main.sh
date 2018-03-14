@@ -234,7 +234,7 @@ STATUS_CODE=0;
         # clean
         rm -fr $TMP/*-* $TMP/LVM2*
     else
-        echo "[ERROR]: build.sh: $(($? * 2)) line." >&2;
+        echo "[ERROR]: ${0##*/}: $(($? * 2)) line." >&2;
         STATUS_CODE=1
     fi
 
