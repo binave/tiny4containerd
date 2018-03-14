@@ -395,8 +395,24 @@ _make_sshfs() {
 
     # uninstall 'pcre', 'glib'
     cd $TMP/pcre-* && make uninstall;
-    cd $TMP/glib-* && make uninstall;
+    cd $TMP/glib-* && make uninstall
 
+}
+
+_make_sudo() {
+    echo " ------------- make sudo --------------------------";
+    _wait_file $TMP/sudo.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch sudo-;
+
+    ./configure \
+        --prefix=/usr \
+        --libexecdir=/usr/lib \
+        --with-secure-path \
+        --with-all-insults \
+        --with-env-editor \
+        --with-passprompt="[sudo] password for %p: " || return $(_err_line $((LINENO / 2)));
+
+    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)))
 }
 
 _make_curl() {
