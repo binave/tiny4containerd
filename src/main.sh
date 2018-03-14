@@ -18,61 +18,61 @@ _main() {
         return 0
     };
 
+    # clear for rebuild
+    rm -fr $TMP/*.lock $TMP/.error $ROOTFS;
+
+    # Make the rootfs, Prepare the build directory ($TMP/iso)
+    mkdir -pv $TMP/iso/boot $ROOTFS;
+
     echo " ------------- init apt-get ------------------------";
     # install pkg
     _init_install && _install bsdtar build-essential curl git-core || return $((LINENO / 2));
 
     echo;
     {
-        _last_version "kernel_version=$(curl -L $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x 2>/dev/null | grep "linux-$KERNEL_MAJOR_VERSION.*xz" | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
+        _last_version "kernel_version=$(curl -L $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x | grep "linux-$KERNEL_MAJOR_VERSION.*xz" | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
-        _last_version "glibc_version=$(curl -L $GLIBC_DOWNLOAD 2>/dev/null | grep 'glibc-[0-9].*xz"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
+        _last_version "glibc_version=$(curl -L $GLIBC_DOWNLOAD | grep 'glibc-[0-9].*xz"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
 
-        _last_version "busybox_version=$(curl -L $BUSYBOX_DOWNLOAD 2>/dev/null | grep 'busybox-[0-9].*bz2"' | awk -F[-\"] '{print $7}')" || return $((LINENO / 2));
+        _last_version "busybox_version=$(curl -L $BUSYBOX_DOWNLOAD | grep 'busybox-[0-9].*bz2"' | awk -F[-\"] '{print $7}')" || return $((LINENO / 2));
 
-        _last_version "zlib_version=$(curl -L $ZLIB_DOWNLOAD/ChangeLog.txt 2>/dev/null | grep Changes | awk '{print $3}')" || return $((LINENO / 2));
+        _last_version "zlib_version=$(curl -L $ZLIB_DOWNLOAD/ChangeLog.txt | grep Changes | awk '{print $3}')" || return $((LINENO / 2));
 
-        _last_version "openssh_version=$(curl -L $OPENSSH_DOWNLOAD 2>/dev/null | grep 'tar\.gz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
-        # _last_version "dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
+        _last_version "openssh_version=$(curl -L $OPENSSH_DOWNLOAD | grep 'tar\.gz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
+        # _last_version "dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD | grep 'bz2"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
-        _last_version "iptables_version=$(curl -L $IPTABLES_DOWNLOAD/downloads.html 2>/dev/null | grep '/iptables.*bz2"' | awk -F[-\"] '{print $5}')" || return $((LINENO / 2));
+        _last_version "iptables_version=$(curl -L $IPTABLES_DOWNLOAD/downloads.html | grep '/iptables.*bz2"' | awk -F[-\"] '{print $5}')" || return $((LINENO / 2));
 
-        _last_version "mdadm_version=$(curl -L $MDADM_DOWNLOAD 2>/dev/null | grep "mdadm-.*.xz" | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
+        _last_version "mdadm_version=$(curl -L $MDADM_DOWNLOAD | grep "mdadm-.*.xz" | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
-        _last_version "util_linux_version=$(curl -L $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION 2>/dev/null | grep 'util-linux-.*tar.xz"' | awk -F[-\"] '{print $4}')" || return $((LINENO / 2));
+        _last_version "util_linux_version=$(curl -L $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION | grep 'util-linux-.*tar.xz"' | awk -F[-\"] '{print $4}')" || return $((LINENO / 2));
 
-        _last_version "eudev_version=$(curl -L $EUDEV_DOWNLOAD 2>/dev/null | grep 'eudev-.*.tar.gz>' | awk -F[-\>\<] '{print $7}')" || return $((LINENO / 2));
+        _last_version "eudev_version=$(curl -L $EUDEV_DOWNLOAD | grep 'eudev-.*.tar.gz>' | awk -F[-\>\<] '{print $7}')" || return $((LINENO / 2));
 
-        _last_version "lvm2_version=$(curl -L $LVM2_DOWNLOAD 2>/dev/null | grep 'tgz"' | awk -F[\"] '{print $8}')" || return $((LINENO / 2));
+        _last_version "lvm2_version=$(curl -L $LVM2_DOWNLOAD | grep 'tgz"' | awk -F[\"] '{print $8}')" || return $((LINENO / 2));
 
         _last_version "libfuse_version=$(curl -L $LIBFUSE_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip)" || return $((LINENO / 2));
 
-        _last_version "glib_version=$(curl -L $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
+        _last_version "glib_version=$(curl -L $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION | grep 'xz"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
 
-        _last_version "pcre_version=$(curl -L $PCRE_DOWNLOAD 2>/dev/null | grep 'pcre-.*bz2"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
+        _last_version "pcre_version=$(curl -L $PCRE_DOWNLOAD | grep 'pcre-.*bz2"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
         _last_version "sshfs_version=$(curl -L $SSHFS_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip)" || return $((LINENO / 2));
 
-        _last_version "libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
+        _last_version "libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD | grep 'xz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
-        _last_version "sudo_version=$(curl -L $SUDO_DOWNLOAD 2>/dev/null | grep 'sudo-.*tar\.gz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
+        _last_version "sudo_version=$(curl -L $SUDO_DOWNLOAD | grep 'sudo-.*tar\.gz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
-        _last_version "curl_version=$(curl -L $CURL_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
+        _last_version "curl_version=$(curl -L $CURL_DOWNLOAD | grep 'xz"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
 
-        # _last_version "perl5_version=$(curl -L $PERL5_DOWNLOAD 2>/dev/null | grep 'perl.*bz2"' | awk -F[-\"] '{print $3}' | grep '5\..*[24680]\.[0-9]')" || return $((LINENO / 2));
+        # _last_version "perl5_version=$(curl -L $PERL5_DOWNLOAD | grep 'perl.*bz2"' | awk -F[-\"] '{print $3}' | grep '5\..*[24680]\.[0-9]')" || return $((LINENO / 2));
 
         # get docker stable version
-        _last_version "docker_version=$(curl -L $DOCKER_DOWNLOAD 2>/dev/null | grep 'docker-' | awk -F[-\"] '{print $3"-"$4}')" || return $((LINENO / 2));
+        _last_version "docker_version=$(curl -L $DOCKER_DOWNLOAD | grep 'docker-' | awk -F[-\"] '{print $3"-"$4}')" || return $((LINENO / 2));
 
-    } | tee $TMP/iso/version.swp;
+    } 2>/dev/null | tee $TMP/iso/version.swp;
 
     echo;
-    # clear for rebuild
-    rm -fr $TMP/*.lock $TMP/.error $ROOTFS;
-
-    # Make the rootfs, Prepare the build directory ($TMP/iso)
-    mkdir -pv $ROOTFS $TMP/iso/boot;
-
     echo " ------------- put in queue -----------------------"
     _message_queue --init;
 

@@ -160,6 +160,7 @@ _downlock() {
 }
 
 _install() {
+    [ -s $TMP/.error ] && return 1;
     apt-get -y install $*
 }
 
