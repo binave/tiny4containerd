@@ -30,7 +30,7 @@ _make_kernel() {
     _hash ./arch/x86/boot/bzImage;
 
     # ./arch/x86_64/boot/bzImage -> ../../x86/boot/bzImage
-    cp -v ./arch/x86/boot/bzImage $TMP/iso/boot/vmlinuz64
+    cp -v ./arch/x86/boot/bzImage $ISO/boot/vmlinuz64
 
 }
 
@@ -550,15 +550,15 @@ _build_iso() {
     # create 'initrd.img'
     find | cpio -o -H newc | \
         xz -9 --format=lzma --verbose --verbose --threads=0 --extreme > \
-        $TMP/iso/boot/initrd.img || return $((LINENO / 2));
+        $ISO/boot/initrd.img || return $((LINENO / 2));
 
-    _hash $TMP/iso/boot/initrd.img;
+    _hash $ISO/boot/initrd.img;
 
-    cp -rv $THIS_DIR/isolinux $TMP/iso/boot/;
+    cp -rv $THIS_DIR/isolinux $ISO/boot/;
     cp -v \
         /usr/lib/ISOLINUX/isolinux.bin \
         /usr/lib/syslinux/modules/bios/ldlinux.c32 \
-        $TMP/iso/boot/isolinux/;
+        $ISO/boot/isolinux/;
 
     # Note: only "-isohybrid-mbr /..." is specific to xorriso.
     xorriso \
@@ -569,7 +569,7 @@ _build_iso() {
         -c boot/isolinux/boot.cat \
         -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
         -o "$OUTPUT_PATH" \
-        $TMP/iso || return $((LINENO / 2));
+        $ISO || return $((LINENO / 2));
 
     _hash "$OUTPUT_PATH";
     return 0

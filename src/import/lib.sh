@@ -111,16 +111,16 @@ _try_patch() {
 
 # Usage: _last_version "[key]=[value_colume]"
 _last_version() {
-    local key="${@%%=*}" value="${@#*=}";
+    local key="${@%%=*}" value="${@#*=}" ver;
     [ "$key" == "$value" ] && return 1;
     value=$(grep '[0-9]' <<< "$value" | grep -v 'beta\|-rc\|-RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | sort --version-sort | tail -1);
-    printf " $(tr "[:lower:]" "[:upper:]" <<< "$key")=";
+    ver="$(tr "[:lower:]" "[:upper:]" <<< "$key")";
     [[ $value == [0-9]*\.*[0-9]* ]] && {
         eval $key=$value;
-        printf "$value\n";
+        printf "$ver=$value\n" | tee -a $ISO/version.swp;
         return 0
     };
-    printf "UNKNOWN\n";
+    printf "$ver=UNKNOWN\n";
     return 1
 }
 

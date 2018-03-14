@@ -8,6 +8,7 @@
 CORES=$(nproc);
 LABEL=`date +tc-%y%m%d-%H`;
 ROOTFS=$TMP/rootfs;
+ISO=$TMP/iso;
 
 # linux
 KERNEL_PUB=https://cdn.kernel.org/pub;
