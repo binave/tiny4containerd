@@ -41,9 +41,9 @@ _make_glibc() {
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch glibc-;
 
-    mkdir -pv _build $ROOTFS/etc;
+    mkdir -pv _install $ROOTFS/etc;
     touch $ROOTFS/etc/ld.so.conf;
-    cd _build;
+    cd _install;
 
     # fix 'glibc' cannot be compiled without optimization
     printf "CFLAGS += -mtune=generic -Og -pipe\n" > ./configparms;
@@ -310,7 +310,7 @@ _make_fuse() {
     _wait_file $TMP/fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch libfuse-;
 
-    mkdir -pv _build; cd _build;
+    mkdir -pv _install; cd _install;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
     local DESTDIR;
@@ -383,7 +383,7 @@ _make_sshfs() {
     _wait_file $TMP/sshfs.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch sshfs-;
 
-    mkdir -pv _build; cd _build;
+    mkdir -pv _install; cd _install;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
     local DESTDIR;
@@ -445,15 +445,15 @@ __make_libcap2() {
 
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
     sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
-    mkdir -pv _build;
+    mkdir -pv _install;
 
     make && make \
         RAISE_SETFCAP=no \
         lib=lib \
-        prefix=$PWD/_build \
+        prefix=$PWD/_install \
         install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv ./_build/lib/libcap.so* $ROOTFS/usr/lib;
+    cp -adv ./_install/lib/libcap.so* $ROOTFS/usr/lib;
     mv -v $ROOTFS/usr/lib/libcap.so.* $ROOTFS/lib;
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
 

@@ -1,5 +1,8 @@
 #!/bin/sh
 #
+# from http://www.tinycorelinux.net/9.x/x86_64/tcz/ca-certificates.tcz
+#
+
 CERTDIR="$1"
 
 # remove hash links
