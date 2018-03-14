@@ -20,9 +20,7 @@ _main() {
 
     echo " ------------- init apt-get ------------------------";
     # install pkg
-    _init_install || return $((LINENO / 2));
-
-    _install bsdtar build-essential curl git-core || return $((LINENO / 2));
+    _init_install && _install bsdtar build-essential curl git-core || return $((LINENO / 2));
 
     echo;
     _case_version ------------ kernel version ----------------------;
@@ -94,35 +92,53 @@ _main() {
         # Fetch the kernel sources
         _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz - || return $((LINENO / 2));
 
-        # rootfs
+        # kernel, libc, rootfs
+        _install bc || return $(_err_line $((LINENO / 2)));
         _message_queue --put "_make_kernel"; # this may use most time
+
+        _install bison gawk || return $(_err_line $((LINENO / 2)));
         _message_queue --put "_make_glibc"; # this may use long time
         _message_queue --put "_make_busybox";
 
         # ssl
         _message_queue --put "__make_zlib";
         _message_queue --put "_make_openssl";
+
+        _install python || return $(_err_line $((LINENO / 2)));
         _message_queue --put "_make_ca_certificates";
         _message_queue --put "_make_openssh";
 
+        # firewall
         _message_queue --put "_make_iptables";
 
         # dev
         _message_queue --put "_make_mdadm";
         _message_queue --put "__make_util_linux";
+
+        _install gperf || return $(_err_line $((LINENO / 2)));
         _message_queue --put "_make_eudev";
+
+        _install pkg-config || return $(_err_line $((LINENO / 2)));
         _message_queue --put "_make_lvm2";
 
         # sshfs
+        _install re2c python3 || return $(_err_line $((LINENO / 2)));
         _message_queue --put "_build_meson";
         _message_queue --put "_make_fuse";
+
+        _install libbz2-dev libreadline-dev || return $(_err_line $((LINENO / 2)));
         _message_queue --put "__make_pcre";
+
+        _install libffi-dev gettext || return $(_err_line $((LINENO / 2)));
         _message_queue --put "__make_glib";
+
+        _install python-docutils || return $(_err_line $((LINENO / 2)));
         _message_queue --put "_make_sshfs";
 
         _message_queue --put "_make_curl";
         _message_queue --put "__make_libcap2";
 
+        # add file
         _message_queue --put "_create_etc";
         _message_queue --put "_apply_rootfs";
 
@@ -166,17 +182,15 @@ _main() {
         _downlock $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz || return $((LINENO / 2));
 
         _downlock $CURL_DOWNLOAD/curl-$curl_version.tar.xz || return $((LINENO / 2));
-
     fi
 
     # Get the Docker binaries with version.
     _downlock "$DOCKER_DOWNLOAD/docker-$docker_version.tgz" - || return $((LINENO / 2));
 
+    # for '_build_iso'
     _install cpio genisoimage isolinux syslinux xorriso xz-utils || return $((LINENO / 2));
 
-    _message_queue --destroy; # close queue
-
-    wait;
+    _message_queue --destroy; wait; # close queue
 
     # test queue error
     [ -s $TMP/.error ] && {
@@ -184,14 +198,11 @@ _main() {
         return $(cat $TMP/.error)
     };
 
-    _create_config;
-
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS/usr/local/bin;
-    tar -zxvf $TMP/docker.tgz -C $ROOTFS/usr/local/bin --strip-components=1;
+    tar -zxvf $TMP/docker.tgz -C $ROOTFS/usr/local/bin --strip-components=1 || return $((LINENO / 2));
 
     mkdir -pv $ROOTFS/dev;
-
     mknod -m 666 $ROOTFS/dev/null c 1 3;
     mknod -m 666 $ROOTFS/dev/zero c 1 5;
 
@@ -199,27 +210,24 @@ _main() {
     mknod -m 666 $ROOTFS/dev/random c 1 8;
     mknod -m 644 $ROOTFS/dev/urandom c 1 9;
 
-    # create ssh key
-    chroot $ROOTFS sh -xc 'ldconfig && ssh-keygen -A';
+    # refresh libc cache
+    chroot $ROOTFS ldconfig;
 
-    # test docker command
-    chroot $ROOTFS docker -v || return $((LINENO / 2));
+    # create ssh key and test docker command
+    chroot $ROOTFS sh -xc 'ssh-keygen -A && docker -v' || return $((LINENO / 2));
 
     echo "-------------- addgroup --------------------------";
-    # make sure the "docker" group exists already
-    chroot $ROOTFS addgroup -S docker;
-
     # for dockerd: root map user
     # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
-    chroot $ROOTFS addgroup -S dockremap;
-    chroot $ROOTFS adduser -S -G dockremap dockremap;
+    chroot $ROOTFS sh -xc 'addgroup -S dockremap && adduser -S -G dockremap dockremap';
     echo "dockremap:165536:65536" | tee $ROOTFS/etc/subgid > $ROOTFS/etc/subuid;
 
     # add user: tc
-    chroot $ROOTFS adduser -s /bin/sh -G staff -D tc;
-    chroot $ROOTFS addgroup tc docker;
-    chroot $ROOTFS sh -xc 'printf "tc:tcuser" | /usr/sbin/chpasswd -m';
-	printf "tc\tALL=NOPASSWD: ALL" >> /etc/sudoers;
+    chroot $ROOTFS sh -xc 'addgroup -S docker && \
+        adduser -s /bin/sh -G staff -D tc && \
+        addgroup tc docker && \
+        printf "tc:tcuser" | /usr/sbin/chpasswd -m';
+	printf "tc\tALL=NOPASSWD: ALL" >> $ROOTFS/etc/sudoers;
 
     # clear dev
     rm -frv $ROOTFS/{dev,var}/*;
@@ -237,7 +245,6 @@ docker-$docker_version
 
     # build iso
     _build_iso || return $?;
-
     return 0
 }
 

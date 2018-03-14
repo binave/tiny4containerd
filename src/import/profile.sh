@@ -1,10 +1,9 @@
 #!/bin/bash
 
 _create_etc() {
-    echo " ------------- create etc -------------------------";
+    [ -s $TMP/.error ] && return $(_err_line $((LINENO / 2)));
 
-    # glibc default configuration, `ldconfig`
-    printf '/usr/lib\n' | tee $ROOTFS/etc/ld.so.conf;
+    echo " ------------- create etc -------------------------";
 
     # glibc
     printf %s '# GNU Name Service Switch config.
@@ -139,10 +138,6 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
     # add some timezone files so we're explicit about being UTC
     echo 'UTC' | tee $ROOTFS/etc/timezone;
 
-}
-
-_create_config() {
-    echo " ------------ create config -----------------------";
     mkdir -pv $ROOTFS/etc/acpi/events;
     printf %s 'event=button/power*
 action=/sbin/poweroff

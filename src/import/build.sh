@@ -1,10 +1,8 @@
 #!/bin/bash
 # functions
 
-# [need]: bc
+# [need]: 'bc'
 _make_kernel() {
-    _install bc || return $(_err_line $((LINENO / 2)));
-
     echo " ------------ untar kernel ------------------------";
     # fix: Directory renamed before its status could be extracted
     _untar $TMP/linux.tar.xz || return $(_err_line $((LINENO / 2)));
@@ -37,10 +35,8 @@ _make_kernel() {
 }
 
 # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
-# [need]: bison, gawk
+# [need]: 'bison', 'gawk'
 _make_glibc() {
-    _install bison gawk || return $(_err_line $((LINENO / 2)));
-
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch glibc-;
 
@@ -48,7 +44,7 @@ _make_glibc() {
     touch $ROOTFS/etc/ld.so.conf;
     cd _build;
 
-    # fix glibc cannot be compiled without optimization
+    # fix 'glibc' cannot be compiled without optimization
     printf "CFLAGS += -mtune=generic -Og -pipe\n" > ./configparms;
     ../configure \
         --prefix=/usr \
@@ -61,6 +57,9 @@ _make_glibc() {
 
     sed -i 's/-O2//g' ./config.make ./config.status;
     make && make install_root=$ROOTFS install;
+
+    # glibc default configuration, `ldconfig`
+    printf '/usr/lib\n' | tee $ROOTFS/etc/ld.so.conf;
 
     ln -sT lib $ROOTFS/lib64
 
@@ -90,7 +89,7 @@ _make_busybox() {
     # rm -fr $TMP/busybox-$busybox_version # clear
 }
 
-# for openssl build, openssh runtime
+# for 'openssl' build, 'openssh' runtime
 __make_zlib() {
     _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch zlib-;
@@ -106,7 +105,7 @@ __make_zlib() {
     # rm -fr $TMP/zlib-$zlib_version # clear
 }
 
-# [need]: zlib
+# [need]: 'zlib'
 _make_openssl() {
     _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch openssl-;
@@ -120,7 +119,7 @@ _make_openssl() {
     sed -i 's/-O3//g' ./Makefile;
     make && make install || return $(_err_line $((LINENO / 2)));
 
-    # for openssh build
+    # for 'openssh' build
     cp -adv $ROOTFS/usr/include/openssl /usr/include;
 
     # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
@@ -128,10 +127,8 @@ _make_openssl() {
 
 # http://www.linuxfromscratch.org/blfs/view/8.1/postlfs/cacerts.html
 # http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
-# [need]: python build
+# [need]: 'python' build
 _make_ca_certificates() {
-    _install python || return $(_err_line $((LINENO / 2)));
-
     mkdir -pv $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
     _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
     _try_patch ca-certificates-;
@@ -145,7 +142,7 @@ _make_ca_certificates() {
 
 }
 
-# [need]: zlib
+# [need]: 'zlib'
 _make_openssh() {
     _wait_file $TMP/openssh.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch openssh- openssl-$OPENSSL_VERSION; # e.g. openssh-7.6p1-openssl-1.1.0-1.patch
@@ -218,7 +215,7 @@ _make_mdadm() {
     # rm -fr $TMP/mdadm-$mdadm_version # clear
 }
 
-# for _make_eudev
+# for '_make_eudev'
 __make_util_linux() {
     _wait_file $TMP/util.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch util-linux-;
@@ -232,17 +229,15 @@ __make_util_linux() {
         --without-python && \
         make && make install || return $(_err_line $((LINENO / 2)));
 
-    # for lvm2 runtime
+    # for 'lvm2' runtime
     cp -adv /usr/lib/lib{blkid,uuid}.so* $ROOTFS/usr/lib;
     cp -adv /lib/lib{blkid,uuid}.so* $ROOTFS/lib
 
 }
 
 # http://linuxfromscratch.org/lfs/view/stable/chapter06/eudev.html
-# for _make_lvm2, [need]: gperf, util-linux
+# for '_make_lvm2', [need]: 'gperf', 'util-linux'
 _make_eudev() {
-    _install gperf || return $(_err_line $((LINENO / 2)));
-
     _wait_file $TMP/eudev.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch eudev-;
 
@@ -269,10 +264,8 @@ BLKID_CFLAGS=\"-I/usr/include\"
 }
 
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/lvm2.html
-# kernel version 4.4.2 or above. [need]: pkg-config, udev
+# kernel version 4.4.2 or above. [need]: 'pkg-config', 'udev'
 _make_lvm2() {
-    _install pkg-config || return $(_err_line $((LINENO / 2)));
-
     echo " -------------- make lvm2 -----------------------";
     _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch LVM2;
@@ -293,29 +286,24 @@ _make_lvm2() {
     # rm -fr $TMP/LVM$lvm2_version # clear
 }
 
-# for _make_fuse _make_sshfs
+# for '_make_fuse' '_make_sshfs'
 _build_meson() {
-    _install re2c || return $(_err_line $((LINENO / 2)));
-
     cd $TMP/ninja-release && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
     cp -v ./ninja /usr/bin;
-
-    _install python3 || return $(_err_line $((LINENO / 2)));
 
     cd $TMP/meson-master && python3 ./setup.py install || return $(_err_line $((LINENO / 2)))
 
 }
 
-# for _make_sshfs build, [need]: ninja, meson, udev
+# for '_make_sshfs' build, [need]: 'ninja', 'meson', 'udev'
 _make_fuse() {
-    local DESTDIR;
     _wait_file $TMP/fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch libfuse-;
 
-    mkdir -pv _build;
-    cd _build;
+    mkdir -pv _build; cd _build;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
+    local DESTDIR;
     ninja install && DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
 
     # uninstall 'util-linux' 'eudev'
@@ -324,10 +312,8 @@ _make_fuse() {
 
 }
 
-# for __make_glib, [need]: libbz2-dev libreadline-dev
+# for '__make_glib', [need]: 'libbz2-dev' 'libreadline-dev'
 __make_pcre() {
-    _install libbz2-dev libreadline-dev || return $(_err_line $((LINENO / 2)));
-
     _wait_file $TMP/pcre.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
     _try_patch pcre-;
     ./configure \
@@ -349,10 +335,8 @@ __make_pcre() {
 
 }
 
-# for _make_sshfs runtime, [need]: zlib, libffi-dev, gettext
+# for '_make_sshfs' runtime, [need]: 'zlib', 'libffi-dev', 'gettext'
 __make_glib() {
-    _install libffi-dev gettext || return $(_err_line $((LINENO / 2)));
-
     _wait_file $TMP/glib.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch glib-;
     ./configure \
@@ -381,18 +365,15 @@ __make_glib() {
 }
 
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/sshfs.html
-# [need]: fuse, python-docutils
+# [need]: 'fuse', 'python-docutils'
 _make_sshfs() {
-    _install python-docutils || return $(_err_line $((LINENO / 2)));
-
-    local DESTDIR;
     _wait_file $TMP/sshfs.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch sshfs-;
 
-    mkdir -pv _build;
-    cd _build;
+    mkdir -pv _build; cd _build;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
+    local DESTDIR;
     DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)));
 
     mv -v $ROOTFS/usr/lib/x86_64-linux-gnu/* $ROOTFS/lib;
@@ -411,9 +392,8 @@ _make_curl() {
     ./configure \
         --prefix=/usr \
         --enable-shared \
-        --enable-threaded-resolver || return $(_err_line $((LINENO / 2)));
-        # --with-ca-path=/etc/ssl/certs || return $(_err_line $((LINENO / 2)));
-        # --with-ca-bundle=/usr/local/etc/ssl/certs/ca-certificates.crt || return $(_err_line $((LINENO / 2)));
+        --enable-threaded-resolver \
+        --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./Makefile;
     make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
@@ -434,7 +414,6 @@ __make_libcap2() {
 
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
     sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
-
     mkdir -pv _build;
 
     make && make \
@@ -471,7 +450,7 @@ _apply_rootfs() {
         # chmod
     done
 
-    # add executable
+    # executable
     find $ROOTFS/usr/local/{,s}bin -type f -exec chmod -c +x '{}' +
 
     # copy timezone
@@ -504,14 +483,14 @@ _apply_rootfs() {
 # It builds an image that can be used as an ISO *and* a disk image.
 # but read only...
 _build_iso() {
-    [ -n "$OUTPUT_PATH" ]|| {
+    [ -n "$OUTPUT_PATH" ] || {
         printf "\n[WARN] skip create iso.\n";
         return 0
     };
 
     cd $ROOTFS || return $((LINENO / 2));
 
-    # create initrd.img
+    # create 'initrd.img'
     find | cpio -o -H newc | \
         xz -9 --format=lzma --verbose --verbose --threads=0 --extreme > \
         $TMP/iso/boot/initrd.img || return $((LINENO / 2));
@@ -536,6 +515,5 @@ _build_iso() {
         $TMP/iso || return $((LINENO / 2));
 
     _hash "$OUTPUT_PATH";
-
     return 0
 }

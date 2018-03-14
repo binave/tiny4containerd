@@ -7,7 +7,8 @@
 
 : ${SSHD_PORT:=22};
 
-/usr/sbin/sshd # TODO
+# TODO
+/usr/sbin/sshd &
 
 # open sshd port
 /sbin/iptables -I INPUT -p tcp --dport $SSHD_PORT -j ACCEPT;
