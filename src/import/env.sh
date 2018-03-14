@@ -24,6 +24,7 @@ NINJA_REPOSITORY=https://github.com/ninja-build/ninja.git; # release
 MESON_REPOSITORY=https://github.com/mesonbuild/meson.git; # master
 GLIB_DOWNLOAD=http://ftp.gnome.org/pub/gnome/sources/glib;
 PCRE_DOWNLOAD=https://ftp.pcre.org/pub/pcre; # not pcre2
+# PERL5_DOWNLOAD=http://www.cpan.org/src/5.0;
 SSHFS_DOWNLOAD=https://github.com/libfuse/sshfs;
 LIBFUSE_DOWNLOAD=https://github.com/libfuse/libfuse;
 CERTDATA_DOWNLOAD=http://anduin.linuxfromscratch.org/BLFS/other/certdata.txt;

@@ -55,7 +55,7 @@ _main() {
     _case_version -------------- lvm2 version ----------------------;
     lvm2_version=$(curl -L $LVM2_DOWNLOAD 2>/dev/null | grep 'tgz"' | awk -F[\"] '{print $8}' | _last_version) || return $((LINENO / 2));
 
-    _case_version ----------- libfuse version ----------------------;
+    _case_version ------------ libfuse version ---------------------;
     libfuse_version=$(curl -L $LIBFUSE_DOWNLOAD/releases | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip | _last_version) || return $((LINENO / 2));
 
     _case_version ------------- glib version -----------------------;
@@ -70,8 +70,11 @@ _main() {
     _case_version ----------- libcap2 version ----------------------;
     libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $3}' | _last_version) || return $((LINENO / 2));
 
-    _case_version -------------- curl version ----------------------;
+    _case_version ------------- curl version -----------------------;
     curl_version=$(curl -L $CURL_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}' | _last_version) || return $((LINENO / 2));
+
+    # _case_version ------------ perl5 version -----------------------;
+    # perl5_version=$(curl -L $PERL5_DOWNLOAD 2>/dev/null | grep 'perl.*bz2"' | awk -F[-\"] '{print $3}' | grep '5\..*[24680]\.[0-9]' | _last_version) || return $((LINENO / 2));
 
     # get docker stable version
     _case_version ------------- docker version ---------------------;
@@ -136,6 +139,7 @@ _main() {
         _message_queue --put "_make_sshfs";
 
         _message_queue --put "_make_curl";
+        # _message_queue --put "_make_perl5";
         _message_queue --put "__make_libcap2";
 
         # add file
@@ -182,6 +186,8 @@ _main() {
         _downlock $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz || return $((LINENO / 2));
 
         _downlock $CURL_DOWNLOAD/curl-$curl_version.tar.xz || return $((LINENO / 2));
+
+        # _downlock $PERL5_DOWNLOAD/perl-$perl5_version.tar.bz2 || return $((LINENO / 2));
     fi
 
     # Get the Docker binaries with version.
@@ -202,6 +208,7 @@ _main() {
     mkdir -pv $ROOTFS/usr/local/bin;
     tar -zxvf $TMP/docker.tgz -C $ROOTFS/usr/local/bin --strip-components=1 || return $((LINENO / 2));
 
+    echo " -------------- run chroot ------------------------";
     mkdir -pv $ROOTFS/dev;
     mknod -m 666 $ROOTFS/dev/null c 1 3;
     mknod -m 666 $ROOTFS/dev/zero c 1 5;

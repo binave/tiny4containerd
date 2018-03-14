@@ -37,6 +37,7 @@ _make_kernel() {
 # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
 # [need]: 'bison', 'gawk'
 _make_glibc() {
+    echo " ------------- make glibc -------------------------";
     _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch glibc-;
 
@@ -66,6 +67,7 @@ _make_glibc() {
 }
 
 _make_busybox() {
+    echo " ------------ make busybox ------------------------";
     _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
     _try_patch busybox-;
 
@@ -91,6 +93,7 @@ _make_busybox() {
 
 # for 'openssl' build, 'openssh' runtime
 __make_zlib() {
+    echo " ------------- make zlib -------------------------";
     _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch zlib-;
 
@@ -107,6 +110,7 @@ __make_zlib() {
 
 # [need]: 'zlib'
 _make_openssl() {
+    echo " ------------ make openssl ------------------------";
     _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch openssl-;
 
@@ -144,6 +148,7 @@ _make_ca_certificates() {
 
 # [need]: 'zlib'
 _make_openssh() {
+    echo " ------------ make openssh ------------------------";
     _wait_file $TMP/openssh.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch openssh- openssl-$OPENSSL_VERSION; # e.g. openssh-7.6p1-openssl-1.1.0-1.patch
 
@@ -171,6 +176,7 @@ _make_openssh() {
 
 # TODO _nftables
 _make_iptables() {
+    echo " ----------- make iptables ------------------------";
     _wait_file $TMP/iptables.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
     _try_patch iptables-;
 
@@ -217,6 +223,7 @@ _make_mdadm() {
 
 # for '_make_eudev'
 __make_util_linux() {
+    echo " ----------- make util-linux ----------------------";
     _wait_file $TMP/util.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch util-linux-;
 
@@ -238,6 +245,7 @@ __make_util_linux() {
 # http://linuxfromscratch.org/lfs/view/stable/chapter06/eudev.html
 # for '_make_lvm2', [need]: 'gperf', 'util-linux'
 _make_eudev() {
+    echo " ------------- make eudev -------------------------";
     _wait_file $TMP/eudev.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch eudev-;
 
@@ -288,6 +296,7 @@ _make_lvm2() {
 
 # for '_make_fuse' '_make_sshfs'
 _build_meson() {
+    echo " ---------- make meson ninja ----------------------";
     cd $TMP/ninja-release && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
     cp -v ./ninja /usr/bin;
 
@@ -297,6 +306,7 @@ _build_meson() {
 
 # for '_make_sshfs' build, [need]: 'ninja', 'meson', 'udev'
 _make_fuse() {
+    echo " ------------- make fuse --------------------------";
     _wait_file $TMP/fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch libfuse-;
 
@@ -314,6 +324,7 @@ _make_fuse() {
 
 # for '__make_glib', [need]: 'libbz2-dev' 'libreadline-dev'
 __make_pcre() {
+    echo " ------------- make pcre --------------------------";
     _wait_file $TMP/pcre.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
     _try_patch pcre-;
     ./configure \
@@ -337,6 +348,7 @@ __make_pcre() {
 
 # for '_make_sshfs' runtime, [need]: 'zlib', 'libffi-dev', 'gettext'
 __make_glib() {
+    echo " ------------- make glib --------------------------";
     _wait_file $TMP/glib.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch glib-;
     ./configure \
@@ -367,6 +379,7 @@ __make_glib() {
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/sshfs.html
 # [need]: 'fuse', 'python-docutils'
 _make_sshfs() {
+    echo " ------------- make sshfs -------------------------";
     _wait_file $TMP/sshfs.tar.gz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch sshfs-;
 
@@ -386,6 +399,7 @@ _make_sshfs() {
 }
 
 _make_curl() {
+    echo " ------------- make curl --------------------------";
     _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
     _try_patch curl-;
 
@@ -405,6 +419,23 @@ _make_curl() {
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcurl.so) $ROOTFS/usr/lib/libcurl.so
 
     # rm -fr $TMP/curl-$curl_version # clear
+}
+
+# for '_make_openssl' [/usr/bin/c_rehash]
+_make_perl5() {
+    echo " ------------- make perl5 -------------------------";
+    _wait_file $TMP/perl.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    _try_patch perl-;
+
+    sh Configure \
+        -des \
+        -Dprefix=/usr \
+        -Dvendorprefix=/usr \
+        -Dpager="/usr/bin/less -isR" \
+        -Duseshrplib \
+        -Dusethreads || return $(_err_line $((LINENO / 2)));
+
+    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)))
 }
 
 __make_libcap2() {
@@ -430,6 +461,7 @@ __make_libcap2() {
 }
 
 _apply_rootfs() {
+    echo " ------------ apply rootfs ------------------------";
     cd $ROOTFS;
     mkdir -pv \
         dev \
@@ -438,11 +470,18 @@ _apply_rootfs() {
         usr/{sbin,share};
         # var run
 
+    # replace '/bin/bash' to '/bin/sh', move perl script to '/opt'
+    for sh in $(grep -lr '\/bin\/bash\|\/bin\/perl' $ROOTFS/{,usr/}{,s}bin);
+    do
+        sed -i 's/\/bin\/bash/\/bin\/sh/g' $sh;
+        sh -n $sh || mv -v $sh /opt
+    done
+
     # Copy our custom rootfs,
     cp -frv $THIS_DIR/rootfs/* $ROOTFS;
 
     # trim suffix
-    local sf;
+    local sf sh;
     for sf in $(cd $THIS_DIR/rootfs; find . -type f -name "*.sh");
     do
         sf="$ROOTFS/${sf#*/}";
@@ -488,6 +527,7 @@ _build_iso() {
         return 0
     };
 
+    echo " ------------- build iso --------------------------";
     cd $ROOTFS || return $((LINENO / 2));
 
     # create 'initrd.img'
