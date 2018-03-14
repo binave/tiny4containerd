@@ -19,7 +19,7 @@ _main() {
     };
 
     # clear for rebuild
-    rm -fr $TMP/*.lock $TMP/.error $ROOTFS;
+    rm -fr $TMP/{.error,*.lock,.message_*,*.swp} $ROOTFS;
 
     # Make the rootfs, Prepare the build directory ($TMP/iso)
     mkdir -pv $TMP/iso/boot $ROOTFS;
