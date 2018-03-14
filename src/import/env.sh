@@ -4,17 +4,18 @@
 : ${TIMEOUT_SEC:=600};
 : ${TIMELAG_SEC:=5};
 : ${TMP:=/tmp};
+: ${ISO:=$TMP/iso};
+
+: ${KERNEL_MAJOR_VERSION:=4.9};
+: ${UTIL_LINUX_MAJOR_VERSION:=2.31};
+: ${GLIB_MAJOR_VERSION:=2.55};
 
 CORES=$(nproc);
 LABEL=`date +tc-%y%m%d-%H`;
 ROOTFS=$TMP/rootfs;
-ISO=$TMP/iso;
 
 # linux
 KERNEL_PUB=https://cdn.kernel.org/pub;
-: ${KERNEL_MAJOR_VERSION:=4.9};
-: ${UTIL_LINUX_MAJOR_VERSION:=2.31};
-: ${GLIB_MAJOR_VERSION:=2.55};
 
 # base
 KERNEL_DOWNLOAD=$KERNEL_PUB/linux/kernel;
