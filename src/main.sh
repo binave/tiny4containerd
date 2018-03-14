@@ -70,13 +70,15 @@ _main() {
     _last_version "docker_version=$(curl -L $DOCKER_DOWNLOAD 2>/dev/null | grep 'docker-' | awk -F[-\"] '{print $3"-"$4}')" || return $((LINENO / 2));
     echo;
 
-    echo " ------------- put in queue -----------------------"
-    _message_queue --init;
 
     # is need build kernel
     if [ ! -s $ISO/boot/vmlinuz64 ]; then
+
         # Fetch the kernel sources
         _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz - || return $((LINENO / 2));
+
+        echo " ------------- put in queue -----------------------"
+        _message_queue --init;
 
         # kernel, libc, rootfs
         _install bc || return $(_err_line $((LINENO / 2)));
@@ -132,51 +134,40 @@ _main() {
         _message_queue --put "_create_etc";
         _message_queue --put "_apply_rootfs";
 
-        _downlock $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz || return $((LINENO / 2));
+        _message_queue --destroy;
 
-        _downlock $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 || return $((LINENO / 2));
+        # init thread valve
+        _thread_valve --init 2;
 
-        _downlock $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz || return $((LINENO / 2)); # for openssl
+        local url;
+        for url in \
+            $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz \
+            $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 \
+            $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz \
+            $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz \
+            $CA_CERTIFICATES_DOWNLOAD \
+            $OPENSSH_DOWNLOAD/openssh-$openssh_version.tar.gz \
+            $IPTABLES_DOWNLOAD/files/iptables-$iptables_version.tar.bz2 \
+            $MDADM_DOWNLOAD/mdadm-$mdadm_version.tar.xz \
+            $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION/util-linux-$util_linux_version.tar.xz \
+            $EUDEV_DOWNLOAD/eudev-$eudev_version.tar.gz \
+            $LVM2_DOWNLOAD/LVM$lvm2_version.tgz \
+            $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz \
+            $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION/glib-$glib_version.tar.xz \
+            $PCRE_DOWNLOAD/pcre-$pcre_version.tar.bz2 \
+            $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz \
+            $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
+            $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz \
+            $CURL_DOWNLOAD/curl-$curl_version.tar.xz;
+        do
+            # get thread and run
+            _thread_valve --run _downlock $url
+        done
 
-        _downlock $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz || return $((LINENO / 2));
-
-        curl --retry 10 -L -o $TMP/${CERTDATA_DOWNLOAD##*/} $CERTDATA_DOWNLOAD || return $((LINENO / 2));
-
-        _downlock $CA_CERTIFICATES_DOWNLOAD || return $((LINENO / 2));
-
-        _downlock $OPENSSH_DOWNLOAD/openssh-$openssh_version.tar.gz || return $((LINENO / 2));
-        # _downlock $DROPBEAR_DOWNLOAD/dropbear-$dropbear_version.tar.bz2 || return $((LINENO / 2));
-
-        _downlock $IPTABLES_DOWNLOAD/files/iptables-$iptables_version.tar.bz2 || return $((LINENO / 2));
-
-        _downlock $MDADM_DOWNLOAD/mdadm-$mdadm_version.tar.xz || return $((LINENO / 2));
-
-        _downlock $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION/util-linux-$util_linux_version.tar.xz || return $((LINENO / 2));
-
-        _downlock $EUDEV_DOWNLOAD/eudev-$eudev_version.tar.gz || return $((LINENO / 2));
-
-        _downlock $LVM2_DOWNLOAD/LVM$lvm2_version.tgz || return $((LINENO / 2));
-
-        git clone -b release --depth 1 $NINJA_REPOSITORY $TMP/ninja-release || return $((LINENO / 2));
-
-        git clone --depth 1 $MESON_REPOSITORY $TMP/meson-master || return $((LINENO / 2));
-
-        _downlock $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz || return $((LINENO / 2));
-
-        _downlock $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION/glib-$glib_version.tar.xz || return $((LINENO / 2));
-
-        _downlock $PCRE_DOWNLOAD/pcre-$pcre_version.tar.bz2 || return $((LINENO / 2));
-
-        _downlock $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz || return $((LINENO / 2));
-
-        _downlock $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz || return $((LINENO / 2));
-
-        _downlock $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz || return $((LINENO / 2));
-
-        _downlock $CURL_DOWNLOAD/curl-$curl_version.tar.xz || return $((LINENO / 2));
-
-        # _downlock $PERL5_DOWNLOAD/perl-$perl5_version.tar.bz2 || return $((LINENO / 2));
+        # destroy thread valve
+        _thread_valve --destroy;
     fi
+        #   $PERL5_DOWNLOAD/perl-$perl5_version.tar.bz2
 
     # Get the Docker binaries with version.
     _downlock "$DOCKER_DOWNLOAD/docker-$docker_version.tgz" - || return $((LINENO / 2));
@@ -184,7 +175,7 @@ _main() {
     # for '_build_iso'
     _install cpio genisoimage isolinux syslinux xorriso xz-utils || return $((LINENO / 2));
 
-    _message_queue --destroy; wait; # close queue
+    wait;
 
     # test queue error
     [ -s $TMP/.error ] && {

@@ -13,6 +13,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+_log() {
+    awk '{print strftime("'"$1"'") $0};fflush(stdout)'
+}
+
 # Message Queue
 _message_queue() {
     case $1 in
@@ -36,7 +40,7 @@ _message_queue() {
                     eval set ${cmd//%34/\\\"} >/dev/null;
 
                     # run command with log
-                    "$@" 2>&1 | awk '{print strftime("%F %T'"${1//_/ }"', ") $0};fflush(stdout)'
+                    "$@" 2>&1 | _log "%F %T${1//_/ }"
 
                 done
             } &
@@ -58,6 +62,35 @@ _message_queue() {
         --destroy)
             printf "0\n" >&6
         ;;
+    esac
+}
+
+# thread valve
+_thread_valve() {
+    case $1 in
+        # use before loop, need count
+        --init)
+            mkfifo "/tmp/.thread_valve+$USER+$$+${0//\//\+}.fifo";
+            # &5
+            exec 5<> "/tmp/.thread_valve+$USER+$$+${0//\//\+}.fifo";
+            perl -e 'print "\n" x '$2 >&5
+        ;;
+        --run)
+            shift;
+            read -u 5;
+            {
+                "$@";
+                printf "\n" >&5
+            } &
+        ;;
+        # use after loop
+        --destroy)
+            wait;
+            exec 5>&-;
+            exec 5<&-
+            rm -f "/tmp/.thread_valve+$USER+$$+${0//\//\+}.fifo"
+        ;;
+
     esac
 }
 
@@ -115,6 +148,7 @@ _try_patch() {
 
 # Usage: _last_version "[key]=[value_colume]"
 _last_version() {
+    [ -s $TMP/.error ] && return 1;
     local key="${@%%=*}" value="${@#*=}" ver;
     [ "$key" == "$value" ] && return 1;
     value=$(grep '[0-9]' <<< "$value" | grep -v 'beta\|-rc\|-RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | sort --version-sort | tail -1);
@@ -130,6 +164,7 @@ _last_version() {
 
 # Usage: _downlock [url]
 _downlock() {
+    [ -s $TMP/.error ] && return 1;
     local prefix=${1##*/} suffix=${1##*.} swp;
     prefix=${prefix%.*}; # trim last suffix
     if [ $prefix == ${prefix#*[0-9]} ]; then
@@ -154,18 +189,20 @@ _downlock() {
         swp=$$$RANDOM.$RANDOM;
         curl -L --retry 10 -o $TMP/$swp $1 || {
             rm -f $TMP/$swp;
-            printf "[ERROR] download $prefix fail.\n" >&2;
+            printf "[ERROR] download $prefix fail.\n";
+            printf 1 > $TMP/.error;
             return 1
         };
         mv $TMP/$swp $TMP/$prefix$suffix
-    fi
+    fi 2>&1 | _log "%F %T download $prefix, "
+
     [ "$2" ] || touch $TMP/$prefix$suffix.lock;
     return 0
 }
 
 _install() {
     [ -s $TMP/.error ] && return 1;
-    apt-get -y install $*
+    apt-get -y install $* 2>&1 | _log "%F %T install $1.., "
 }
 
 _init_install() {
@@ -175,7 +212,7 @@ _init_install() {
         curl -L --connect-timeout 1 http://www.google.com >/dev/null 2>&1 && \
             printf %s "$DEBIAN_SOURCE" || printf %s "$DEBIAN_CN_SOURCE"
     } | tee /etc/apt/sources.list;
-    apt-get update;
+    apt-get update 2>&1 | _log "%F %T init install, ";
 
     return $?
 }
