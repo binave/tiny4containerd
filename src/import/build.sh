@@ -411,8 +411,8 @@ _make_curl() {
     ./configure \
         --prefix=/usr \
         --enable-shared \
-        --enable-threaded-resolver \
-        --with-ca-path=/etc/ssl/certs || return $(_err_line $((LINENO / 2)));
+        --enable-threaded-resolver || return $(_err_line $((LINENO / 2)));
+        # --with-ca-path=/etc/ssl/certs || return $(_err_line $((LINENO / 2)));
         # --with-ca-bundle=/usr/local/etc/ssl/certs/ca-certificates.crt || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./Makefile;
@@ -435,13 +435,15 @@ __make_libcap2() {
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
     sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
 
+    mkdir -pv _build;
+
     make && make \
         RAISE_SETFCAP=no \
         lib=lib \
-        prefix=/usr \
+        prefix=$PWD/_build \
         install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv /usr/lib/libcap.so* $ROOTFS/usr/lib;
+    cp -adv ./_build/lib/libcap.so* $ROOTFS/usr/lib;
     mv -v $ROOTFS/usr/lib/libcap.so.* $ROOTFS/lib;
     ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
 
