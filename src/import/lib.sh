@@ -27,8 +27,7 @@ _message_queue() {
             # make handler
             {
                 local cmd;
-                time while read -u 6 cmd;
-                do
+                time while read -u 6 cmd; do
                     [ "$cmd" == "0" ] && {
                         exec 6>&-;
                         exec 6<&-;
@@ -40,7 +39,7 @@ _message_queue() {
                     eval set ${cmd//%34/\\\"} >/dev/null;
 
                     # run command with log
-                    "$@" 2>&1 | _log "%F %T${1//_/ }"
+                    "$@" 2>&1 | _log "%F %T${1//_/ } "
 
                 done
             } &
