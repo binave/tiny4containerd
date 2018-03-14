@@ -132,7 +132,8 @@ _make_openssl() {
 # http://www.linuxfromscratch.org/blfs/view/8.1/postlfs/cacerts.html
 # http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
 # [need]: 'python' build
-_make_ca_certificates() {
+_make_ca() {
+    echo " --------------- make ca --------------------------";
     mkdir -pv $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
     _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
     _try_patch ca-certificates-;

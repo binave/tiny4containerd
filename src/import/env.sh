@@ -14,30 +14,44 @@ KERNEL_PUB=https://cdn.kernel.org/pub;
 : ${KERNEL_MAJOR_VERSION:=4.9};
 : ${UTIL_LINUX_MAJOR_VERSION:=2.31};
 : ${GLIB_MAJOR_VERSION:=2.55};
+
+# base
 KERNEL_DOWNLOAD=$KERNEL_PUB/linux/kernel;
-UTIL_LINUX_DOWNLOAD=$KERNEL_PUB/linux/utils/util-linux;
-LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
-MDADM_DOWNLOAD=$KERNEL_PUB/linux/utils/raid/mdadm; # http://neil.brown.name/blog/mdadm
-BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
-NINJA_REPOSITORY=https://github.com/ninja-build/ninja.git; # release
-MESON_REPOSITORY=https://github.com/mesonbuild/meson.git; # master
-GLIB_DOWNLOAD=http://ftp.gnome.org/pub/gnome/sources/glib;
-PCRE_DOWNLOAD=https://ftp.pcre.org/pub/pcre; # not pcre2
-# PERL5_DOWNLOAD=http://www.cpan.org/src/5.0;
-SSHFS_DOWNLOAD=https://github.com/libfuse/sshfs;
-LIBFUSE_DOWNLOAD=https://github.com/libfuse/libfuse;
+BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
+
+# ssl
+MAKE_CA=https://raw.githubusercontent.com/djlucas/make-ca/master/make-ca
 CERTDATA_DOWNLOAD=http://anduin.linuxfromscratch.org/BLFS/other/certdata.txt;
 CA_CERTIFICATES_DOWNLOAD=https://salsa.debian.org/debian/ca-certificates/repository/master/archive.tar.bz2;
 ZLIB_DOWNLOAD=http://www.zlib.net;
 OPENSSL_VERSION=1.0.2n;
 OPENSSL_DOWNLOAD=https://www.openssl.org/source;
 OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable; # DROPBEAR_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
+
+# firewall
 IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
+
+# dev
+MDADM_DOWNLOAD=$KERNEL_PUB/linux/utils/raid/mdadm; # http://neil.brown.name/blog/mdadm
+UTIL_LINUX_DOWNLOAD=$KERNEL_PUB/linux/utils/util-linux;
 EUDEV_DOWNLOAD=https://dev.gentoo.org/~blueness/eudev;
 LVM2_DOWNLOAD=https://sourceware.org/ftp/lvm2/releases;
+
+# sshfs
+MESON_REPOSITORY=https://github.com/mesonbuild/meson.git; # master
+NINJA_REPOSITORY=https://github.com/ninja-build/ninja.git; # release
+PCRE_DOWNLOAD=https://ftp.pcre.org/pub/pcre; # not pcre2
+GLIB_DOWNLOAD=http://ftp.gnome.org/pub/gnome/sources/glib;
+SSHFS_DOWNLOAD=https://github.com/libfuse/sshfs;
+LIBFUSE_DOWNLOAD=https://github.com/libfuse/libfuse;
+
+# tools
+SUDO_DOWNLOAD=http://www.sudo.ws/dist;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
+LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64;
+# PERL5_DOWNLOAD=http://www.cpan.org/src/5.0;
 
 # debian sources
 DEBIAN_SOURCE='deb http://deb.debian.org/debian stretch main

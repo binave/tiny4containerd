@@ -1,5 +1,5 @@
 #!/bin/sh
-#
+# for 'openssl'
 # from http://www.tinycorelinux.net/9.x/x86_64/tcz/ca-certificates.tcz
 #
 
