@@ -235,10 +235,10 @@ _main() {
     fi
 
     # log path
-    printf "\nuse command 'docker cp [container_name]:/build.log .' get log file.\n";
+    printf "\nuse command 'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";
     # complete.
     printf "\ncomplete.\n\n"
 
-} 2>&1 | tee -a "/build.log";
+} 2>&1 | tee -a "$OUT_DIR/build.log";
 
 exit $STATUS_CODE
