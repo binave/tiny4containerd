@@ -81,10 +81,10 @@ _main() {
         _message_queue --init;
 
         # kernel, libc, rootfs
-        _install bc || return $(_err_line $((LINENO / 2)));
+        _install bc;
         _message_queue --put "_make_kernel"; # this may use most time
 
-        _install bison gawk || return $(_err_line $((LINENO / 2)));
+        _install bison gawk;
         _message_queue --put "_make_glibc"; # this may use long time
         _message_queue --put "_make_busybox";
 
@@ -92,7 +92,7 @@ _main() {
         _message_queue --put "__make_zlib";
         _message_queue --put "_make_openssl";
 
-        _install python || return $(_err_line $((LINENO / 2)));
+        _install python;
         # libnss3-tools p11-kit
         _message_queue --put "_make_ca";
         _message_queue --put "_make_openssh";
@@ -104,24 +104,24 @@ _main() {
         _message_queue --put "_make_mdadm";
         _message_queue --put "__make_util_linux";
 
-        _install gperf || return $(_err_line $((LINENO / 2)));
+        _install gperf;
         _message_queue --put "_make_eudev";
 
-        _install pkg-config || return $(_err_line $((LINENO / 2)));
+        _install pkg-config;
         _message_queue --put "_make_lvm2";
 
         # sshfs
-        _install re2c python3 || return $(_err_line $((LINENO / 2)));
+        _install re2c python3;
         _message_queue --put "_build_meson";
         _message_queue --put "_make_fuse";
 
-        _install libbz2-dev libreadline-dev || return $(_err_line $((LINENO / 2)));
+        _install libbz2-dev libreadline-dev;
         _message_queue --put "__make_pcre";
 
-        _install libffi-dev gettext || return $(_err_line $((LINENO / 2)));
+        _install libffi-dev gettext;
         _message_queue --put "__make_glib";
 
-        _install python-docutils || return $(_err_line $((LINENO / 2)));
+        _install python-docutils;
         _message_queue --put "_make_sshfs";
 
         # tools
@@ -239,7 +239,8 @@ _main() {
     # log path
     printf "\nuse command 'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";
     # complete.
-    printf "\ncomplete.\n\n"
+    printf "\ncomplete.\n\n";
+    exit $STATUS_CODE
 
 } 2>&1 | tee -a "$OUT_DIR/build.log";
 
