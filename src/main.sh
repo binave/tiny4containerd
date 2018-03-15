@@ -40,7 +40,7 @@ _main() {
     _last_version "openssh_version=$(curl -L $OPENSSH_DOWNLOAD 2>/dev/null | grep 'tar\.gz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
     # _last_version "dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
-    _last_version "iptables_version=$(curl -L $IPTABLES_DOWNLOAD/downloads.html 2>/dev/null | grep '/iptables.*bz2"' | awk -F[-\"] '{print $5}')" || return $((LINENO / 2));
+    _last_version "iptables_version=$(curl -L $IPTABLES_DOWNLOAD 2>/dev/null | grep '/iptables-.*bz2"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
 
     _last_version "mdadm_version=$(curl -L $MDADM_DOWNLOAD 2>/dev/null | grep "mdadm-.*.xz" | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
@@ -147,7 +147,7 @@ _main() {
             $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz \
             $CA_CERTIFICATES_REPOSITORY.master \
             $OPENSSH_DOWNLOAD/openssh-$openssh_version.tar.gz \
-            $IPTABLES_DOWNLOAD/files/iptables-$iptables_version.tar.bz2 \
+            $IPTABLES_DOWNLOAD/iptables-$iptables_version.tar.bz2 \
             $MDADM_DOWNLOAD/mdadm-$mdadm_version.tar.xz \
             $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION/util-linux-$util_linux_version.tar.xz \
             $EUDEV_DOWNLOAD/eudev-$eudev_version.tar.gz \

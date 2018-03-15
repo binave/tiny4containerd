@@ -35,7 +35,7 @@ OPENSSL_DOWNLOAD=https://www.openssl.org/source;
 OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable; # DROPBEAR_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
 
 # firewall
-IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables;
+IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables/files;
 
 # dev
 MDADM_DOWNLOAD=$KERNEL_PUB/linux/utils/raid/mdadm; # http://neil.brown.name/blog/mdadm
