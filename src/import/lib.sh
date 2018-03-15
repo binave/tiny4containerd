@@ -185,13 +185,13 @@ _downlock() {
         swp="$CELLAR_DIR/$pre-$suf";
         printf "will clone '$pre' to '$swp'.\n";
         if [ -d "$swp" ]; then
-            git clone -b $suf --depth 1 ${1%\.git\.*}.git $swp && {
+            cd $swp;
+            git pull && cd - >/dev/null && {
                 [ "$2" ] || touch $STATE_DIR/$pre-$suf.lock;
                 return 0
             };
         else
-            cd $swp;
-            git pull && cd - >/dev/null && {
+            git clone -b $suf --depth 1 ${1%\.git\.*}.git $swp && {
                 [ "$2" ] || touch $STATE_DIR/$pre-$suf.lock;
                 return 0
             };
