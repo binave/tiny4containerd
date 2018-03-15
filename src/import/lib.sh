@@ -117,7 +117,7 @@ _wait_file(){
     [ "$1" ] || return 1;
     set ${1##*/};
     local count=0 times=$((TIMEOUT_SEC / TIMELAG_SEC));
-    until [ -f "$CELLAR_DIR/$1.lock" ];
+    until [ -f "$STATE_DIR/$1.lock" ];
     do
         [ $((++count)) -gt $times ] && {
             printf "[ERROR]: '$1' time out\n" >&2;
@@ -125,8 +125,8 @@ _wait_file(){
         };
         sleep $TIMELAG_SEC
     done
-    _untar $CELLAR_DIR/$1 || return 1;
-    rm -f "$CELLAR_DIR/$1.lock";
+    [ -d $CELLAR_DIR/$1 ] || _untar $CELLAR_DIR/$1 || return 1;
+    rm -f "$STATE_DIR/$1.lock";
     return 0
 }
 
@@ -163,9 +163,9 @@ _last_version() {
     [ -s $STATE_DIR/.error ] && return 1;
     local key="${@%%=*}" value="${@#*=}" ver;
     [ "$key" == "$value" ] && return 1;
-    value=$(grep '[0-9]' <<< "$value" | grep -v 'beta\|-rc\|-RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | sort --version-sort | tail -1);
+    value=$(grep '[0-9]' <<< "$value" | grep -v 'beta\|[-0-9]rc\|[-0-9]RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | sort --version-sort | tail -1);
     ver="$(tr "[:lower:]" "[:upper:]" <<< "$key")";
-    [[ $value == [0-9]*\.*[0-9]* ]] && {
+    [[ $value == *[0-9]\.[0-9]* ]] && {
         eval $key=$value;
         printf "$ver=$value\n" | tee -a $ISO_DIR/version.swp;
         return 0
@@ -177,40 +177,52 @@ _last_version() {
 # Usage: _downlock [url]
 _downlock() {
     [ -s $STATE_DIR/.error ] && return 1;
-    local prefix=${1##*/} suffix=${1##*.} swp;
-    prefix=${prefix%.*}; # trim last suffix
-    if [ $prefix == ${prefix#*[0-9]} ]; then
-        swp=$prefix;
-        prefix=${swp%%.*};
-        suffix=${swp##*$prefix}.$suffix
+    local pre=${1##*/} suf swp;
+
+    if [[ $1 == *\.git\.* ]]; then
+        pre=${pre%\.git\.*};
+        suf=${1##*\.git\.};
+        swp="$CELLAR_DIR/$pre-$suf";
+        printf "will clone '$pre' to '$swp'.\n";
+        if [ -d "$swp" ]; then
+            git clone -b $suf --depth 1 ${1%\.git\.*}.git $swp && {
+                [ "$2" ] || touch $STATE_DIR/$pre-$suf.lock;
+                return 0
+            };
+        else
+            cd $swp;
+            git pull && cd - >/dev/null && {
+                [ "$2" ] || touch $STATE_DIR/$pre-$suf.lock;
+                return 0
+            };
+        fi
+        rm -fr "$swp"
     else
-        swp=${prefix##*[0-9]};
-        if [ "$swp" -a "${swp:0:1}" != "." ]; then
-            if [ "$swp" == "${swp#*.}" ]; then
-                unset swp
-            else
-                swp=".${swp#*.}"
+        # have int
+        if [ "$pre" != "${pre#*[0-9]}" ]; then
+            suf=${pre##*\.t}; # 'gz' 'ar.gz' 'ar.xz' 'ar.bz2'
+            if [ "$pre" != "$suf" ]; then
+                swp=${pre%%-[0-9]*};
+                [ "$swp" == "$pre" ] && pre=${pre%%[0-9]*} || pre=$swp;
+                suf=".t$suf";
+                printf "will download '$pre$suf' to '$CELLAR_DIR'.\n";
+                if [ ! -f "$CELLAR_DIR/$pre$suf" ]; then
+                    mkdir -p $CELLAR_DIR;
+                    swp=$$$RANDOM.$RANDOM;
+                    curl -L --retry 10 -o $CELLAR_DIR/$swp $1 || {
+                        rm -f $CELLAR_DIR/$swp;
+                        printf "[ERROR] download $pre fail.\n";
+                        printf 1 > $STATE_DIR/.error;
+                        return 1
+                    };
+                    mv $CELLAR_DIR/$swp $CELLAR_DIR/$pre$suf
+                fi
+                [ "$2" ] || touch $STATE_DIR/$pre$suf.lock;
+                return 0
             fi
         fi
-        suffix=$swp.$suffix;
-        prefix=${prefix%%-*};
-        [ "$prefix$suffix" == "${1##*/}" ] && prefix="${prefix%%[0-9]*}";
-    fi
-    printf "# will download '$prefix$suffix' to '$CELLAR_DIR'.\n";
-    if [ ! -f "$CELLAR_DIR/$prefix$suffix" ]; then
-        mkdir -p $CELLAR_DIR;
-        swp=$$$RANDOM.$RANDOM;
-        curl -L --retry 10 -o $CELLAR_DIR/$swp $1 || {
-            rm -f $CELLAR_DIR/$swp;
-            printf "[ERROR] download $prefix fail.\n";
-            printf 1 > $STATE_DIR/.error;
-            return 1
-        };
-        mv $CELLAR_DIR/$swp $CELLAR_DIR/$prefix$suffix
-    fi 2>&1 | _prefix "%F %T download '$prefix', "
-
-    [ "$2" ] || touch $STATE_DIR/$prefix$suffix.lock;
-    return 0
+    fi 2>&1 | _prefix "%F %T download '$pre', "
+    return 1
 }
 
 _install() {

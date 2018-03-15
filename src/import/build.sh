@@ -121,8 +121,8 @@ _make_openssl() {
 _make_ca() {
     curl --retry 10 -L -o $STATE_DIR/${CERTDATA_DOWNLOAD##*/} $CERTDATA_DOWNLOAD || return $((LINENO / 2));
 
-    _wait_file archive.tar.bz2 || return $(_err_line $((LINENO / 2)));
-    _try_patch ca-certificates-;
+    _wait_file ca-certificates-master || return $(_err_line $((LINENO / 2)));
+    cd $CELLAR_DIR/ca-certificates-master;
 
     mkdir -pv $ROOTFS_DIR/tmp $ROOTFS_DIR/usr/share/ca-certificates;
     cp -v $STATE_DIR/certdata.txt ./mozilla/;
@@ -272,14 +272,16 @@ _make_lvm2() {
 
 # for '_make_fuse' '_make_sshfs'
 _build_meson() {
-    git clone -b release --depth 1 $NINJA_REPOSITORY $STATE_DIR/ninja-release && \
-        cd $STATE_DIR/ninja-release && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
+    _wait_file ninja-release || return $(_err_line $((LINENO / 2)));
 
+    cd $CELLAR_DIR/ninja-release && ./configure.py --bootstrap || \
+        return $(_err_line $((LINENO / 2)));
     cp -v ./ninja /usr/bin;
 
-    git clone --depth 1 $MESON_REPOSITORY $STATE_DIR/meson-master && \
-        cd $STATE_DIR/meson-master && python3 ./setup.py install || return $(_err_line $((LINENO / 2)))
+    _wait_file meson-master || return $(_err_line $((LINENO / 2)));
 
+    cd $CELLAR_DIR/meson-master && python3 ./setup.py install || \
+        return $(_err_line $((LINENO / 2)))
 }
 
 # for '_make_sshfs' build, [need]: 'ninja', 'meson', 'udev'

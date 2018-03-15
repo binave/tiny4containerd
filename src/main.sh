@@ -19,7 +19,7 @@ _main() {
     };
 
     # clear for rebuild
-    rm -frv $STATE_DIR/{*-*,.error,*.lock,.message_*,*.swp} $ISO_DIR/version $ROOTFS_DIR;
+    rm -frv $STATE_DIR/{*-*,.error,*.lock,*.swp} $ISO_DIR/version $ROOTFS_DIR;
 
     # Make the rootfs, Prepare the build directory ($ISO_DIR)
     mkdir -pv $CELLAR_DIR $ISO_DIR/boot $ROOTFS_DIR $OUT_DIR;
@@ -50,13 +50,13 @@ _main() {
 
     _last_version "lvm2_version=$(curl -L $LVM2_DOWNLOAD 2>/dev/null | grep 'tgz"' | awk -F[\"] '{print $8}')" || return $((LINENO / 2));
 
-    _last_version "libfuse_version=$(curl -L $LIBFUSE_DOWNLOAD/releases 2>/dev/null | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip)" || return $((LINENO / 2));
+    _last_version "libfuse_version=$(curl -L $LIBFUSE_DOWNLOAD/tags 2>/dev/null | grep tag-name | awk -F[-\>\<] '{print $5}')" || return $((LINENO / 2));
 
     _last_version "glib_version=$(curl -L $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
 
     _last_version "pcre_version=$(curl -L $PCRE_DOWNLOAD 2>/dev/null | grep 'pcre-.*bz2"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
-    _last_version "sshfs_version=$(curl -L $SSHFS_DOWNLOAD/releases 2>/dev/null | grep '[0-9]\.zip"' | awk -F[-\"] '{print $3}' | grep zip)" || return $((LINENO / 2));
+    _last_version "sshfs_version=$(curl -L $SSHFS_DOWNLOAD/tags 2>/dev/null | grep tag-name | awk -F[-_\>\<] '{print $5}')" || return $((LINENO / 2));
 
     _last_version "libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
@@ -145,20 +145,23 @@ _main() {
             $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 \
             $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz \
             $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz \
-            $CA_CERTIFICATES_DOWNLOAD \
+            $CA_CERTIFICATES_REPOSITORY.master \
             $OPENSSH_DOWNLOAD/openssh-$openssh_version.tar.gz \
             $IPTABLES_DOWNLOAD/files/iptables-$iptables_version.tar.bz2 \
             $MDADM_DOWNLOAD/mdadm-$mdadm_version.tar.xz \
             $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION/util-linux-$util_linux_version.tar.xz \
             $EUDEV_DOWNLOAD/eudev-$eudev_version.tar.gz \
             $LVM2_DOWNLOAD/LVM$lvm2_version.tgz \
-            $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz \
             $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION/glib-$glib_version.tar.xz \
             $PCRE_DOWNLOAD/pcre-$pcre_version.tar.bz2 \
+            $MESON_REPOSITORY.master \
+            $NINJA_REPOSITORY.release \
+            $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz \
             $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz \
-            $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
             $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz \
-            $CURL_DOWNLOAD/curl-$curl_version.tar.xz;
+            $CURL_DOWNLOAD/curl-$curl_version.tar.xz \
+            $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz;
+            # $PERL5_DOWNLOAD/perl-$perl5_version.tar.bz2
         do
             # get thread and run
             _thread_valve --run _downlock $url
@@ -167,7 +170,6 @@ _main() {
         # destroy thread valve
         _thread_valve --destroy;
     fi
-        #   $PERL5_DOWNLOAD/perl-$perl5_version.tar.bz2
 
     # Get the Docker binaries with version.
     _downlock "$DOCKER_DOWNLOAD/docker-$docker_version.tgz" - || return $((LINENO / 2));
