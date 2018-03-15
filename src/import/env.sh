@@ -55,7 +55,7 @@ LIBFUSE_DOWNLOAD=https://github.com/libfuse/libfuse;
 SUDO_DOWNLOAD=http://www.sudo.ws/dist;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
 LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
-DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64;
+DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64; # https://docs.docker.com/install/linux/docker-ce/binaries/#prerequisites
 # PERL5_DOWNLOAD=http://www.cpan.org/src/5.0;
 
 # debian sources

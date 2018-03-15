@@ -221,7 +221,7 @@ _downlock() {
                 return 0
             fi
         fi
-    fi 2>&1 | _prefix "%F %T download '$pre', "
+    fi
     return 1
 }
 
