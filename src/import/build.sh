@@ -4,39 +4,39 @@
 # [need]: 'bc'
 _make_kernel() {
     # fix: Directory renamed before its status could be extracted
-    _untar $TMP/linux.tar.xz || return $(_err_line $((LINENO / 2)));
+    _untar $STATE_DIR/linux.tar.xz || return $(_err_line $((LINENO / 2)));
     _try_patch linux-;
 
     # make ARCH=x86_64 menuconfig # ncurses-dev
     cp -v $THIS_DIR/config/kernel.cfg ./.config;
 
     # put in queue
-    make -j $CORES bzImage && make -j $CORES modules || return $(_err_line $((LINENO / 2)))
+    make -j $CORES_COUNT bzImage && make -j $CORES_COUNT modules || return $(_err_line $((LINENO / 2)))
 
-    # Install the kernel modules in $ROOTFS
-    make INSTALL_MOD_PATH=$ROOTFS modules_install firmware_install || return $(_err_line $((LINENO / 2)));
+    # Install the kernel modules in $ROOTFS_DIR
+    make INSTALL_MOD_PATH=$ROOTFS_DIR modules_install firmware_install || return $(_err_line $((LINENO / 2)));
 
     # remove empty link
-    rm -fv $ROOTFS/lib/modules/${kernel_version}-tc/{build,source};
+    rm -fv $ROOTFS_DIR/lib/modules/[0-9]*-tc/{build,source};
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/linux-headers.html
-    make INSTALL_HDR_PATH=$TMP/kernel-header headers_install || return $(_err_line $((LINENO / 2)));
+    make INSTALL_HDR_PATH=$STATE_DIR/kernel-header headers_install || return $(_err_line $((LINENO / 2)));
 
     _hash ./arch/x86/boot/bzImage;
 
     # ./arch/x86_64/boot/bzImage -> ../../x86/boot/bzImage
-    cp -v ./arch/x86/boot/bzImage $ISO/boot/vmlinuz64
+    cp -v ./arch/x86/boot/bzImage $ISO_DIR/boot/vmlinuz64
 
 }
 
 # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
 # [need]: 'bison', 'gawk'
 _make_glibc() {
-    _wait_file $TMP/glibc.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file glibc.tar.xz || return $(_err_line $((LINENO / 2)));
     _try_patch glibc-;
 
-    mkdir -pv _install $ROOTFS/etc;
-    touch $ROOTFS/etc/ld.so.conf;
+    mkdir -pv _install $ROOTFS_DIR/etc;
+    touch $ROOTFS_DIR/etc/ld.so.conf;
     cd _install;
 
     # fix 'glibc' cannot be compiled without optimization
@@ -47,21 +47,21 @@ _make_glibc() {
         --enable-stack-protector=strong \
         --enable-obsolete-rpc  \
         --disable-werror \
-        --with-headers=$TMP/kernel-header/include \
+        --with-headers=$STATE_DIR/kernel-header/include \
         libc_cv_slibdir=/lib || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2//g' ./config.make ./config.status;
-    make && make install_root=$ROOTFS install;
+    make && make install_root=$ROOTFS_DIR install;
 
     # glibc default configuration, `ldconfig`
-    printf '/usr/lib\n' | tee $ROOTFS/etc/ld.so.conf;
+    printf '/usr/lib\n' | tee $ROOTFS_DIR/etc/ld.so.conf;
 
-    ln -sT lib $ROOTFS/lib64
+    ln -sT lib $ROOTFS_DIR/lib64
 
 }
 
 _make_busybox() {
-    _wait_file $TMP/busybox.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file busybox.tar.bz2 || return $(_err_line $((LINENO / 2)));
     _try_patch busybox-;
 
     cp -v $THIS_DIR/config/busybox_suid.cfg ./.config;
@@ -73,20 +73,18 @@ _make_busybox() {
         printf "  $symbolic -> $target.suid\n";
         symbolic=${symbolic//\/\//\/};
         rm -f $symbolic && ln -fs $target.suid $symbolic
-    done <<< $(make CONFIG_PREFIX=$ROOTFS install | grep '\->' | awk '{print $1" "$3}');
-    mv -v $ROOTFS/bin/busybox $ROOTFS/bin/busybox.suid;
+    done <<< $(make CONFIG_PREFIX=$ROOTFS_DIR install | grep '\->' | awk '{print $1" "$3}');
+    mv -v $ROOTFS_DIR/bin/busybox $ROOTFS_DIR/bin/busybox.suid;
 
     make mrproper;
     cp -v $THIS_DIR/config/busybox_nosuid.cfg ./.config;
-    make && make CONFIG_PREFIX=$ROOTFS install || \
-        return $(_err_line $((LINENO / 2)));
-
-    # rm -fr $TMP/busybox-$busybox_version # clear
+    make && make CONFIG_PREFIX=$ROOTFS_DIR install || \
+        return $(_err_line $((LINENO / 2)))
 }
 
 # for 'openssl' build, 'openssh' runtime
 __make_zlib() {
-    _wait_file $TMP/zlib.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file zlib.tar.gz || return $(_err_line $((LINENO / 2)));
     _try_patch zlib-;
 
     ./configure \
@@ -94,59 +92,54 @@ __make_zlib() {
         --shared && \
         make && make install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv /usr/lib/libz.so* $ROOTFS/usr/lib;
-    mv -v $ROOTFS/usr/lib/libz.so.* $ROOTFS/lib;
-    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libz.so) $ROOTFS/usr/lib/libz.so
-    # rm -fr $TMP/zlib-$zlib_version # clear
+    cp -adv /usr/lib/libz.so* $ROOTFS_DIR/usr/lib;
+    mv -v $ROOTFS_DIR/usr/lib/libz.so.* $ROOTFS_DIR/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libz.so) $ROOTFS_DIR/usr/lib/libz.so
 }
 
 # [need]: 'zlib'
 _make_openssl() {
-    _wait_file $TMP/openssl.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file openssl.tar.gz || return $(_err_line $((LINENO / 2)));
     _try_patch openssl-;
 
     ./config \
         --prefix=/usr \
         --openssldir=/etc/ssl \
-        --install_prefix=$ROOTFS \
+        --install_prefix=$ROOTFS_DIR \
         shared zlib-dynamic || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O3//g' ./Makefile;
     make && make install || return $(_err_line $((LINENO / 2)));
 
     # for 'openssh' build
-    cp -adv $ROOTFS/usr/include/openssl /usr/include;
-
-    # rm -fr $TMP/openssl-$OPENSSL_VERSION # clear
+    cp -adv $ROOTFS_DIR/usr/include/openssl /usr/include;
 }
 
 # http://www.linuxfromscratch.org/blfs/view/8.1/postlfs/cacerts.html
 # http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
 # [need]: 'python' build
 _make_ca() {
-    curl --retry 10 -L -o $TMP/${CERTDATA_DOWNLOAD##*/} $CERTDATA_DOWNLOAD || return $((LINENO / 2));
+    curl --retry 10 -L -o $STATE_DIR/${CERTDATA_DOWNLOAD##*/} $CERTDATA_DOWNLOAD || return $((LINENO / 2));
 
-    _wait_file $TMP/archive.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file archive.tar.bz2 || return $(_err_line $((LINENO / 2)));
     _try_patch ca-certificates-;
 
-    mkdir -pv $ROOTFS/tmp $ROOTFS/usr/share/ca-certificates;
-    cp -v $TMP/certdata.txt ./mozilla/;
+    mkdir -pv $ROOTFS_DIR/tmp $ROOTFS_DIR/usr/share/ca-certificates;
+    cp -v $STATE_DIR/certdata.txt ./mozilla/;
 
-    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
-    find $ROOTFS/usr/share/ca-certificates/mozilla -type f | sed 's/.*mozilla/mozilla/g' | \
-        tee $ROOTFS/etc/ca-certificates.conf;
-
-    # rm -fr
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err_line $((LINENO / 2)));
+    find $ROOTFS_DIR/usr/share/ca-certificates/mozilla -type f | sed 's/.*mozilla/mozilla/g' | \
+        tee $ROOTFS_DIR/etc/ca-certificates.conf;
 
 }
 
 # [need]: 'zlib'
 _make_openssh() {
-    _wait_file $TMP/openssh.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file openssh.tar.gz || return $(_err_line $((LINENO / 2)));
     _try_patch openssh- openssl-$OPENSSL_VERSION; # e.g. openssh-7.6p1-openssl-1.1.0-1.patch
 
     # link 'openssl' lib
-    ln -sv $ROOTFS/usr/lib/lib{crypto,ssl}.* /usr/lib;
+    ln -sv $ROOTFS_DIR/usr/lib/lib{crypto,ssl}.* /usr/lib;
 
     ./configure \
         --prefix=/usr \
@@ -158,18 +151,18 @@ _make_openssh() {
         --with-md5-passwords || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-g -O2//g' ./Makefile;
-    make && make DESTDIR=$ROOTFS install-nokeys || return $(_err_line $((LINENO / 2)));
+    make && make DESTDIR=$ROOTFS_DIR install-nokeys || return $(_err_line $((LINENO / 2)));
 
     # unlink 'openssl' lib
     rm -fv /usr/lib/lib{crypto,ssl}.*;
 
-    echo "PermitRootLogin no" >> $ROOTFS/etc/ssh/sshd_config
+    echo "PermitRootLogin no" >> $ROOTFS_DIR/etc/ssh/sshd_config
 
 }
 
 # TODO _nftables
 _make_iptables() {
-    _wait_file $TMP/iptables.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file iptables.tar.bz2 || return $(_err_line $((LINENO / 2)));
     _try_patch iptables-;
 
     # Error: No suitable 'libmnl' found: --disable-nftables
@@ -180,41 +173,38 @@ _make_iptables() {
         --enable-shared \
         --localstatedir=/var \
         --with-xtlibdir=/lib/xtables \
-        --with-kernel=$TMP/linux-$kernel_version \
+        --with-kernel=$STATE_DIR/linux-[0-9]* \
         --disable-nftables;
     sed -i 's/-O2/ /g' ./Makefile;
 
     # link 'glibc' lib
-    ln -sv $ROOTFS/lib/{libc,ld-linux-x86-64}.so.* /lib;
-    ln -sv $ROOTFS/usr/lib/libc_nonshared.a /usr/lib;
+    ln -sv $ROOTFS_DIR/lib/{libc,ld-linux-x86-64}.so.* /lib;
+    ln -sv $ROOTFS_DIR/usr/lib/libc_nonshared.a /usr/lib;
 
-    make -j $CORES && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+    make -j $CORES_COUNT && make DESTDIR=$ROOTFS_DIR install || return $(_err_line $((LINENO / 2)));
 
     local file;
     for file in ip4tc ip6tc ipq iptc xtables;
     do
-        mv -v $ROOTFS/usr/lib/lib${file}.so.* $ROOTFS/lib && \
-        ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/lib${file}.so) $ROOTFS/usr/lib/lib${file}.so
+        mv -v $ROOTFS_DIR/usr/lib/lib${file}.so.* $ROOTFS_DIR/lib && \
+        ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/lib${file}.so) $ROOTFS_DIR/usr/lib/lib${file}.so
     done
 
     # unlink 'glibc' lib
-    rm -fv /lib/{libc,ld-linux-x86-64}.so.* /usr/lib/libc_nonshared.a;
-
-    # rm -fr $TMP/iptables-$iptables_version $TMP/linux-$kernel_version # clear
+    rm -fv /lib/{libc,ld-linux-x86-64}.so.* /usr/lib/libc_nonshared.a
 }
 
 # kernel version 4.4.2 or above.
 _make_mdadm() {
-    _wait_file $TMP/mdadm.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file mdadm.tar.xz || return $(_err_line $((LINENO / 2)));
     _try_patch mdadm-;
 
-    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
-    # rm -fr $TMP/mdadm-$mdadm_version # clear
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err_line $((LINENO / 2)))
 }
 
 # for '_make_eudev'
 __make_util_linux() {
-    _wait_file $TMP/util.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file util.tar.xz || return $(_err_line $((LINENO / 2)));
     _try_patch util-linux-;
 
     ./configure \
@@ -227,15 +217,15 @@ __make_util_linux() {
         make && make install || return $(_err_line $((LINENO / 2)));
 
     # for 'lvm2' runtime
-    cp -adv /usr/lib/lib{blkid,uuid}.so* $ROOTFS/usr/lib;
-    cp -adv /lib/lib{blkid,uuid}.so* $ROOTFS/lib
+    cp -adv /usr/lib/lib{blkid,uuid}.so* $ROOTFS_DIR/usr/lib;
+    cp -adv /lib/lib{blkid,uuid}.so* $ROOTFS_DIR/lib
 
 }
 
 # http://linuxfromscratch.org/lfs/view/stable/chapter06/eudev.html
 # for '_make_lvm2', [need]: 'gperf', 'util-linux'
 _make_eudev() {
-    _wait_file $TMP/eudev.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file eudev.tar.gz || return $(_err_line $((LINENO / 2)));
     _try_patch eudev-;
 
     sed -r -i 's|/usr(/bin/test)|\1|' test/udev-test.pl; # fix a test script
@@ -256,14 +246,14 @@ BLKID_CFLAGS=\"-I/usr/include\"
         --disable-static \
         --config-cache || return $(_err_line $((LINENO / 2)));
 
-    make && make DESTDIR=$ROOTFS install && make install || return $(_err_line $((LINENO / 2)))
+    make && make DESTDIR=$ROOTFS_DIR install && make install || return $(_err_line $((LINENO / 2)))
 
 }
 
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/lvm2.html
 # kernel version 4.4.2 or above. [need]: 'pkg-config', 'udev'
 _make_lvm2() {
-    _wait_file $TMP/LVM.tgz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file LVM.tgz || return $(_err_line $((LINENO / 2)));
     _try_patch LVM2;
 
     ./configure \
@@ -277,43 +267,41 @@ _make_lvm2() {
         --enable-udev_sync || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./make.tmpl;
-    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)))
-
-    # rm -fr $TMP/LVM$lvm2_version # clear
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err_line $((LINENO / 2)))
 }
 
 # for '_make_fuse' '_make_sshfs'
 _build_meson() {
-    git clone -b release --depth 1 $NINJA_REPOSITORY $TMP/ninja-release && \
-        cd $TMP/ninja-release && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
+    git clone -b release --depth 1 $NINJA_REPOSITORY $STATE_DIR/ninja-release && \
+        cd $STATE_DIR/ninja-release && ./configure.py --bootstrap || return $(_err_line $((LINENO / 2)));
 
     cp -v ./ninja /usr/bin;
 
-    git clone --depth 1 $MESON_REPOSITORY $TMP/meson-master && \
-        cd $TMP/meson-master && python3 ./setup.py install || return $(_err_line $((LINENO / 2)))
+    git clone --depth 1 $MESON_REPOSITORY $STATE_DIR/meson-master && \
+        cd $STATE_DIR/meson-master && python3 ./setup.py install || return $(_err_line $((LINENO / 2)))
 
 }
 
 # for '_make_sshfs' build, [need]: 'ninja', 'meson', 'udev'
 _make_fuse() {
-    _wait_file $TMP/fuse.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file fuse.tar.gz || return $(_err_line $((LINENO / 2)));
     _try_patch libfuse-;
 
     mkdir -pv _install; cd _install;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
     local DESTDIR;
-    ninja install && DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)))
+    ninja install && DESTDIR=$ROOTFS_DIR ninja install || return $(_err_line $((LINENO / 2)))
 
     # uninstall 'util-linux' 'eudev'
-    cd $TMP/util-linux-* && make uninstall;
-    cd $TMP/eudev-* && make uninstall
+    cd $STATE_DIR/util-linux-* && make uninstall;
+    cd $STATE_DIR/eudev-* && make uninstall
 
 }
 
 # for '__make_glib', [need]: 'libbz2-dev' 'libreadline-dev'
 __make_pcre() {
-    _wait_file $TMP/pcre.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file pcre.tar.bz2 || return $(_err_line $((LINENO / 2)));
     _try_patch pcre-;
     ./configure \
         --prefix=/usr \
@@ -328,15 +316,15 @@ __make_pcre() {
 
     make && make install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv /usr/lib/libpcre.so* $ROOTFS/usr/lib;
-    mv -v $ROOTFS/usr/lib/libpcre.so.* $ROOTFS/lib;
-    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libpcre.so) $ROOTFS/usr/lib/libpcre.so
+    cp -adv /usr/lib/libpcre.so* $ROOTFS_DIR/usr/lib;
+    mv -v $ROOTFS_DIR/usr/lib/libpcre.so.* $ROOTFS_DIR/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libpcre.so) $ROOTFS_DIR/usr/lib/libpcre.so
 
 }
 
 # for '_make_sshfs' runtime, [need]: 'zlib', 'libffi-dev', 'gettext'
 __make_glib() {
-    _wait_file $TMP/glib.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file glib.tar.xz || return $(_err_line $((LINENO / 2)));
     _try_patch glib-;
     ./configure \
         --prefix=/usr \
@@ -348,44 +336,44 @@ __make_glib() {
     sed -i 's/-g -O2//g' ./Makefile;
 
     # link 'glibc' lib
-    ln -sv $ROOTFS/lib/l{d-linux-x86-64,ibpthread,ibc}.so* /lib;
-    ln -sv $ROOTFS/usr/lib/lib{c,pthread}_nonshared.a /usr/lib;
+    ln -sv $ROOTFS_DIR/lib/l{d-linux-x86-64,ibpthread,ibc}.so* /lib;
+    ln -sv $ROOTFS_DIR/usr/lib/lib{c,pthread}_nonshared.a /usr/lib;
 
     make && make install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv /usr/lib/libglib-* $ROOTFS/usr/lib;
+    cp -adv /usr/lib/libglib-* $ROOTFS_DIR/usr/lib;
 
     # unlink 'glibc' lib
     rm -fv /lib/l{d-linux-x86-64,ibpthread,ibc}.so* /usr/lib/lib{c,pthread}_nonshared.a;
 
     # uninstall 'zlib'
-    cd $TMP/zlib-* && make uninstall
+    cd $STATE_DIR/zlib-* && make uninstall
 
 }
 
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/sshfs.html
 # [need]: 'fuse', 'python-docutils'
 _make_sshfs() {
-    _wait_file $TMP/sshfs.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file sshfs.tar.gz || return $(_err_line $((LINENO / 2)));
     _try_patch sshfs-;
 
     mkdir -pv _install; cd _install;
     meson --prefix=/usr .. || return $(_err_line $((LINENO / 2)));
 
     local DESTDIR;
-    DESTDIR=$ROOTFS ninja install || return $(_err_line $((LINENO / 2)));
+    DESTDIR=$ROOTFS_DIR ninja install || return $(_err_line $((LINENO / 2)));
 
-    mv -v $ROOTFS/usr/lib/x86_64-linux-gnu/* $ROOTFS/lib;
-    rm -frv $ROOTFS/usr/lib/x86_64-linux-gnu;
+    mv -v $ROOTFS_DIR/usr/lib/x86_64-linux-gnu/* $ROOTFS_DIR/lib;
+    rm -frv $ROOTFS_DIR/usr/lib/x86_64-linux-gnu;
 
     # uninstall 'pcre', 'glib'
-    cd $TMP/pcre-* && make uninstall;
-    cd $TMP/glib-* && make uninstall
+    cd $STATE_DIR/pcre-* && make uninstall;
+    cd $STATE_DIR/glib-* && make uninstall
 
 }
 
 _make_sudo() {
-    _wait_file $TMP/sudo.tar.gz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file sudo.tar.gz || return $(_err_line $((LINENO / 2)));
     _try_patch sudo-;
 
     ./configure \
@@ -396,11 +384,11 @@ _make_sudo() {
         --with-env-editor \
         --with-passprompt="[sudo] password for %p: " || return $(_err_line $((LINENO / 2)));
 
-    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)))
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err_line $((LINENO / 2)))
 }
 
 _make_curl() {
-    _wait_file $TMP/curl.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file curl.tar.xz || return $(_err_line $((LINENO / 2)));
     _try_patch curl-;
 
     ./configure \
@@ -410,20 +398,18 @@ _make_curl() {
         --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt || return $(_err_line $((LINENO / 2)));
 
     sed -i 's/-O2/ /g' ./Makefile;
-    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)));
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err_line $((LINENO / 2)));
 
-    mv -v $ROOTFS/usr/local/lib/libcurl* $ROOTFS/usr/lib;
+    mv -v $ROOTFS_DIR/usr/local/lib/libcurl* $ROOTFS_DIR/usr/lib;
 
     # relink
-    mv -v $ROOTFS/usr/lib/libcurl.so.* $ROOTFS/lib;
-    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcurl.so) $ROOTFS/usr/lib/libcurl.so
-
-    # rm -fr $TMP/curl-$curl_version # clear
+    mv -v $ROOTFS_DIR/usr/lib/libcurl.so.* $ROOTFS_DIR/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libcurl.so) $ROOTFS_DIR/usr/lib/libcurl.so
 }
 
 # for '_make_openssl' [/usr/bin/c_rehash]
 _make_perl5() {
-    _wait_file $TMP/perl.tar.bz2.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file perl.tar.bz2 || return $(_err_line $((LINENO / 2)));
     _try_patch perl-;
 
     sh Configure \
@@ -434,11 +420,11 @@ _make_perl5() {
         -Duseshrplib \
         -Dusethreads || return $(_err_line $((LINENO / 2)));
 
-    make && make DESTDIR=$ROOTFS install || return $(_err_line $((LINENO / 2)))
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err_line $((LINENO / 2)))
 }
 
 __make_libcap2() {
-    _wait_file $TMP/libcap.tar.xz.lock || return $(_err_line $((LINENO / 2)));
+    _wait_file libcap.tar.xz || return $(_err_line $((LINENO / 2)));
     _try_patch libcap-;
 
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
@@ -451,15 +437,13 @@ __make_libcap2() {
         prefix=$PWD/_install \
         install || return $(_err_line $((LINENO / 2)));
 
-    cp -adv ./_install/lib/libcap.so* $ROOTFS/usr/lib;
-    mv -v $ROOTFS/usr/lib/libcap.so.* $ROOTFS/lib;
-    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libcap.so) $ROOTFS/usr/lib/libcap.so;
-
-    # rm -fr $TMP/libcap-$libcap2_version # clear
+    cp -adv ./_install/lib/libcap.so* $ROOTFS_DIR/usr/lib;
+    mv -v $ROOTFS_DIR/usr/lib/libcap.so.* $ROOTFS_DIR/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libcap.so) $ROOTFS_DIR/usr/lib/libcap.so
 }
 
 _apply_rootfs() {
-    cd $ROOTFS;
+    cd $ROOTFS_DIR;
     mkdir -pv \
         dev \
         etc/{acpi/events,init.d,ssl/certs,skel,sysconfig} \
@@ -468,77 +452,79 @@ _apply_rootfs() {
         # var run
 
     # replace '/bin/bash' to '/bin/sh', move perl script to '/opt'
-    for sh in $(grep -lr '\/bin\/bash\|\/bin\/perl' $ROOTFS/{,usr/}{,s}bin);
+    for sh in $(grep -lr '\/bin\/bash\|\/bin\/perl' $ROOTFS_DIR/{,usr/}{,s}bin);
     do
         sed -i 's/\/bin\/bash/\/bin\/sh/g' $sh;
         sh -n $sh || mv -v $sh /opt
     done
 
     # Copy our custom rootfs,
-    cp -frv $THIS_DIR/rootfs/* $ROOTFS;
+    cp -frv $THIS_DIR/rootfs/* $ROOTFS_DIR;
 
     # trim suffix
     local sf sh;
     for sf in $(cd $THIS_DIR/rootfs; find . -type f -name "*.sh");
     do
-        sf="$ROOTFS/${sf#*/}";
+        sf="$ROOTFS_DIR/${sf#*/}";
         mv "$sf" "${sf%.*}";
         # chmod
     done
 
     # executable
-    find $ROOTFS/usr/local/{,s}bin -type f -exec chmod -c +x '{}' +
+    find $ROOTFS_DIR/usr/local/{,s}bin -type f -exec chmod -c +x '{}' +
 
     # copy timezone
-    cp -vL /usr/share/zoneinfo/UTC $ROOTFS/etc/localtime;
+    cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime;
 
     # subversion
-    ln -fsv /var/subversion/bin/svn         $ROOTFS/usr/bin/;
-    ln -fsv /var/subversion/bin/svnadmin    $ROOTFS/usr/bin/;
-    ln -fsv /var/subversion/bin/svnlook     $ROOTFS/usr/bin/;
+    ln -fsv /var/subversion/bin/svn         $ROOTFS_DIR/usr/bin/;
+    ln -fsv /var/subversion/bin/svnadmin    $ROOTFS_DIR/usr/bin/;
+    ln -fsv /var/subversion/bin/svnlook     $ROOTFS_DIR/usr/bin/;
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -frv \
-        $ROOTFS/usr/bin/passwd \
-        $ROOTFS/etc/ssl/man \
-        $ROOTFS/usr/{,local/}include \
-        $ROOTFS/usr/{,local/}share/{info,man,doc} \
-        $ROOTFS/{,usr/}lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a
+        $ROOTFS_DIR/usr/bin/passwd \
+        $ROOTFS_DIR/etc/ssl/man \
+        $ROOTFS_DIR/usr/{,local/}include \
+        $ROOTFS_DIR/usr/{,local/}share/{info,man,doc} \
+        $ROOTFS_DIR/{,usr/}lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a
 
-    find $ROOTFS/{,usr/}lib -name \*.la -delete;
+    find $ROOTFS_DIR/{,usr/}lib -name \*.la -delete;
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/stripping.html
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/strippingagain.html
     # Take care not to use '--strip-unneeded' on the libraries
-    strip --strip-debug $ROOTFS/lib/*;
-    strip --strip-unneeded $ROOTFS/{,usr/}{,s}bin/*; # --strip-all
+    strip --strip-debug $ROOTFS_DIR/lib/*;
+    strip --strip-unneeded $ROOTFS_DIR/{,usr/}{,s}bin/*; # --strip-all
 
 }
 
 # It builds an image that can be used as an ISO *and* a disk image.
 # but read only...
 _build_iso() {
-    [ -n "$OUTPUT_PATH" ] || {
+    [ -n "$1" ] || {
         printf "\n[WARN] skip create iso.\n";
         return 0
     };
 
+    set ${1##*/};
+
     echo " ------------- build iso --------------------------";
-    cd $ROOTFS || return $((LINENO / 2));
+    cd $ROOTFS_DIR || return $((LINENO / 2));
 
     # create 'initrd.img'
     find | cpio -o -H newc | \
         xz -9 --format=lzma --verbose --verbose --threads=0 --extreme > \
-        $ISO/boot/initrd.img || return $((LINENO / 2));
+        $ISO_DIR/boot/initrd.img || return $((LINENO / 2));
 
-    _hash $ISO/boot/initrd.img;
+    _hash $ISO_DIR/boot/initrd.img;
 
-    cp -rv $THIS_DIR/isolinux $ISO/boot/;
+    cp -rv $THIS_DIR/isolinux $ISO_DIR/boot/;
     cp -v \
         /usr/lib/ISOLINUX/isolinux.bin \
         /usr/lib/syslinux/modules/bios/ldlinux.c32 \
-        $ISO/boot/isolinux/;
+        $ISO_DIR/boot/isolinux/;
 
     # Note: only "-isohybrid-mbr /..." is specific to xorriso.
     xorriso \
@@ -548,9 +534,9 @@ _build_iso() {
         -b boot/isolinux/isolinux.bin \
         -c boot/isolinux/boot.cat \
         -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
-        -o "$OUTPUT_PATH" \
-        $ISO || return $((LINENO / 2));
+        -o "$OUT_DIR/$1" \
+        $ISO_DIR || return $((LINENO / 2));
 
-    _hash "$OUTPUT_PATH";
+    _hash "$OUT_DIR";
     return 0
 }

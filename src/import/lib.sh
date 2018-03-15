@@ -29,7 +29,6 @@ _prefix() {
     fi
 }
 
-
 # Message Queue
 _message_queue() {
     case $1 in
@@ -108,25 +107,26 @@ _thread_valve() {
 }
 
 _err_line() {
-    [ -s $TMP/.error ] || printf %s $1 > $TMP/.error;
+    [ -s $STATE_DIR/.error ] || printf %s $1 > $STATE_DIR/.error;
     return 1
 }
 
 # Usage: _wait_file [file]
 _wait_file(){
-    [ -s $TMP/.error ] && return 1;
-    [ -f "$1" ] || return 0;
+    [ -s $STATE_DIR/.error ] && return 1;
+    [ "$1" ] || return 1;
+    set ${1##*/};
     local count=0 times=$((TIMEOUT_SEC / TIMELAG_SEC));
-    until [ -f $1 ];
+    until [ -f "$CELLAR_DIR/$1.lock" ];
     do
         [ $((++count)) -gt $times ] && {
-            printf "[ERROR]: '${1##*/}' time out\n" >&2;
+            printf "[ERROR]: '$1' time out\n" >&2;
             return 1
         };
         sleep $TIMELAG_SEC
     done
-    _untar ${1%.*} || return 1;
-    rm -f $1;
+    _untar $CELLAR_DIR/$1 || return 1;
+    rm -f "$CELLAR_DIR/$1.lock";
     return 0
 }
 
@@ -134,13 +134,12 @@ _wait_file(){
 _untar() {
     _hash $1 || return 1;
     case $1 in
-        *.tar.gz) tar -C $TMP -xzf $1 || return 1;;
-        *.tar.bz2) tar -C $TMP -xjf $1 || return 1;;
-        *.tar.xz) bsdtar -C $TMP -xJf $1 || return 1;;
-        *.tgz) tar -C $TMP -zxf $1 || return 1;;
+        *.tar.gz) tar -C $STATE_DIR -xzf $1 || return 1;;
+        *.tar.bz2) tar -C $STATE_DIR -xjf $1 || return 1;;
+        *.tar.xz) bsdtar -C $STATE_DIR -xJf $1 || return 1;;
+        *.tgz) tar -C $STATE_DIR -zxf $1 || return 1;;
         *) return 1;;
     esac
-    # rm -f $1;
     return 0
 }
 
@@ -154,21 +153,21 @@ _hash() {
 # Usage: _try_patch [prefix_name]-
 _try_patch() {
     [ "$1" ] || return 1;
-    cd $TMP/$1* || return 1;
+    cd $STATE_DIR/$1* || return 1;
     find $THIS_DIR/patch -type f -iname "${PWD##*/}*$2*.patch" -exec patch -Ntp1 -i {} \;
     return $?
 }
 
 # Usage: _last_version "[key]=[value_colume]"
 _last_version() {
-    [ -s $TMP/.error ] && return 1;
+    [ -s $STATE_DIR/.error ] && return 1;
     local key="${@%%=*}" value="${@#*=}" ver;
     [ "$key" == "$value" ] && return 1;
     value=$(grep '[0-9]' <<< "$value" | grep -v 'beta\|-rc\|-RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | sort --version-sort | tail -1);
     ver="$(tr "[:lower:]" "[:upper:]" <<< "$key")";
     [[ $value == [0-9]*\.*[0-9]* ]] && {
         eval $key=$value;
-        printf "$ver=$value\n" | tee -a $ISO/version.swp;
+        printf "$ver=$value\n" | tee -a $ISO_DIR/version.swp;
         return 0
     };
     printf "$ver=UNKNOWN\n";
@@ -177,7 +176,7 @@ _last_version() {
 
 # Usage: _downlock [url]
 _downlock() {
-    [ -s $TMP/.error ] && return 1;
+    [ -s $STATE_DIR/.error ] && return 1;
     local prefix=${1##*/} suffix=${1##*.} swp;
     prefix=${prefix%.*}; # trim last suffix
     if [ $prefix == ${prefix#*[0-9]} ]; then
@@ -197,24 +196,25 @@ _downlock() {
         prefix=${prefix%%-*};
         [ "$prefix$suffix" == "${1##*/}" ] && prefix="${prefix%%[0-9]*}";
     fi
-    printf "# will download '$prefix$suffix' to '$TMP'.\n";
-    if [ ! -f "$TMP/$prefix$suffix" ]; then
+    printf "# will download '$prefix$suffix' to '$CELLAR_DIR'.\n";
+    if [ ! -f "$CELLAR_DIR/$prefix$suffix" ]; then
+        mkdir -p $CELLAR_DIR;
         swp=$$$RANDOM.$RANDOM;
-        curl -L --retry 10 -o $TMP/$swp $1 || {
-            rm -f $TMP/$swp;
+        curl -L --retry 10 -o $CELLAR_DIR/$swp $1 || {
+            rm -f $CELLAR_DIR/$swp;
             printf "[ERROR] download $prefix fail.\n";
-            printf 1 > $TMP/.error;
+            printf 1 > $STATE_DIR/.error;
             return 1
         };
-        mv $TMP/$swp $TMP/$prefix$suffix
+        mv $CELLAR_DIR/$swp $CELLAR_DIR/$prefix$suffix
     fi 2>&1 | _prefix "%F %T download '$prefix', "
 
-    [ "$2" ] || touch $TMP/$prefix$suffix.lock;
+    [ "$2" ] || touch $STATE_DIR/$prefix$suffix.lock;
     return 0
 }
 
 _install() {
-    [ -s $TMP/.error ] && return 1;
+    [ -s $STATE_DIR/.error ] && return 1;
     apt-get -y install $* 2>&1 | _prefix "%F %T install ${1:0:5}.., "
 }
 

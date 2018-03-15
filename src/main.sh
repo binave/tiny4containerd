@@ -11,18 +11,18 @@ THIS_DIR=$(cd `dirname $0`; pwd);
 
 _main() {
     # test complete, then pack it
-    [ -s $ISO/version ] && {
-        cat $ISO/version 2>/dev/null;
+    [ -s $ISO_DIR/version ] && {
+        cat $ISO_DIR/version 2>/dev/null;
         printf "\n";
         _build_iso || return $?;
         return 0
     };
 
     # clear for rebuild
-    rm -frv $TMP/{*-*,.error,*.lock,.message_*,*.swp} $ISO/version $ROOTFS;
+    rm -frv $STATE_DIR/{*-*,.error,*.lock,.message_*,*.swp} $ISO_DIR/version $ROOTFS_DIR;
 
-    # Make the rootfs, Prepare the build directory ($ISO)
-    mkdir -pv $ISO/boot $ROOTFS;
+    # Make the rootfs, Prepare the build directory ($ISO_DIR)
+    mkdir -pv $CELLAR_DIR $ISO_DIR/boot $ROOTFS_DIR $OUT_DIR;
 
     echo " ------------- init apt-get ------------------------";
     # install pkg
@@ -72,7 +72,7 @@ _main() {
 
 
     # is need build kernel
-    if [ ! -s $ISO/boot/vmlinuz64 ]; then
+    if [ ! -s $ISO_DIR/boot/vmlinuz64 ]; then
 
         # Fetch the kernel sources
         _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz - || return $((LINENO / 2));
@@ -178,61 +178,57 @@ _main() {
     wait;
 
     # test queue error
-    [ -s $TMP/.error ] && {
-        ls $TMP/*.lock 2>/dev/null;
-        return $(cat $TMP/.error)
-    };
+    [ -s $STATE_DIR/.error ] && return $(cat $STATE_DIR/.error);
 
     echo " ------------ install docker ----------------------";
-    mkdir -pv $ROOTFS/usr/local/bin;
-    tar -zxvf $TMP/docker.tgz -C $ROOTFS/usr/local/bin --strip-components=1 || return $((LINENO / 2));
+    mkdir -pv $ROOTFS_DIR/usr/local/bin;
+    tar -zxvf $STATE_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $((LINENO / 2));
 
     echo " -------------- run chroot ------------------------";
-    mkdir -pv $ROOTFS/dev;
-    mknod -m 666 $ROOTFS/dev/null c 1 3;
-    mknod -m 666 $ROOTFS/dev/zero c 1 5;
+    mkdir -pv $ROOTFS_DIR/dev;
+    mknod -m 666 $ROOTFS_DIR/dev/null c 1 3;
+    mknod -m 666 $ROOTFS_DIR/dev/zero c 1 5;
 
     # fix: PRNG is not seeded
-    mknod -m 666 $ROOTFS/dev/random c 1 8;
-    mknod -m 644 $ROOTFS/dev/urandom c 1 9;
+    mknod -m 666 $ROOTFS_DIR/dev/random c 1 8;
+    mknod -m 644 $ROOTFS_DIR/dev/urandom c 1 9;
 
     # refresh libc cache
-    chroot $ROOTFS ldconfig;
+    chroot $ROOTFS_DIR ldconfig;
 
     # create ssh key and test docker command
-    chroot $ROOTFS sh -xc 'ssh-keygen -A && docker -v' || return $((LINENO / 2));
+    chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v' || return $((LINENO / 2));
 
     echo "-------------- addgroup --------------------------";
     # for dockerd: root map user
     # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
-    chroot $ROOTFS sh -xc 'addgroup -S dockremap && adduser -S -G dockremap dockremap';
-    echo "dockremap:165536:65536" | tee $ROOTFS/etc/subgid > $ROOTFS/etc/subuid;
+    chroot $ROOTFS_DIR sh -xc 'addgroup -S dockremap && adduser -S -G dockremap dockremap';
+    echo "dockremap:165536:65536" | tee $ROOTFS_DIR/etc/subgid > $ROOTFS_DIR/etc/subuid;
 
     # add user: tc
-    chroot $ROOTFS sh -xc 'addgroup -S docker && \
+    chroot $ROOTFS_DIR sh -xc 'addgroup -S docker && \
         adduser -s /bin/sh -G staff -D tc && \
         addgroup tc docker && \
         printf "tc:tcuser" | /usr/sbin/chpasswd -m';
-	printf "tc\tALL=NOPASSWD: ALL" >> $ROOTFS/etc/sudoers;
+	printf "tc\tALL=NOPASSWD: ALL" >> $ROOTFS_DIR/etc/sudoers;
 
     # clear dev
-    rm -frv $ROOTFS/{dev,var}/*;
+    rm -frv $ROOTFS_DIR/{dev,var}/*;
 
     # for iso label
-    mv -v $ISO/version.swp $ISO/version;
+    mv -v $ISO_DIR/version.swp $ISO_DIR/version;
 
     # build iso
     _build_iso || return $?;
     return 0
 }
 
-STATUS_CODE=0;
 {
     printf "\n[`date`]\n";
     # $((LINENO / 2)) -> return|exit code: [0, 256)
     if time _main; then
         # clean
-        rm -fr $TMP/*-* $TMP/LVM2*
+        rm -fr $STATE_DIR/*-* $STATE_DIR/LVM2*
     else
         echo "[ERROR]: ${0##*/}: $(($? * 2)) line." >&2;
         STATUS_CODE=1

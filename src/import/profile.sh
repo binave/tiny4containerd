@@ -1,7 +1,7 @@
 #!/bin/bash
 
 _create_etc() {
-    [ -s $TMP/.error ] && return $(_err_line $((LINENO / 2)));
+    [ -s $STATE_DIR/.error ] && return $(_err_line $((LINENO / 2)));
 
     echo " ------------- create etc -------------------------";
 
@@ -22,12 +22,12 @@ ethers: files
 rpc: files
 
 # End /etc/nsswitch.conf
-' | tee $ROOTFS/etc/nsswitch.conf
+' | tee $ROOTFS_DIR/etc/nsswitch.conf
 
     # sysctl
     printf %s 'net.ipv4.ip_forward=1
 # net.ipv6.conf.all.forwarding=1
-' | tee $ROOTFS/etc/sysctl.conf;
+' | tee $ROOTFS_DIR/etc/sysctl.conf;
 
     # fstab
     printf %s '# /etc/fstab
@@ -35,7 +35,7 @@ proc            /proc        proc    defaults          0       0
 sysfs           /sys         sysfs   defaults          0       0
 devpts          /dev/pts     devpts  defaults          0       0
 # tmpfs           /dev/shm     tmpfs   defaults          0       0
-' | tee $ROOTFS/etc/fstab;
+' | tee $ROOTFS_DIR/etc/fstab;
 
     # group
     printf %s '
@@ -43,7 +43,7 @@ root:x:0:
 lp:x:7:lp
 nogroup:x:65534:
 staff:x:50:
-' | tee $ROOTFS/etc/group;
+' | tee $ROOTFS_DIR/etc/group;
 
     # gshadow
     printf %s '
@@ -53,21 +53,21 @@ staff:!::
 floppy:!::tcroot:x:0:0:root:/root:/bin/sh
 lp:x:7:7:lp:/var/spool/lpd:/bin/sh
 nobody:x:65534:65534:nobody:/nonexistent:/bin/false
-' | tee $ROOTFS/etc/gshadow;
+' | tee $ROOTFS_DIR/etc/gshadow;
 
     # passwd
     printf %s '
 root:x:0:0:root:/root:/bin/sh
 lp:x:7:7:lp:/var/spool/lpd:/bin/sh
 nobody:x:65534:65534:nobody:/nonexistent:/bin/false
-' | tee $ROOTFS/etc/passwd;
+' | tee $ROOTFS_DIR/etc/passwd;
 
     # shadow
     printf %s '
 root:*:13525:0:99999:7:::
 lp:*:13510:0:99999:7:::
 nobody:*:13509:0:99999:7:::
-' | tee $ROOTFS/etc/shadow;
+' | tee $ROOTFS_DIR/etc/shadow;
 
     # sudoers
     printf %s "#
@@ -86,7 +86,7 @@ Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/sbin/wtmp
 # User privilege specification
 root    ALL=(ALL) ALL
 
-" | tee $ROOTFS/etc/sudoers;
+" | tee $ROOTFS_DIR/etc/sudoers;
 
     # profile
     printf %s "# /etc/profile: system-wide .profile file for the Bourne shells
@@ -112,9 +112,9 @@ readonly TMOUT;
 
 for i in /etc/profile.d/*.sh; do [ -r \$i ] && . \$i; done
 unset i
-" | tee $ROOTFS/etc/profile;
+" | tee $ROOTFS_DIR/etc/profile;
 
-    mkdir -pv $ROOTFS/etc/{skel,sysconfig};
+    mkdir -pv $ROOTFS_DIR/etc/{skel,sysconfig};
 
     # .profile
     printf %s "# ~/.profile: Executed by Bourne-compatible login SHells.
@@ -128,19 +128,19 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
 
 [ -f \$HOME/.ashrc ] && . \$HOME/.ashrc
 
-" | tee $ROOTFS/etc/skel/.profile;
+" | tee $ROOTFS_DIR/etc/skel/.profile;
 
-    touch $ROOTFS/etc/{skel/.ashrc,skel/.ash_history,motd};
+    touch $ROOTFS_DIR/etc/{skel/.ashrc,skel/.ash_history,motd};
 
     # fix "su -"
-    echo root > $ROOTFS/etc/sysconfig/superuser;
+    echo root > $ROOTFS_DIR/etc/sysconfig/superuser;
 
     # add some timezone files so we're explicit about being UTC
-    echo 'UTC' | tee $ROOTFS/etc/timezone;
+    echo 'UTC' | tee $ROOTFS_DIR/etc/timezone;
 
-    mkdir -pv $ROOTFS/etc/acpi/events;
+    mkdir -pv $ROOTFS_DIR/etc/acpi/events;
     printf %s 'event=button/power*
 action=/sbin/poweroff
-' | tee $ROOTFS/etc/acpi/events/all;
+' | tee $ROOTFS_DIR/etc/acpi/events/all;
 
 }

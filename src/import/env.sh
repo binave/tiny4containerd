@@ -1,18 +1,21 @@
 #!/bin/bash
 
-: ${OUTPUT_PATH:=$1};
 : ${TIMEOUT_SEC:=600};
 : ${TIMELAG_SEC:=5};
-: ${TMP:=/tmp};
-: ${ISO:=$TMP/iso};
+
+: ${STATE_DIR:=$HOME};
+: ${ISO_DIR:=$STATE_DIR/iso};
+: ${OUT_DIR:=$STATE_DIR/out};
+: ${CELLAR_DIR:=$STATE_DIR/cellar};
 
 : ${KERNEL_MAJOR_VERSION:=4.9};
 : ${UTIL_LINUX_MAJOR_VERSION:=2.31};
 : ${GLIB_MAJOR_VERSION:=2.55};
 
-CORES=$(nproc);
+STATUS_CODE=0;
+CORES_COUNT=$(nproc);
 LABEL=`date +tc-%y%m%d-%H`;
-ROOTFS=$TMP/rootfs;
+ROOTFS_DIR=$STATE_DIR/rootfs;
 
 # linux
 KERNEL_PUB=https://cdn.kernel.org/pub;
@@ -23,7 +26,7 @@ GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
 BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 
 # ssl
-MAKE_CA=https://raw.githubusercontent.com/djlucas/make-ca/master/make-ca
+MAKE_CA=https://raw.githubusercontent.com/djlucas/make-ca/master/make-ca;
 CERTDATA_DOWNLOAD=http://anduin.linuxfromscratch.org/BLFS/other/certdata.txt;
 CA_CERTIFICATES_DOWNLOAD=https://salsa.debian.org/debian/ca-certificates/repository/master/archive.tar.bz2;
 ZLIB_DOWNLOAD=http://www.zlib.net;
