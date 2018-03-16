@@ -106,6 +106,17 @@ _thread_valve() {
     esac
 }
 
+_case() {
+    local pre=low suf=upp
+    case $1 in
+        -u|--up) :;;
+        -l|--low) pre=upp suf=low;;
+        *) return 1;;
+    esac
+    shift;
+    printf %s "$@" | tr "[:${pre}er:]" "[:${suf}er:]"
+}
+
 _err_line() {
     [ -s $STATE_DIR/.error ] || printf %s $1 > $STATE_DIR/.error;
     return 1
@@ -161,16 +172,22 @@ _try_patch() {
 # Usage: _last_version "[key]=[value_colume]"
 _last_version() {
     [ -s $STATE_DIR/.error ] && return 1;
-    local key="${@%%=*}" value="${@#*=}" ver;
+    local key="${@%%=*}" value="${@#*=}" tmp;
     [ "$key" == "$value" ] && return 1;
-    value=$(grep '[0-9]' <<< "$value" | grep -v 'beta\|[-0-9]rc\|[-0-9]RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | sort --version-sort | tail -1);
-    ver="$(tr "[:lower:]" "[:upper:]" <<< "$key")";
+    # source $ISO_DIR/version
+    if tmp=$(eval printf \$$(_case --up $key) 2>/dev/null); then
+        value=$tmp;
+    else
+        value=$(grep '[0-9]' <<< "$value" | grep -v 'beta\|[-0-9]rc\|[-0-9]RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | sort --version-sort | tail -1);
+    fi
+    tmp=$(_case --up $key);
+    unset $tmp; # clear variable from $ISO_DIR/version
     [[ $value == *[0-9]\.[0-9]* ]] && {
         eval $key=$value;
-        printf "$ver=$value\n" | tee -a $ISO_DIR/version.swp;
+        printf "$tmp=$value\n" | tee -a $ISO_DIR/version.swp;
         return 0
     };
-    printf "$ver=UNKNOWN\n";
+    printf "$tmp is UNKNOWN\n" >&2;
     return 1
 }
 
@@ -187,12 +204,12 @@ _downlock() {
         if [ -d "$swp" ]; then
             cd $swp;
             git pull && cd - >/dev/null && {
-                [ "$2" ] || touch $STATE_DIR/$pre-$suf.lock;
+                touch $STATE_DIR/$pre-$suf.lock;
                 return 0
             };
         else
             git clone -b $suf --depth 1 ${1%\.git\.*}.git $swp && {
-                [ "$2" ] || touch $STATE_DIR/$pre-$suf.lock;
+                touch $STATE_DIR/$pre-$suf.lock;
                 return 0
             };
         fi
@@ -217,7 +234,7 @@ _downlock() {
                     };
                     mv $CELLAR_DIR/$swp $CELLAR_DIR/$pre$suf
                 fi
-                [ "$2" ] || touch $STATE_DIR/$pre$suf.lock;
+                touch $STATE_DIR/$pre$suf.lock;
                 return 0
             fi
         fi

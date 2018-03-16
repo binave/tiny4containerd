@@ -11,12 +11,13 @@ THIS_DIR=$(cd `dirname $0`; pwd);
 
 _main() {
     # test complete, then pack it
-    [ -s $ISO_DIR/version ] && {
-        cat $ISO_DIR/version 2>/dev/null;
-        printf "\n";
-        _build_iso || return $?;
-        return 0
+    [ -f $ROOTFS_DIR/usr/local/bin/docker ] && {
+        _build_iso;
+        return $?
     };
+
+    # load version info (upper key)
+    [ -s $ISO_DIR/version ] && . $ISO_DIR/version;
 
     # clear for rebuild
     rm -frv $STATE_DIR/{*-*,.error,*.lock,*.swp} $ISO_DIR/version $ROOTFS_DIR;
@@ -69,7 +70,6 @@ _main() {
     # get docker stable version
     _last_version "docker_version=$(curl -L $DOCKER_DOWNLOAD 2>/dev/null | grep 'docker-' | awk -F[-\"] '{print $3"-"$4}')" || return $((LINENO / 2));
     echo;
-
 
     # is need build kernel
     if [ ! -s $ISO_DIR/boot/vmlinuz64 ]; then
@@ -160,7 +160,8 @@ _main() {
             $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz \
             $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz \
             $CURL_DOWNLOAD/curl-$curl_version.tar.xz \
-            $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz;
+            $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
+            $DOCKER_DOWNLOAD/docker-$docker_version.tgz;
             # $PERL5_DOWNLOAD/perl-$perl5_version.tar.bz2
         do
             # get thread and run
@@ -171,20 +172,12 @@ _main() {
         _thread_valve --destroy;
     fi
 
-    # Get the Docker binaries with version.
-    _downlock "$DOCKER_DOWNLOAD/docker-$docker_version.tgz" - || return $((LINENO / 2));
-
     # for '_build_iso'
     _install cpio genisoimage isolinux syslinux xorriso xz-utils || return $((LINENO / 2));
-
     wait;
 
     # test queue error
     [ -s $STATE_DIR/.error ] && return $(cat $STATE_DIR/.error);
-
-    echo " ------------ install docker ----------------------";
-    mkdir -pv $ROOTFS_DIR/usr/local/bin;
-    tar -zxvf $STATE_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $((LINENO / 2));
 
     echo " -------------- run chroot ------------------------";
     mkdir -pv $ROOTFS_DIR/dev;
@@ -219,6 +212,10 @@ _main() {
 
     # for iso label
     mv -v $ISO_DIR/version.swp $ISO_DIR/version;
+
+    echo " ------------ install docker ----------------------";
+    mkdir -pv $ROOTFS_DIR/usr/local/bin;
+    tar -zxvf $STATE_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $((LINENO / 2));
 
     # build iso
     _build_iso || return $?;
