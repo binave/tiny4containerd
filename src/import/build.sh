@@ -541,6 +541,6 @@ _build_iso() {
         -o "$OUT_DIR/$1" \
         $ISO_DIR || return $((LINENO / 2));
 
-    _hash "$OUT_DIR";
+    _hash "$OUT_DIR/$1";
     return 0
 }

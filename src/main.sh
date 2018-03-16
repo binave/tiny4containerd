@@ -215,7 +215,7 @@ _main() {
     mv -v $ISO_DIR/version.swp $ISO_DIR/version;
 
     # build iso
-    _build_iso || return $?;
+    _build_iso $@ || return $?;
     return 0
 }
 
