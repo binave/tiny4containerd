@@ -188,9 +188,6 @@ _main() {
     # refresh libc cache
     chroot $ROOTFS_DIR ldconfig;
 
-    # create ssh key and test docker command
-    chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v' || return $((LINENO / 2));
-
     echo "-------------- addgroup --------------------------";
     # for dockerd: root map user
     # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
@@ -204,15 +201,18 @@ _main() {
         printf "tc:tcuser" | /usr/sbin/chpasswd -m';
 	printf "tc\tALL=NOPASSWD: ALL" >> $ROOTFS_DIR/etc/sudoers;
 
+    echo " ------------ install docker ----------------------";
+    mkdir -pv $ROOTFS_DIR/usr/local/bin;
+    tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $((LINENO / 2));
+
+    # create ssh key and test docker command
+    chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v' || return $((LINENO / 2));
+
     # clear dev
     rm -frv $ROOTFS_DIR/{dev,var}/*;
 
     # for iso label
     mv -v $ISO_DIR/version.swp $ISO_DIR/version;
-
-    echo " ------------ install docker ----------------------";
-    mkdir -pv $ROOTFS_DIR/usr/local/bin;
-    tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $((LINENO / 2));
 
     # build iso
     _build_iso || return $?;
