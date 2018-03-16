@@ -118,17 +118,18 @@ _case() {
 }
 
 _err() {
-    [ -s $STATE_DIR/.error ] || printf %s $(($1 / 2)) > $STATE_DIR/.error;
+    mkdir -p $WORK_DIR;
+    [ -s $WORK_DIR/.error ] || printf %s $(($1 / 2)) > $WORK_DIR/.error;
     return 1
 }
 
 # Usage: _wait4 [file]
 _wait4(){
-    [ -s $STATE_DIR/.error ] && return 1;
+    [ -s $WORK_DIR/.error ] && return 1;
     [ "$1" ] || return 1;
     set ${1##*/};
     local count=0 times=$((TIMEOUT_SEC / TIMELAG_SEC));
-    until [ -f "$STATE_DIR/$1.lock" ];
+    until [ -f "$LOCK_DIR/$1.lock" ];
     do
         [ $((++count)) -gt $times ] && {
             printf "[ERROR]: '$1' time out\n" >&2;
@@ -139,7 +140,7 @@ _wait4(){
     if [ -f $CELLAR_DIR/$1 ]; then
         _untar $CELLAR_DIR/$1 || return 1;
     fi
-    rm -f "$STATE_DIR/$1.lock";
+    rm -f "$LOCK_DIR/$1.lock";
     return 0
 }
 
@@ -147,10 +148,10 @@ _wait4(){
 _untar() {
     _hash $1 || return 1;
     case $1 in
-        *.tar.gz) tar -C $STATE_DIR -xzf $1 || return 1;;
-        *.tar.bz2) tar -C $STATE_DIR -xjf $1 || return 1;;
-        *.tar.xz) bsdtar -C $STATE_DIR -xJf $1 || return 1;;
-        *.tgz) tar -C $STATE_DIR -zxf $1 || return 1;;
+        *.tar.gz) tar -C $WORK_DIR -xzf $1 || return 1;;
+        *.tar.bz2) tar -C $WORK_DIR -xjf $1 || return 1;;
+        *.tar.xz) bsdtar -C $WORK_DIR -xJf $1 || return 1;;
+        *.tgz) tar -C $WORK_DIR -zxf $1 || return 1;;
         *) return 1;;
     esac
     return 0
@@ -166,14 +167,14 @@ _hash() {
 # Usage: _try_patch [prefix_name]-
 _try_patch() {
     [ "$1" ] || return 1;
-    cd $STATE_DIR/$1* || return 1;
+    cd $WORK_DIR/$1* || return 1;
     find $THIS_DIR/patch -type f -iname "${PWD##*/}*$2*.patch" -exec patch -Ntp1 -i {} \;
     return $?
 }
 
 # Usage: _last_version "[key]=[value_colume]"
 _last_version() {
-    [ -s $STATE_DIR/.error ] && return 1;
+    [ -s $WORK_DIR/.error ] && return 1;
     local key="${@%%=*}" value="${@#*=}" tmp;
     [ "$key" == "$value" ] && return 1;
     # source $ISO_DIR/version
@@ -185,6 +186,7 @@ _last_version() {
     tmp=$(_case --up $key);
     unset $tmp; # clear variable from $ISO_DIR/version
     [[ $value == *[0-9]\.[0-9]* ]] && {
+        mkdir -p $ISO_DIR;
         eval $key=$value;
         printf "$tmp=$value\n" | tee -a $ISO_DIR/version.swp;
         return 0
@@ -195,9 +197,9 @@ _last_version() {
 
 # Usage: _downlock [url]
 _downlock() {
-    [ -s $STATE_DIR/.error ] && return 1;
+    mkdir -p $CELLAR_DIR $LOCK_DIR $WORK_DIR;
+    [ -s $WORK_DIR/.error ] && return 1;
     local pre=${1##*/} suf swp;
-
     if [[ $1 == *\.git\.* ]]; then
         pre=${pre%\.git\.*};
         suf=${1##*\.git\.};
@@ -208,12 +210,12 @@ _downlock() {
             git $args checkout .; # reset edit
             git $args clean -d -f; # remove new file
             git $args pull && {
-                touch $STATE_DIR/$pre-$suf.lock;
+                touch $LOCK_DIR/$pre-$suf.lock;
                 return 0
             };
         else
             git clone --branch $suf --depth 1 ${1%\.git\.*}.git $swp && {
-                touch $STATE_DIR/$pre-$suf.lock;
+                touch $LOCK_DIR/$pre-$suf.lock;
                 return 0
             };
         fi
@@ -233,12 +235,12 @@ _downlock() {
                     curl -L --retry 10 -o $CELLAR_DIR/$swp $1 || {
                         rm -f $CELLAR_DIR/$swp;
                         printf "[ERROR] download $pre fail.\n";
-                        printf 1 > $STATE_DIR/.error;
+                        printf 1 > $WORK_DIR/.error;
                         return 1
                     };
                     mv $CELLAR_DIR/$swp $CELLAR_DIR/$pre$suf
                 fi
-                touch $STATE_DIR/$pre$suf.lock;
+                touch $LOCK_DIR/$pre$suf.lock;
                 return 0
             fi
         fi
@@ -247,7 +249,7 @@ _downlock() {
 }
 
 _install() {
-    [ -s $STATE_DIR/.error ] && return 1;
+    [ -s $WORK_DIR/.error ] && return 1;
     apt-get -y install $* 2>&1 | _prefix "%F %T install ${1:0:5}.., "
 }
 

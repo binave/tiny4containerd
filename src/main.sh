@@ -19,11 +19,9 @@ _main() {
     # load version info (upper key)
     [ -s $ISO_DIR/version ] && . $ISO_DIR/version;
 
-    # clear for rebuild
-    rm -frv $STATE_DIR/{*-*,.error,*.lock} $ISO_DIR/version* $ROOTFS_DIR;
-
-    # Make the rootfs, Prepare the build directory ($ISO_DIR)
-    mkdir -pv $CELLAR_DIR $ISO_DIR/boot $ROOTFS_DIR $OUT_DIR;
+    # clean the rootfs, prepare the build directory ($ISO_DIR)
+    rm -fv $ISO_DIR $ROOTFS_DIR;
+    mkdir -pv $ISO_DIR/boot $ROOTFS_DIR;
 
     echo " ------------- init apt-get ------------------------";
     # install pkg
@@ -39,7 +37,6 @@ _main() {
     _last_version "zlib_version=$(curl -L $ZLIB_DOWNLOAD/ChangeLog.txt 2>/dev/null | grep Changes | awk '{print $3}')" || return $((LINENO / 2));
 
     _last_version "openssh_version=$(curl -L $OPENSSH_DOWNLOAD 2>/dev/null | grep 'tar\.gz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
-    # _last_version "dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
     _last_version "iptables_version=$(curl -L $IPTABLES_DOWNLOAD 2>/dev/null | grep '"iptables-.*bz2"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
 
@@ -177,7 +174,7 @@ _main() {
     wait;
 
     # test queue error
-    [ -s $STATE_DIR/.error ] && return $(cat $STATE_DIR/.error);
+    [ -s $WORK_DIR/.error ] && return $(cat $WORK_DIR/.error);
 
     echo " -------------- run chroot ------------------------";
     mkdir -pv $ROOTFS_DIR/dev;
@@ -215,30 +212,28 @@ _main() {
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;
-    tar -zxvf $STATE_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $((LINENO / 2));
+    tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $((LINENO / 2));
 
     # build iso
     _build_iso || return $?;
     return 0
 }
 
+# create directory
+rm -fr $LOCK_DIR $WORK_DIR;
+printf "mkdir -pv$(set | grep _DIR= | awk -F= '{printf " "$2}')" | bash;
+
 {
     printf "\n[`date`]\n";
     # $((LINENO / 2)) -> return|exit code: [0, 256)
-    if time _main; then
-        # clean
-        rm -fr $STATE_DIR/*-* $STATE_DIR/LVM2*
-    else
-        echo "[ERROR]: ${0##*/}: $(($? * 2)) line." >&2;
-        STATUS_CODE=1
-    fi
+    time _main || printf "[ERROR]: ${0##*/}: $(($? * 2)) line.\n" >&2;
 
     # log path
     printf "\nuse command 'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";
     # complete.
     printf "\ncomplete.\n\n";
-    exit $STATUS_CODE
+    exit 0
 
 } 2>&1 | tee -a "$OUT_DIR/build.log";
 
-exit $STATUS_CODE
+exit 0

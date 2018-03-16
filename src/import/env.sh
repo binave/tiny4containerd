@@ -12,10 +12,11 @@
 : ${UTIL_LINUX_MAJOR_VERSION:=2.31};
 : ${GLIB_MAJOR_VERSION:=2.55};
 
-STATUS_CODE=0;
+LOCK_DIR=$STATE_DIR/lock;
+ROOTFS_DIR=$STATE_DIR/rootfs;
+WORK_DIR=$STATE_DIR/work;
 CORES_COUNT=$(nproc);
 LABEL=`date +tc-%y%m%d-%H`;
-ROOTFS_DIR=$STATE_DIR/rootfs;
 
 # linux
 KERNEL_PUB=https://cdn.kernel.org/pub;

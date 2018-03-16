@@ -20,7 +20,7 @@ _make_kernel() {
     rm -fv $ROOTFS_DIR/lib/modules/[0-9]*-tc/{build,source};
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/linux-headers.html
-    make INSTALL_HDR_PATH=$STATE_DIR/kernel-header headers_install || return $(_err $LINENO);
+    make INSTALL_HDR_PATH=$WORK_DIR/kernel-header headers_install || return $(_err $LINENO);
 
     _hash ./arch/x86/boot/bzImage;
 
@@ -47,7 +47,7 @@ _make_glibc() {
         --enable-stack-protector=strong \
         --enable-obsolete-rpc  \
         --disable-werror \
-        --with-headers=$STATE_DIR/kernel-header/include \
+        --with-headers=$WORK_DIR/kernel-header/include \
         libc_cv_slibdir=/lib || return $(_err $LINENO);
 
     sed -i 's/-O2//g' ./config.make ./config.status;
@@ -119,14 +119,14 @@ _make_openssl() {
 # http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
 # [need]: 'python' build
 _make_ca() {
-    [ -s $STATE_DIR/.error ] || \
-        curl --retry 10 -L -o $STATE_DIR/${CERTDATA_DOWNLOAD##*/} $CERTDATA_DOWNLOAD || return $((LINENO / 2));
+    [ -s $WORK_DIR/.error ] || \
+        curl --retry 10 -L -o $CELLAR_DIR/${CERTDATA_DOWNLOAD##*/} $CERTDATA_DOWNLOAD || return $((LINENO / 2));
 
     _wait4 ca-certificates-master || return $(_err $LINENO);
     cd $CELLAR_DIR/ca-certificates-master;
 
     mkdir -pv $ROOTFS_DIR/tmp $ROOTFS_DIR/usr/share/ca-certificates;
-    cp -v $STATE_DIR/certdata.txt ./mozilla/;
+    cp -v $CELLAR_DIR/certdata.txt ./mozilla/;
 
     make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO);
     find $ROOTFS_DIR/usr/share/ca-certificates/mozilla -type f | sed 's/.*mozilla/mozilla/g' | \
@@ -174,7 +174,7 @@ _make_iptables() {
         --enable-shared \
         --localstatedir=/var \
         --with-xtlibdir=/lib/xtables \
-        --with-kernel=$STATE_DIR/linux-[0-9]* \
+        --with-kernel=$WORK_DIR/linux-[0-9]* \
         --disable-nftables;
     sed -i 's/-O2/ /g' ./Makefile;
 
@@ -205,7 +205,7 @@ _make_mdadm() {
 
 # for '_make_eudev'
 __make_util_linux() {
-    _wait4 util.tar.xz || return $(_err $LINENO);
+    _wait4 util-linux.tar.xz || return $(_err $LINENO);
     _try_patch util-linux-;
 
     ./configure \
@@ -297,8 +297,8 @@ _make_fuse() {
     ninja install && DESTDIR=$ROOTFS_DIR ninja install || return $(_err $LINENO)
 
     # uninstall 'util-linux' 'eudev'
-    cd $STATE_DIR/util-linux-* && make uninstall;
-    cd $STATE_DIR/eudev-* && make uninstall
+    cd $WORK_DIR/util-linux-* && make uninstall;
+    cd $WORK_DIR/eudev-* && make uninstall
 
 }
 
@@ -350,7 +350,7 @@ __make_glib() {
     rm -fv /lib/l{d-linux-x86-64,ibpthread,ibc}.so* /usr/lib/lib{c,pthread}_nonshared.a;
 
     # uninstall 'zlib'
-    cd $STATE_DIR/zlib-* && make uninstall
+    cd $WORK_DIR/zlib-* && make uninstall
 
 }
 
@@ -370,8 +370,8 @@ _make_sshfs() {
     rm -frv $ROOTFS_DIR/usr/lib/x86_64-linux-gnu;
 
     # uninstall 'pcre', 'glib'
-    cd $STATE_DIR/pcre-* && make uninstall;
-    cd $STATE_DIR/glib-* && make uninstall
+    cd $WORK_DIR/pcre-* && make uninstall;
+    cd $WORK_DIR/glib-* && make uninstall
 
 }
 
@@ -446,7 +446,7 @@ __make_libcap2() {
 }
 
 _apply_rootfs() {
-    [ -s $STATE_DIR/.error ] && return $(_err $LINENO);
+    [ -s $WORK_DIR/.error ] && return $(_err $LINENO);
     cd $ROOTFS_DIR;
     mkdir -pv \
         dev \
