@@ -20,7 +20,7 @@ _main() {
     [ -s $ISO_DIR/version ] && . $ISO_DIR/version;
 
     # clean the rootfs, prepare the build directory ($ISO_DIR)
-    rm -fv $ISO_DIR $ROOTFS_DIR;
+    rm -fr $ISO_DIR $ROOTFS_DIR;
     mkdir -pv $ISO_DIR/boot $ROOTFS_DIR;
 
     echo " ------------- init apt-get ------------------------";
