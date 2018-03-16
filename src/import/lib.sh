@@ -117,13 +117,13 @@ _case() {
     printf %s "$@" | tr "[:${pre}er:]" "[:${suf}er:]"
 }
 
-_err_line() {
-    [ -s $STATE_DIR/.error ] || printf %s $1 > $STATE_DIR/.error;
+_err() {
+    [ -s $STATE_DIR/.error ] || printf %s $(($1 / 2)) > $STATE_DIR/.error;
     return 1
 }
 
-# Usage: _wait_file [file]
-_wait_file(){
+# Usage: _wait4 [file]
+_wait4(){
     [ -s $STATE_DIR/.error ] && return 1;
     [ "$1" ] || return 1;
     set ${1##*/};
