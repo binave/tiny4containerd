@@ -226,7 +226,7 @@ printf "mkdir -pv$(set | grep _DIR= | awk -F= '{printf " "$2}')" | bash;
 {
     printf "\n[`date`]\n";
     # $((LINENO / 2)) -> return|exit code: [0, 256)
-    time _main || printf "[ERROR]: ${0##*/}: $(($? * 2)) line.\n" >&2;
+    time _main $@ || printf "[ERROR]: ${0##*/}: $(($? * 2)) line.\n" >&2;
 
     # log path
     printf "\nuse command 'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";
