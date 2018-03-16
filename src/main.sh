@@ -20,7 +20,7 @@ _main() {
     [ -s $ISO_DIR/version ] && . $ISO_DIR/version;
 
     # clear for rebuild
-    rm -frv $STATE_DIR/{*-*,.error,*.lock,*.swp} $ISO_DIR/version $ROOTFS_DIR;
+    rm -frv $STATE_DIR/{*-*,.error,*.lock} $ISO_DIR/version* $ROOTFS_DIR;
 
     # Make the rootfs, Prepare the build directory ($ISO_DIR)
     mkdir -pv $CELLAR_DIR $ISO_DIR/boot $ROOTFS_DIR $OUT_DIR;
