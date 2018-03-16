@@ -12,7 +12,7 @@ THIS_DIR=$(cd `dirname $0`; pwd);
 _main() {
     # test complete, then pack it
     [ -f $ROOTFS_DIR/usr/local/bin/docker ] && {
-        _build_iso;
+        _build_iso $@;
         return $?
     };
 
