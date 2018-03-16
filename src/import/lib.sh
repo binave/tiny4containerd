@@ -136,7 +136,9 @@ _wait4(){
         };
         sleep $TIMELAG_SEC
     done
-    [ -d $CELLAR_DIR/$1 ] || _untar $CELLAR_DIR/$1 || return 1;
+    if [ -f $CELLAR_DIR/$1 ]; then
+        _untar $CELLAR_DIR/$1 || return 1;
+    fi
     rm -f "$STATE_DIR/$1.lock";
     return 0
 }
@@ -202,13 +204,15 @@ _downlock() {
         swp="$CELLAR_DIR/$pre-$suf";
         printf "will clone '$pre' to '$swp'.\n";
         if [ -d "$swp" ]; then
-            cd $swp;
-            git pull && cd - >/dev/null && {
+            local args="--git-dir=$swp/.git --work-tree=$swp";
+            git $args checkout .; # reset edit
+            git $args clean -d -f; # remove new file
+            git $args pull && {
                 touch $STATE_DIR/$pre-$suf.lock;
                 return 0
             };
         else
-            git clone -b $suf --depth 1 ${1%\.git\.*}.git $swp && {
+            git clone --branch $suf --depth 1 ${1%\.git\.*}.git $swp && {
                 touch $STATE_DIR/$pre-$suf.lock;
                 return 0
             };
