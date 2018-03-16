@@ -41,7 +41,7 @@ _main() {
     _last_version "openssh_version=$(curl -L $OPENSSH_DOWNLOAD 2>/dev/null | grep 'tar\.gz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
     # _last_version "dropbear_version=$(curl -L $DROPBEAR_DOWNLOAD 2>/dev/null | grep 'bz2"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
-    _last_version "iptables_version=$(curl -L $IPTABLES_DOWNLOAD 2>/dev/null | grep '/iptables-.*bz2"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
+    _last_version "iptables_version=$(curl -L $IPTABLES_DOWNLOAD 2>/dev/null | grep '"iptables-.*bz2"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
 
     _last_version "mdadm_version=$(curl -L $MDADM_DOWNLOAD 2>/dev/null | grep "mdadm-.*.xz" | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
 
