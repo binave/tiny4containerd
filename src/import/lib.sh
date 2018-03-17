@@ -172,17 +172,17 @@ _try_patch() {
     return $?
 }
 
-# Usage: _last_version "[key]=[value_colume]"
+# Usage: _last_version [key] [url] [grep_args] [awk args] ...
 _last_version() {
     [ -s $WORK_DIR/.error ] && return 1;
-    local key="${@%%=*}" value="${@#*=}" tmp;
-    [ "$key" == "$value" ] && return 1;
+    [ $# -ge 4 ] || return 1;
+    local key="$1" value tmp;
     # source $ISO_DIR/version
-    if tmp=$(eval printf \$$(_case --up $key) 2>/dev/null); then
-        value=$tmp;
-    else
-        value=$(grep '[0-9]' <<< "$value" | grep -v 'beta\|[-0-9]rc\|[-0-9]RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | sort --version-sort | tail -1);
-    fi
+    value=$(eval printf \$$(_case --up $key) 2>/dev/null) || {
+        value=$(printf %s "curl -L $2 2>/dev/null | grep $3 | awk $4 $5 $6 $7" | bash | \
+            grep '[0-9]' | grep -v 'beta\|[-0-9]rc\|[-0-9]RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | \
+            sort --version-sort | tail -1);
+    };
     tmp=$(_case --up $key);
     unset $tmp; # clear variable from $ISO_DIR/version
     [[ $value == *[0-9]\.[0-9]* ]] && {

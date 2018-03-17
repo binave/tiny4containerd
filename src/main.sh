@@ -28,45 +28,27 @@ _main() {
     _init_install && _install gawk && _install build-essential bsdtar curl git-core || return $((LINENO / 2));
 
     echo;
-    _last_version "kernel_version=$(curl -L $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x 2>/dev/null | grep "linux-$KERNEL_MAJOR_VERSION.*xz" | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
-
-    _last_version "glibc_version=$(curl -L $GLIBC_DOWNLOAD 2>/dev/null | grep 'glibc-[0-9].*xz"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
-
-    _last_version "busybox_version=$(curl -L $BUSYBOX_DOWNLOAD 2>/dev/null | grep 'busybox-[0-9].*bz2"' | awk -F[-\"] '{print $7}')" || return $((LINENO / 2));
-
-    _last_version "zlib_version=$(curl -L $ZLIB_DOWNLOAD/ChangeLog.txt 2>/dev/null | grep Changes | awk '{print $3}')" || return $((LINENO / 2));
-
-    _last_version "openssh_version=$(curl -L $OPENSSH_DOWNLOAD 2>/dev/null | grep 'tar\.gz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
-
-    _last_version "iptables_version=$(curl -L $IPTABLES_DOWNLOAD 2>/dev/null | grep '"iptables-.*bz2"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
-
-    _last_version "mdadm_version=$(curl -L $MDADM_DOWNLOAD 2>/dev/null | grep "mdadm-.*.xz" | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
-
-    _last_version "util_linux_version=$(curl -L $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION 2>/dev/null | grep 'util-linux-.*tar.xz"' | awk -F[-\"] '{print $4}')" || return $((LINENO / 2));
-
-    _last_version "eudev_version=$(curl -L $EUDEV_DOWNLOAD 2>/dev/null | grep 'eudev-.*.tar.gz>' | awk -F[-\>\<] '{print $7}')" || return $((LINENO / 2));
-
-    _last_version "lvm2_version=$(curl -L $LVM2_DOWNLOAD 2>/dev/null | grep 'tgz"' | awk -F[\"] '{print $8}')" || return $((LINENO / 2));
-
-    _last_version "libfuse_version=$(curl -L $LIBFUSE_DOWNLOAD/tags 2>/dev/null | grep tag-name | awk -F[-\>\<] '{print $5}')" || return $((LINENO / 2));
-
-    _last_version "glib_version=$(curl -L $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
-
-    _last_version "pcre_version=$(curl -L $PCRE_DOWNLOAD 2>/dev/null | grep 'pcre-.*bz2"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
-
-    _last_version "sshfs_version=$(curl -L $SSHFS_DOWNLOAD/tags 2>/dev/null | grep tag-name | awk -F[-_\>\<] '{print $5}')" || return $((LINENO / 2));
-
-    _last_version "libcap2_version=$(curl -L $LIBCAP2_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
-
-    _last_version "sudo_version=$(curl -L $SUDO_DOWNLOAD 2>/dev/null | grep 'sudo-.*tar\.gz"' | awk -F[-\"] '{print $3}')" || return $((LINENO / 2));
-
-    _last_version "curl_version=$(curl -L $CURL_DOWNLOAD 2>/dev/null | grep 'xz"' | awk -F[-\"] '{print $9}')" || return $((LINENO / 2));
-
-    # _last_version "perl5_version=$(curl -L $PERL5_DOWNLOAD 2>/dev/null | grep 'perl.*bz2"' | awk -F[-\"] '{print $3}' | grep '5\..*[24680]\.[0-9]')" || return $((LINENO / 2));
-
+    _last_version kernel_version    $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x  "\"linux-$KERNEL_MAJOR_VERSION.*xz\""   '-F[-\"]'   "'{print \$3}'" || return $((LINENO / 2));
+    _last_version glibc_version     $GLIBC_DOWNLOAD     "'glibc-[0-9].*xz\"'"       '-F[-\"]'       "'{print \$9}'" || return $((LINENO / 2));
+    _last_version busybox_version   $BUSYBOX_DOWNLOAD   "'busybox-[0-9].*bz2\"'"    '-F[-\"]'       "'{print \$7}'" || return $((LINENO / 2));
+    _last_version zlib_version      $ZLIB_DOWNLOAD/ChangeLog.txt Changes                            "'{print \$3}'" || return $((LINENO / 2));
+    _last_version openssh_version   $OPENSSH_DOWNLOAD   "'tar\.gz\"'"               '-F[-\"]'       "'{print \$3}'" || return $((LINENO / 2));
+    _last_version iptables_version  $IPTABLES_DOWNLOAD  "'\"iptables-.*bz2\"'"      '-F[-\"]'       "'{print \$9}'" || return $((LINENO / 2));
+    _last_version mdadm_version     $MDADM_DOWNLOAD     "\"mdadm-.*.xz\""           '-F[-\"]'       "'{print \$3}'" || return $((LINENO / 2));
+    _last_version util_linux_version    $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION     "'util-linux-.*tar.xz\"'"   '-F[-\"]'   "'{print \$4}'" || return $((LINENO / 2));
+    _last_version eudev_version     $EUDEV_DOWNLOAD     "'eudev-.*.tar.gz>'"        '-F[-\>\<]'     "'{print \$7}'" || return $((LINENO / 2));
+    _last_version lvm2_version      $LVM2_DOWNLOAD      "'tgz\"'"                   '-F[\"]'        "'{print \$8}'" || return $((LINENO / 2));
+    _last_version libfuse_version   $LIBFUSE_DOWNLOAD/tags  tag-name                '-F[-\>\<]'     "'{print \$5}'" || return $((LINENO / 2));
+    _last_version glib_version      $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION  "'xz\"'"    '-F[-\"]'       "'{print \$9}'" || return $((LINENO / 2));
+    _last_version pcre_version      $PCRE_DOWNLOAD      "'pcre-.*bz2\"'"            '-F[-\"]'       "'{print \$3}'" || return $((LINENO / 2));
+    _last_version sshfs_version     $SSHFS_DOWNLOAD/tags    tag-name                '-F[-_\>\<]'    "'{print \$5}'" || return $((LINENO / 2));
+    _last_version libcap2_version   $LIBCAP2_DOWNLOAD   "'xz\"'"                    '-F[-\"]'       "'{print \$3}'" || return $((LINENO / 2));
+    _last_version sudo_version      $SUDO_DOWNLOAD      "'sudo-.*tar\\.gz\"'"       '-F[-\"]'       "'{print \$3}'" || return $((LINENO / 2));
+    _last_version curl_version      $CURL_DOWNLOAD      "'xz\"'"                    '-F[-\"]'       "'{print \$9}'" || return $((LINENO / 2));
+    # _last_version perl5_version     $PERL5_DOWNLOAD     "'perl.*bz2\"'"             '-F[-\"]'       "'{print \$3}'" "| grep '5\..*[24680]\.[0-9]'" || return $((LINENO / 2));
     # get docker stable version
-    _last_version "docker_version=$(curl -L $DOCKER_DOWNLOAD 2>/dev/null | grep 'docker-' | awk -F[-\"] '{print $3"-"$4}')" || return $((LINENO / 2));
-    echo;
+    _last_version docker_version    $DOCKER_DOWNLOAD        docker-                 '-F[-\"]'       "'{print \$3\"-\"\$4}'" || return $((LINENO / 2));
+echo;
 
     # is need build kernel
     if [ ! -s $ISO_DIR/boot/vmlinuz64 ]; then
@@ -78,20 +60,15 @@ _main() {
         _message_queue --init;
 
         # kernel, libc, rootfs
-        _install bc;
-        _message_queue --put "_make_kernel"; # this may use most time
-
-        _install bison gawk;
-        _message_queue --put "_make_glibc"; # this may use long time
+        _install bc;                _message_queue --put "_make_kernel"; # this may use most time
+        _install bison gawk;        _message_queue --put "_make_glibc"; # this may use long time
         _message_queue --put "_make_busybox";
 
         # ssl
         _message_queue --put "__make_zlib";
         _message_queue --put "_make_openssl";
-
-        _install python;
         # libnss3-tools p11-kit
-        _message_queue --put "_make_ca";
+        _install python;            _message_queue --put "_make_ca";
         _message_queue --put "_make_openssh";
 
         # firewall
@@ -100,26 +77,15 @@ _main() {
         # dev
         _message_queue --put "_make_mdadm";
         _message_queue --put "__make_util_linux";
-
-        _install gperf;
-        _message_queue --put "_make_eudev";
-
-        _install pkg-config;
-        _message_queue --put "_make_lvm2";
+        _install gperf;             _message_queue --put "_make_eudev";
+        _install pkg-config;        _message_queue --put "_make_lvm2";
 
         # sshfs
-        _install re2c python3;
-        _message_queue --put "_build_meson";
+        _install re2c python3;      _message_queue --put "_build_meson";
         _message_queue --put "_make_fuse";
-
-        _install libbz2-dev libreadline-dev;
-        _message_queue --put "__make_pcre";
-
-        _install libffi-dev gettext;
-        _message_queue --put "__make_glib";
-
-        _install python-docutils;
-        _message_queue --put "_make_sshfs";
+        _install libbz2-dev libreadline-dev;    _message_queue --put "__make_pcre";
+        _install libffi-dev gettext;            _message_queue --put "__make_glib";
+        _install python-docutils;   _message_queue --put "_make_sshfs";
 
         # tools
         _message_queue --put "_make_sudo";
@@ -180,9 +146,7 @@ _main() {
     mkdir -pv $ROOTFS_DIR/dev;
     mknod -m 666 $ROOTFS_DIR/dev/null c 1 3;
     mknod -m 666 $ROOTFS_DIR/dev/zero c 1 5;
-
-    # fix: PRNG is not seeded
-    mknod -m 666 $ROOTFS_DIR/dev/random c 1 8;
+    mknod -m 666 $ROOTFS_DIR/dev/random c 1 8; # fix: PRNG is not seeded
     mknod -m 644 $ROOTFS_DIR/dev/urandom c 1 9;
 
     # refresh libc cache
