@@ -4,23 +4,23 @@
 # [need]: 'bc'
 _make_kernel() {
     # fix: Directory renamed before its status could be extracted
-    _untar $CELLAR_DIR/linux.tar.xz || return $(_err $LINENO);
+    _untar $CELLAR_DIR/linux.tar.xz || return $(_err $LINENO 3);
     _try_patch linux-;
 
     # make ARCH=x86_64 menuconfig # ncurses-dev
     cp -v $THIS_DIR/config/kernel.cfg ./.config;
 
     # put in queue
-    make -j $CORES_COUNT bzImage && make -j $CORES_COUNT modules || return $(_err $LINENO)
+    make -j $CORES_COUNT bzImage && make -j $CORES_COUNT modules || return $(_err $LINENO 3)
 
     # Install the kernel modules in $ROOTFS_DIR
-    make INSTALL_MOD_PATH=$ROOTFS_DIR modules_install firmware_install || return $(_err $LINENO);
+    make INSTALL_MOD_PATH=$ROOTFS_DIR modules_install firmware_install || return $(_err $LINENO 3);
 
     # remove empty link
     rm -fv $ROOTFS_DIR/lib/modules/[0-9]*-tc/{build,source};
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/linux-headers.html
-    make INSTALL_HDR_PATH=$WORK_DIR/kernel-header headers_install || return $(_err $LINENO);
+    make INSTALL_HDR_PATH=$WORK_DIR/kernel-header headers_install || return $(_err $LINENO 3);
 
     _hash ./arch/x86/boot/bzImage;
 
@@ -32,7 +32,7 @@ _make_kernel() {
 # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
 # [need]: 'bison', 'gawk'
 _make_glibc() {
-    _wait4 glibc.tar.xz || return $(_err $LINENO);
+    _wait4 glibc.tar.xz || return $(_err $LINENO 3);
     _try_patch glibc-;
 
     mkdir -pv _install $ROOTFS_DIR/etc;
@@ -48,7 +48,7 @@ _make_glibc() {
         --enable-obsolete-rpc  \
         --disable-werror \
         --with-headers=$WORK_DIR/kernel-header/include \
-        libc_cv_slibdir=/lib || return $(_err $LINENO);
+        libc_cv_slibdir=/lib || return $(_err $LINENO 3);
 
     sed -i 's/-O2//g' ./config.make ./config.status;
     make && make install_root=$ROOTFS_DIR install;
@@ -61,12 +61,12 @@ _make_glibc() {
 }
 
 _make_busybox() {
-    _wait4 busybox.tar.bz2 || return $(_err $LINENO);
+    _wait4 busybox.tar.bz2 || return $(_err $LINENO 3);
     _try_patch busybox-;
 
     cp -v $THIS_DIR/config/busybox_suid.cfg ./.config;
 
-    make || return $(_err $LINENO);
+    make || return $(_err $LINENO 3);
     local symbolic target;
     while read symbolic target;
     do
@@ -79,18 +79,18 @@ _make_busybox() {
     make mrproper;
     cp -v $THIS_DIR/config/busybox_nosuid.cfg ./.config;
     make && make CONFIG_PREFIX=$ROOTFS_DIR install || \
-        return $(_err $LINENO)
+        return $(_err $LINENO 3)
 }
 
 # for 'openssl' build, 'openssh' runtime
 __make_zlib() {
-    _wait4 zlib.tar.gz || return $(_err $LINENO);
+    _wait4 zlib.tar.gz || return $(_err $LINENO 3);
     _try_patch zlib-;
 
     ./configure \
         --prefix=/usr \
         --shared && \
-        make && make install || return $(_err $LINENO);
+        make && make install || return $(_err $LINENO 3);
 
     cp -adv /usr/lib/libz.so* $ROOTFS_DIR/usr/lib;
     mv -v $ROOTFS_DIR/usr/lib/libz.so.* $ROOTFS_DIR/lib;
@@ -99,17 +99,17 @@ __make_zlib() {
 
 # [need]: 'zlib'
 _make_openssl() {
-    _wait4 openssl.tar.gz || return $(_err $LINENO);
+    _wait4 openssl.tar.gz || return $(_err $LINENO 3);
     _try_patch openssl-;
 
     ./config \
         --prefix=/usr \
         --openssldir=/etc/ssl \
         --install_prefix=$ROOTFS_DIR \
-        shared zlib-dynamic || return $(_err $LINENO);
+        shared zlib-dynamic || return $(_err $LINENO 3);
 
     sed -i 's/-O3//g' ./Makefile;
-    make && make install || return $(_err $LINENO);
+    make && make install || return $(_err $LINENO 3);
 
     # for 'openssh' build
     cp -adv $ROOTFS_DIR/usr/include/openssl /usr/include;
@@ -120,15 +120,15 @@ _make_openssl() {
 # [need]: 'python' build
 _make_ca() {
     [ -s $WORK_DIR/.error ] || \
-        curl --retry 10 -L -o $CELLAR_DIR/${CERTDATA_DOWNLOAD##*/} $CERTDATA_DOWNLOAD || return $((LINENO / 2));
+        curl --retry 10 -L -o $CELLAR_DIR/${CERTDATA_DOWNLOAD##*/} $CERTDATA_DOWNLOAD || return $(_err $LINENO 3);
 
-    _wait4 ca-certificates-master || return $(_err $LINENO);
+    _wait4 ca-certificates-master || return $(_err $LINENO 3);
     cd $CELLAR_DIR/ca-certificates-master;
 
     mkdir -pv $ROOTFS_DIR/tmp $ROOTFS_DIR/usr/share/ca-certificates;
     cp -v $CELLAR_DIR/certdata.txt ./mozilla/;
 
-    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO);
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
     find $ROOTFS_DIR/usr/share/ca-certificates/mozilla -type f | sed 's/.*mozilla/mozilla/g' | \
         tee $ROOTFS_DIR/etc/ca-certificates.conf;
 
@@ -136,7 +136,7 @@ _make_ca() {
 
 # [need]: 'zlib'
 _make_openssh() {
-    _wait4 openssh.tar.gz || return $(_err $LINENO);
+    _wait4 openssh.tar.gz || return $(_err $LINENO 3);
     _try_patch openssh- openssl-$OPENSSL_VERSION; # e.g. openssh-7.6p1-openssl-1.1.0-1.patch
 
     # link 'openssl' lib
@@ -149,10 +149,10 @@ _make_openssh() {
         --with-privsep-path=/var/lib/sshd \
         --with-privsep-user=nobody \
         --with-xauth=/bin/xauth \
-        --with-md5-passwords || return $(_err $LINENO);
+        --with-md5-passwords || return $(_err $LINENO 3);
 
     sed -i 's/-g -O2//g' ./Makefile;
-    make && make DESTDIR=$ROOTFS_DIR install-nokeys || return $(_err $LINENO);
+    make && make DESTDIR=$ROOTFS_DIR install-nokeys || return $(_err $LINENO 3);
 
     # unlink 'openssl' lib
     rm -fv /usr/lib/lib{crypto,ssl}.*;
@@ -163,7 +163,7 @@ _make_openssh() {
 
 # TODO _nftables
 _make_iptables() {
-    _wait4 iptables.tar.bz2 || return $(_err $LINENO);
+    _wait4 iptables.tar.bz2 || return $(_err $LINENO 3);
     _try_patch iptables-;
 
     # Error: No suitable 'libmnl' found: --disable-nftables
@@ -182,7 +182,7 @@ _make_iptables() {
     ln -sv $ROOTFS_DIR/lib/{libc,ld-linux-x86-64}.so.* /lib;
     ln -sv $ROOTFS_DIR/usr/lib/libc_nonshared.a /usr/lib;
 
-    make -j $CORES_COUNT && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO);
+    make -j $CORES_COUNT && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
 
     local file;
     for file in ip4tc ip6tc ipq iptc xtables;
@@ -197,15 +197,15 @@ _make_iptables() {
 
 # kernel version 4.4.2 or above.
 _make_mdadm() {
-    _wait4 mdadm.tar.xz || return $(_err $LINENO);
+    _wait4 mdadm.tar.xz || return $(_err $LINENO 3);
     _try_patch mdadm-;
 
-    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO)
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3)
 }
 
 # for '_make_eudev'
 __make_util_linux() {
-    _wait4 util-linux.tar.xz || return $(_err $LINENO);
+    _wait4 util-linux.tar.xz || return $(_err $LINENO 3);
     _try_patch util-linux-;
 
     ./configure \
@@ -215,7 +215,7 @@ __make_util_linux() {
         --enable-libuuid \
         --enable-libblkid \
         --without-python && \
-        make && make install || return $(_err $LINENO);
+        make && make install || return $(_err $LINENO 3);
 
     # for 'lvm2' runtime
     cp -adv /usr/lib/lib{blkid,uuid}.so* $ROOTFS_DIR/usr/lib;
@@ -226,7 +226,7 @@ __make_util_linux() {
 # http://linuxfromscratch.org/lfs/view/stable/chapter06/eudev.html
 # for '_make_lvm2', [need]: 'gperf', 'util-linux'
 _make_eudev() {
-    _wait4 eudev.tar.gz || return $(_err $LINENO);
+    _wait4 eudev.tar.gz || return $(_err $LINENO 3);
     _try_patch eudev-;
 
     sed -r -i 's|/usr(/bin/test)|\1|' test/udev-test.pl; # fix a test script
@@ -245,16 +245,16 @@ BLKID_CFLAGS=\"-I/usr/include\"
         --with-rootlibdir=/lib \
         --enable-manpages \
         --disable-static \
-        --config-cache || return $(_err $LINENO);
+        --config-cache || return $(_err $LINENO 3);
 
-    make && make DESTDIR=$ROOTFS_DIR install && make install || return $(_err $LINENO)
+    make && make DESTDIR=$ROOTFS_DIR install && make install || return $(_err $LINENO 3)
 
 }
 
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/lvm2.html
 # kernel version 4.4.2 or above. [need]: 'pkg-config', 'udev'
 _make_lvm2() {
-    _wait4 LVM.tgz || return $(_err $LINENO);
+    _wait4 LVM.tgz || return $(_err $LINENO 3);
     _try_patch LVM2;
 
     ./configure \
@@ -265,36 +265,36 @@ _make_lvm2() {
         --enable-applib \
         --enable-cmdlib \
         --enable-pkgconfig \
-        --enable-udev_sync || return $(_err $LINENO);
+        --enable-udev_sync || return $(_err $LINENO 3);
 
     sed -i 's/-O2/ /g' ./make.tmpl;
-    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO)
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3)
 }
 
 # for '_make_fuse' '_make_sshfs'
 _build_meson() {
-    _wait4 ninja-release || return $(_err $LINENO);
+    _wait4 ninja-release || return $(_err $LINENO 3);
 
     cd $CELLAR_DIR/ninja-release && ./configure.py --bootstrap || \
-        return $(_err $LINENO);
+        return $(_err $LINENO 3);
     cp -v ./ninja /usr/bin;
 
-    _wait4 meson-master || return $(_err $LINENO);
+    _wait4 meson-master || return $(_err $LINENO 3);
 
     cd $CELLAR_DIR/meson-master && python3 ./setup.py install || \
-        return $(_err $LINENO)
+        return $(_err $LINENO 3)
 }
 
 # for '_make_sshfs' build, [need]: 'ninja', 'meson', 'udev'
 _make_fuse() {
-    _wait4 fuse.tar.gz || return $(_err $LINENO);
+    _wait4 fuse.tar.gz || return $(_err $LINENO 3);
     _try_patch libfuse-;
 
     mkdir -pv _install; cd _install;
-    meson --prefix=/usr .. || return $(_err $LINENO);
+    meson --prefix=/usr .. || return $(_err $LINENO 3);
 
     local DESTDIR;
-    ninja install && DESTDIR=$ROOTFS_DIR ninja install || return $(_err $LINENO)
+    ninja install && DESTDIR=$ROOTFS_DIR ninja install || return $(_err $LINENO 3)
 
     # uninstall 'util-linux' 'eudev'
     cd $WORK_DIR/util-linux-* && make uninstall;
@@ -304,7 +304,7 @@ _make_fuse() {
 
 # for '__make_glib', [need]: 'libbz2-dev' 'libreadline-dev'
 __make_pcre() {
-    _wait4 pcre.tar.bz2 || return $(_err $LINENO);
+    _wait4 pcre.tar.bz2 || return $(_err $LINENO 3);
     _try_patch pcre-;
     ./configure \
         --prefix=/usr \
@@ -315,9 +315,9 @@ __make_pcre() {
         --enable-pcregrep-libz \
         --enable-pcregrep-libbz2 \
         --enable-pcretest-libreadline \
-        --enable-shared || return $(_err $LINENO);
+        --enable-shared || return $(_err $LINENO 3);
 
-    make && make install || return $(_err $LINENO);
+    make && make install || return $(_err $LINENO 3);
 
     cp -adv /usr/lib/libpcre.so* $ROOTFS_DIR/usr/lib;
     mv -v $ROOTFS_DIR/usr/lib/libpcre.so.* $ROOTFS_DIR/lib;
@@ -327,14 +327,14 @@ __make_pcre() {
 
 # for '_make_sshfs' runtime, [need]: 'zlib', 'libffi-dev', 'gettext'
 __make_glib() {
-    _wait4 glib.tar.xz || return $(_err $LINENO);
+    _wait4 glib.tar.xz || return $(_err $LINENO 3);
     _try_patch glib-;
     ./configure \
         --prefix=/usr \
         --localstatedir=/var \
         --enable-shared \
         --with-pcre=system \
-        --disable-libmount || return $(_err $LINENO);
+        --disable-libmount || return $(_err $LINENO 3);
 
     sed -i 's/-g -O2//g' ./Makefile;
 
@@ -342,7 +342,7 @@ __make_glib() {
     ln -sv $ROOTFS_DIR/lib/l{d-linux-x86-64,ibpthread,ibc}.so* /lib;
     ln -sv $ROOTFS_DIR/usr/lib/lib{c,pthread}_nonshared.a /usr/lib;
 
-    make && make install || return $(_err $LINENO);
+    make && make install || return $(_err $LINENO 3);
 
     cp -adv /usr/lib/libglib-* $ROOTFS_DIR/usr/lib;
 
@@ -357,14 +357,14 @@ __make_glib() {
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/sshfs.html
 # [need]: 'fuse', 'python-docutils'
 _make_sshfs() {
-    _wait4 sshfs.tar.gz || return $(_err $LINENO);
+    _wait4 sshfs.tar.gz || return $(_err $LINENO 3);
     _try_patch sshfs-;
 
     mkdir -pv _install; cd _install;
-    meson --prefix=/usr .. || return $(_err $LINENO);
+    meson --prefix=/usr .. || return $(_err $LINENO 3);
 
     local DESTDIR;
-    DESTDIR=$ROOTFS_DIR ninja install || return $(_err $LINENO);
+    DESTDIR=$ROOTFS_DIR ninja install || return $(_err $LINENO 3);
 
     mv -v $ROOTFS_DIR/usr/lib/x86_64-linux-gnu/* $ROOTFS_DIR/lib;
     rm -frv $ROOTFS_DIR/usr/lib/x86_64-linux-gnu;
@@ -376,7 +376,7 @@ _make_sshfs() {
 }
 
 _make_sudo() {
-    _wait4 sudo.tar.gz || return $(_err $LINENO);
+    _wait4 sudo.tar.gz || return $(_err $LINENO 3);
     _try_patch sudo-;
 
     ./configure \
@@ -385,23 +385,23 @@ _make_sudo() {
         --with-secure-path \
         --with-all-insults \
         --with-env-editor \
-        --with-passprompt="[sudo] password for %p: " || return $(_err $LINENO);
+        --with-passprompt="[sudo] password for %p: " || return $(_err $LINENO 3);
 
-    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO)
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3)
 }
 
 _make_curl() {
-    _wait4 curl.tar.xz || return $(_err $LINENO);
+    _wait4 curl.tar.xz || return $(_err $LINENO 3);
     _try_patch curl-;
 
     ./configure \
         --prefix=/usr \
         --enable-shared \
         --enable-threaded-resolver \
-        --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt || return $(_err $LINENO);
+        --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt || return $(_err $LINENO 3);
 
     sed -i 's/-O2/ /g' ./Makefile;
-    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO);
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
 
     mv -v $ROOTFS_DIR/usr/local/lib/libcurl* $ROOTFS_DIR/usr/lib;
 
@@ -412,7 +412,7 @@ _make_curl() {
 
 # for '_make_openssl' [/usr/bin/c_rehash]
 _make_perl5() {
-    _wait4 perl.tar.bz2 || return $(_err $LINENO);
+    _wait4 perl.tar.bz2 || return $(_err $LINENO 3);
     _try_patch perl-;
 
     sh Configure \
@@ -421,13 +421,13 @@ _make_perl5() {
         -Dvendorprefix=/usr \
         -Dpager="/usr/bin/less -isR" \
         -Duseshrplib \
-        -Dusethreads || return $(_err $LINENO);
+        -Dusethreads || return $(_err $LINENO 3);
 
-    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO)
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3)
 }
 
 __make_libcap2() {
-    _wait4 libcap.tar.xz || return $(_err $LINENO);
+    _wait4 libcap.tar.xz || return $(_err $LINENO 3);
     _try_patch libcap-;
 
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
@@ -438,7 +438,7 @@ __make_libcap2() {
         RAISE_SETFCAP=no \
         lib=lib \
         prefix=$PWD/_install \
-        install || return $(_err $LINENO);
+        install || return $(_err $LINENO 3);
 
     cp -adv ./_install/lib/libcap.so* $ROOTFS_DIR/usr/lib;
     mv -v $ROOTFS_DIR/usr/lib/libcap.so.* $ROOTFS_DIR/lib;
@@ -446,7 +446,7 @@ __make_libcap2() {
 }
 
 _apply_rootfs() {
-    [ -s $WORK_DIR/.error ] && return $(_err $LINENO);
+    [ -s $WORK_DIR/.error ] && return $(_err $LINENO 3);
     cd $ROOTFS_DIR;
     mkdir -pv \
         dev \
@@ -515,12 +515,12 @@ _build_iso() {
     set ${1##*/};
 
     echo " ------------- build iso --------------------------";
-    cd $ROOTFS_DIR || return $((LINENO / 2));
+    cd $ROOTFS_DIR || return $(_err $LINENO 3);
 
     # create 'initrd.img'
     find | cpio -o -H newc | \
         xz -9 --format=lzma --verbose --verbose --threads=0 --extreme > \
-        $ISO_DIR/boot/initrd.img || return $((LINENO / 2));
+        $ISO_DIR/boot/initrd.img || return $(_err $LINENO 3);
 
     _hash $ISO_DIR/boot/initrd.img;
 
@@ -539,7 +539,7 @@ _build_iso() {
         -c boot/isolinux/boot.cat \
         -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
         -o "$OUT_DIR/$1" \
-        $ISO_DIR || return $((LINENO / 2));
+        $ISO_DIR || return $(_err $LINENO 3);
 
     _hash "$OUT_DIR/$1";
     return 0

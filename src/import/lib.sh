@@ -118,8 +118,10 @@ _case() {
 }
 
 _err() {
-    mkdir -p $WORK_DIR;
-    [ -s $WORK_DIR/.error ] || printf %s $(($1 / 2)) > $WORK_DIR/.error;
+    [ -s $WORK_DIR/.error ] || {
+        mkdir -p $WORK_DIR;
+        printf "[ERROR]: ${IMPORT[${2:-0}]}.sh: $1 line.\n" | tee -a $WORK_DIR/.error
+    };
     return 1
 }
 
@@ -132,7 +134,7 @@ _wait4(){
     until [ -f "$LOCK_DIR/$1.lock" ];
     do
         [ $((++count)) -gt $times ] && {
-            printf "[ERROR]: '$1' time out\n" >&2;
+            printf "[ERROR]: '$1' time out\n" | tee -a $WORK_DIR/.error;
             return 1
         };
         sleep $TIMELAG_SEC
@@ -191,7 +193,7 @@ _last_version() {
         printf "$tmp=$value\n" | tee -a $ISO_DIR/version.swp;
         return 0
     };
-    printf "$tmp is UNKNOWN\n" >&2;
+    printf "[ERROR]: $tmp is UNKNOWN\n" | tee -a $WORK_DIR/.error;
     return 1
 }
 
@@ -204,8 +206,8 @@ _downlock() {
         pre=${pre%\.git\.*};
         suf=${1##*\.git\.};
         swp="$CELLAR_DIR/$pre-$suf";
-        printf "will clone '$pre' to '$swp'.\n";
         if [ -d "$swp" ]; then
+            printf "will update '$swp'.\n";
             local args="--git-dir=$swp/.git --work-tree=$swp";
             git $args checkout .; # reset edit
             git $args clean -d -f; # remove new file
@@ -214,6 +216,7 @@ _downlock() {
                 return 0
             };
         else
+            printf "will clone '$pre' to '$swp'.\n";
             git clone --branch $suf --depth 1 ${1%\.git\.*}.git $swp && {
                 touch $LOCK_DIR/$pre-$suf.lock;
                 return 0
@@ -234,8 +237,7 @@ _downlock() {
                     swp=$$$RANDOM.$RANDOM;
                     curl -L --retry 10 -o $CELLAR_DIR/$swp $1 || {
                         rm -f $CELLAR_DIR/$swp;
-                        printf "[ERROR] download $pre fail.\n";
-                        printf 1 > $WORK_DIR/.error;
+                        printf "[ERROR] download '$pre' fail.\n" | tee -a $WORK_DIR/.error;
                         return 1
                     };
                     mv $CELLAR_DIR/$swp $CELLAR_DIR/$pre$suf

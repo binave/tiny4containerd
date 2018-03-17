@@ -1,13 +1,13 @@
 #!/bin/bash
 [ "$SHELL" == "/bin/bash" ] || exit 255;
 
-THIS_DIR=$(cd `dirname $0`; pwd);
+THIS_DIR=$(cd `dirname $0`; pwd) IMPORT=("${0##*/}" "env" "lib" "build" "profile");
 
 # import script
 . $THIS_DIR/import/env.sh; # load environment variable
 . $THIS_DIR/import/lib.sh; # load common function
-. $THIS_DIR/import/build.sh;
-. $THIS_DIR/import/profile.sh;
+. $THIS_DIR/import/build.sh; # 3
+. $THIS_DIR/import/profile.sh; # 4
 
 _main() {
     # test complete, then pack it
@@ -25,36 +25,36 @@ _main() {
 
     echo " ------------- init apt-get ------------------------";
     # install pkg
-    _init_install && _install gawk && _install build-essential bsdtar curl git-core || return $((LINENO / 2));
+    _init_install && _install gawk && _install build-essential bsdtar curl git-core || return $(_err $LINENO);
 
     echo;
-    _last_version kernel_version    $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x  "\"linux-$KERNEL_MAJOR_VERSION.*xz\""   '-F[-\"]'   "'{print \$3}'" || return $((LINENO / 2));
-    _last_version glibc_version     $GLIBC_DOWNLOAD     "'glibc-[0-9].*xz\"'"       '-F[-\"]'       "'{print \$9}'" || return $((LINENO / 2));
-    _last_version busybox_version   $BUSYBOX_DOWNLOAD   "'busybox-[0-9].*bz2\"'"    '-F[-\"]'       "'{print \$7}'" || return $((LINENO / 2));
-    _last_version zlib_version      $ZLIB_DOWNLOAD/ChangeLog.txt Changes                            "'{print \$3}'" || return $((LINENO / 2));
-    _last_version openssh_version   $OPENSSH_DOWNLOAD   "'tar\.gz\"'"               '-F[-\"]'       "'{print \$3}'" || return $((LINENO / 2));
-    _last_version iptables_version  $IPTABLES_DOWNLOAD  "'\"iptables-.*bz2\"'"      '-F[-\"]'       "'{print \$9}'" || return $((LINENO / 2));
-    _last_version mdadm_version     $MDADM_DOWNLOAD     "\"mdadm-.*.xz\""           '-F[-\"]'       "'{print \$3}'" || return $((LINENO / 2));
-    _last_version util_linux_version    $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION     "'util-linux-.*tar.xz\"'"   '-F[-\"]'   "'{print \$4}'" || return $((LINENO / 2));
-    _last_version eudev_version     $EUDEV_DOWNLOAD     "'eudev-.*.tar.gz>'"        '-F[-\>\<]'     "'{print \$7}'" || return $((LINENO / 2));
-    _last_version lvm2_version      $LVM2_DOWNLOAD      "'tgz\"'"                   '-F[\"]'        "'{print \$8}'" || return $((LINENO / 2));
-    _last_version libfuse_version   $LIBFUSE_DOWNLOAD/tags  tag-name                '-F[-\>\<]'     "'{print \$5}'" || return $((LINENO / 2));
-    _last_version glib_version      $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION  "'xz\"'"    '-F[-\"]'       "'{print \$9}'" || return $((LINENO / 2));
-    _last_version pcre_version      $PCRE_DOWNLOAD      "'pcre-.*bz2\"'"            '-F[-\"]'       "'{print \$3}'" || return $((LINENO / 2));
-    _last_version sshfs_version     $SSHFS_DOWNLOAD/tags    tag-name                '-F[-_\>\<]'    "'{print \$5}'" || return $((LINENO / 2));
-    _last_version libcap2_version   $LIBCAP2_DOWNLOAD   "'xz\"'"                    '-F[-\"]'       "'{print \$3}'" || return $((LINENO / 2));
-    _last_version sudo_version      $SUDO_DOWNLOAD      "'sudo-.*tar\\.gz\"'"       '-F[-\"]'       "'{print \$3}'" || return $((LINENO / 2));
-    _last_version curl_version      $CURL_DOWNLOAD      "'xz\"'"                    '-F[-\"]'       "'{print \$9}'" || return $((LINENO / 2));
-    # _last_version perl5_version     $PERL5_DOWNLOAD     "'perl.*bz2\"'"             '-F[-\"]'       "'{print \$3}'" "| grep '5\..*[24680]\.[0-9]'" || return $((LINENO / 2));
+    _last_version kernel_version    $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x  "\"linux-$KERNEL_MAJOR_VERSION.*xz\""   '-F[-\"]'   "'{print \$3}'" || return $(_err $LINENO);
+    _last_version glibc_version     $GLIBC_DOWNLOAD     "'glibc-[0-9].*xz\"'"       '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
+    _last_version busybox_version   $BUSYBOX_DOWNLOAD   "'busybox-[0-9].*bz2\"'"    '-F[-\"]'       "'{print \$7}'" || return $(_err $LINENO);
+    _last_version zlib_version      $ZLIB_DOWNLOAD/ChangeLog.txt Changes                            "'{print \$3}'" || return $(_err $LINENO);
+    _last_version openssh_version   $OPENSSH_DOWNLOAD   "'tar\.gz\"'"               '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
+    _last_version iptables_version  $IPTABLES_DOWNLOAD  "'\"iptables-.*bz2\"'"      '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
+    _last_version mdadm_version     $MDADM_DOWNLOAD     "\"mdadm-.*.xz\""           '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
+    _last_version util_linux_version    $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION     "'util-linux-.*tar.xz\"'"   '-F[-\"]'   "'{print \$4}'" || return $(_err $LINENO);
+    _last_version eudev_version     $EUDEV_DOWNLOAD     "'eudev-.*.tar.gz>'"        '-F[-\>\<]'     "'{print \$7}'" || return $(_err $LINENO);
+    _last_version lvm2_version      $LVM2_DOWNLOAD      "'tgz\"'"                   '-F[\"]'        "'{print \$8}'" || return $(_err $LINENO);
+    _last_version libfuse_version   $LIBFUSE_DOWNLOAD/tags  tag-name                '-F[-\>\<]'     "'{print \$5}'" || return $(_err $LINENO);
+    _last_version glib_version      $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION  "'xz\"'"    '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
+    _last_version pcre_version      $PCRE_DOWNLOAD      "'pcre-.*bz2\"'"            '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
+    _last_version sshfs_version     $SSHFS_DOWNLOAD/tags    tag-name                '-F[-_\>\<]'    "'{print \$5}'" || return $(_err $LINENO);
+    _last_version libcap2_version   $LIBCAP2_DOWNLOAD   "'xz\"'"                    '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
+    _last_version sudo_version      $SUDO_DOWNLOAD      "'sudo-.*tar\\.gz\"'"       '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
+    _last_version curl_version      $CURL_DOWNLOAD      "'xz\"'"                    '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
+    # _last_version perl5_version     $PERL5_DOWNLOAD     "'perl.*bz2\"'"             '-F[-\"]'       "'{print \$3}'" "| grep '5\..*[24680]\.[0-9]'" || return $(_err $LINENO);
     # get docker stable version
-    _last_version docker_version    $DOCKER_DOWNLOAD        docker-                 '-F[-\"]'       "'{print \$3\"-\"\$4}'" || return $((LINENO / 2));
+    _last_version docker_version    $DOCKER_DOWNLOAD        docker-                 '-F[-\"]'       "'{print \$3\"-\"\$4}'" || return $(_err $LINENO);
 echo;
 
     # is need build kernel
     if [ ! -s $ISO_DIR/boot/vmlinuz64 ]; then
 
         # Fetch the kernel sources
-        _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz - || return $((LINENO / 2));
+        _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz - || return $(_err $LINENO);
 
         echo " ------------- put in queue -----------------------"
         _message_queue --init;
@@ -136,11 +136,11 @@ echo;
     fi
 
     # for '_build_iso'
-    _install cpio genisoimage isolinux syslinux xorriso xz-utils || return $((LINENO / 2));
+    _install cpio genisoimage isolinux syslinux xorriso xz-utils || return $(_err $LINENO);
     wait;
 
     # test queue error
-    [ -s $WORK_DIR/.error ] && return $(cat $WORK_DIR/.error);
+    [ -s $WORK_DIR/.error ] && return 1;
 
     echo " -------------- run chroot ------------------------";
     mkdir -pv $ROOTFS_DIR/dev;
@@ -167,10 +167,10 @@ echo;
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;
-    tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $((LINENO / 2));
+    tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $(_err $LINENO);
 
     # create ssh key and test docker command
-    chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v' || return $((LINENO / 2));
+    chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v' || return $(_err $LINENO);
 
     # clear dev
     rm -frv $ROOTFS_DIR/{dev,var}/*;
@@ -189,8 +189,8 @@ printf "mkdir -pv$(set | grep _DIR= | awk -F= '{printf " "$2}')" | bash;
 
 {
     printf "\n[`date`]\n";
-    # $((LINENO / 2)) -> return|exit code: [0, 256)
-    time _main $@ || printf "[ERROR]: ${0##*/}: $(($? * 2)) line.\n" >&2;
+    # return|exit code: [0, 256)
+    time _main $@ || cat $WORK_DIR/.error >&2;
 
     # log path
     printf "\nuse command 'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";

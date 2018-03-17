@@ -1,7 +1,7 @@
 #!/bin/bash
 
 _create_etc() {
-    [ -s $STATE_DIR/.error ] && return $(_err_line $((LINENO / 2)));
+    [ -s $WORK_DIR/.error ] && return 1;
 
     echo " ------------- create etc -------------------------";
 
