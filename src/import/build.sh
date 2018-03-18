@@ -447,11 +447,14 @@ __make_libcap2() {
 
 _apply_rootfs() {
     [ -s $WORK_DIR/.error ] && return $(_err $LINENO 3);
+
+    _create_dev;
+
     cd $ROOTFS_DIR;
     mkdir -pv \
         dev \
         etc/{acpi/events,init.d,ssl/certs,skel,sysconfig} \
-        home lib media mnt proc root sys tmp \
+        home lib media mnt proc sys \
         usr/{sbin,share};
         # var run
 

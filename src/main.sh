@@ -143,12 +143,6 @@ echo;
     [ -s $WORK_DIR/.error ] && return 1;
 
     echo " -------------- run chroot ------------------------";
-    mkdir -pv $ROOTFS_DIR/dev;
-    mknod -m 666 $ROOTFS_DIR/dev/null c 1 3;
-    mknod -m 666 $ROOTFS_DIR/dev/zero c 1 5;
-    mknod -m 666 $ROOTFS_DIR/dev/random c 1 8; # fix: PRNG is not seeded
-    mknod -m 644 $ROOTFS_DIR/dev/urandom c 1 9;
-
     # refresh libc cache
     chroot $ROOTFS_DIR ldconfig;
 
@@ -172,8 +166,8 @@ echo;
     # create ssh key and test docker command
     chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v' || return $(_err $LINENO);
 
-    # clear dev
-    rm -frv $ROOTFS_DIR/{dev,var}/*;
+    # clear var
+    rm -frv $ROOTFS_DIR/var/*;
 
     # for iso label
     mv -v $ISO_DIR/version.swp $ISO_DIR/version;
