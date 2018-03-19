@@ -4,7 +4,8 @@
 ::sysinit:/etc/init.d/rc S
 
 # /sbin/getty respawn shell invocations for selected ttys.
-tty1::respawn:/sbin/getty -nl /sbin/sulogin 38400 tty1
+tty1::respawn:/sbin/getty 38400 tty1
+#tty1::respawn:/sbin/getty -nl /sbin/sulogin 38400 tty1
 #tty2::respawn:/sbin/getty 38400 tty2
 #tty3::respawn:/sbin/getty 38400 tty3
 #tty4::askfirst:/sbin/getty 38400 tty4

@@ -7,7 +7,7 @@ _create_dev() {
     mkdir -pv $ROOTFS_DIR/dev/{pts,shm};
 
     mknod -m 666 $ROOTFS_DIR/dev/null c 1 3;
-    mknod -m 600 $ROOTFS_DIR/dev/console c 5 1;
+    mknod -m 600 $ROOTFS_DIR/dev/console c 5 1; # ?
 
     mknod -m 666 $ROOTFS_DIR/dev/full c 1 7;
     mknod -m 666 $ROOTFS_DIR/dev/ptmx c 5 2;

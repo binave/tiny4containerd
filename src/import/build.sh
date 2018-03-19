@@ -212,6 +212,7 @@ __make_util_linux() {
         --prefix=/usr \
         --disable-all-programs \
         --disable-makeinstall-chown \
+        --enable-kill \
         --enable-libuuid \
         --enable-libblkid \
         --without-python && \
@@ -388,6 +389,28 @@ _make_sudo() {
         --with-passprompt="[sudo] password for %p: " || return $(_err $LINENO 3);
 
     make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3)
+}
+
+_make_procps() {
+    _wait4 procps-master || return $(_err $LINENO 3);
+    cd $CELLAR_DIR/procps-master;
+
+    ./configure \
+        --prefix=/usr \
+        --exec-prefix= \
+        --libdir=/usr/lib \
+        --disable-static \
+        --disable-kill && make || return $(_err $LINENO 3);
+
+    sed -i -r 's|(pmap_initname)\\\$|\1|' testsuite/pmap.test/pmap.exp;
+    sed -i '/set tty/d' testsuite/pkill.test/pkill.exp;
+    rm testsuite/pgrep.test/pgrep.exp;
+
+    make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
+
+    mv -v $ROOTFS_DIR/usr/lib/libprocps.so.* $ROOTFS_DIR/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libprocps.so) $ROOTFS_DIR/usr/lib/libprocps.so
+
 }
 
 _make_curl() {

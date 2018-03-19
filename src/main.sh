@@ -89,6 +89,7 @@ echo;
 
         # tools
         _message_queue --put "_make_sudo";
+        _message_queue --put "_make_procps";
         _message_queue --put "_make_curl";
         # _message_queue --put "_make_perl5";
         _message_queue --put "__make_libcap2";
@@ -122,6 +123,7 @@ echo;
             $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz \
             $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz \
             $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz \
+            $PROCPS_REPOSITORY.master \
             $CURL_DOWNLOAD/curl-$curl_version.tar.xz \
             $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
             $DOCKER_DOWNLOAD/docker-$docker_version.tgz;

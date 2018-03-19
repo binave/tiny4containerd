@@ -1,8 +1,25 @@
 #!/bin/busybox ash
 
 _init() {
+    # Mounting devtmpfs filesystem on: /dev
+	/bin/mount -t devtmpfs devtmpfs /dev;
+
+	# Starting udev daemon...
+	/sbin/udevd --daemon 2>/dev/null;
+
+	# Udevadm requesting events from the Kernel...
+	/sbin/udevadm trigger;
+
+	# Udevadm waiting for the event queue to finish...
+	/sbin/udevadm settle --timeout=120;
+
     # set globle file mode mask
     umask 022;
+
+    # # Starting system log daemon: syslogd...
+    # syslogd -s $TODO;
+    # # Starting kernel log daemon: klogd...
+    # klogd;
 
     # Mount /proc.
     [ -f /proc/cmdline ] || /bin/mount /proc;
