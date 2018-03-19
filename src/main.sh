@@ -44,6 +44,7 @@ _main() {
     _last_version sshfs_version     $SSHFS_DOWNLOAD/tags    tag-name                '-F[-_\>\<]'    "'{print \$5}'" || return $(_err $LINENO);
     _last_version libcap2_version   $LIBCAP2_DOWNLOAD   "'xz\"'"                    '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version sudo_version      $SUDO_DOWNLOAD      "'sudo-.*tar\\.gz\"'"       '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
+    _last_version procps_version    $PROCPS_DOWNLOAD    "'\-ng-.*.tar.xz\"'"        '-F[-\"]'       "'{print \$10}'"|| return $(_err $LINENO);
     _last_version curl_version      $CURL_DOWNLOAD      "'xz\"'"                    '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
     # _last_version perl5_version     $PERL5_DOWNLOAD     "'perl.*bz2\"'"             '-F[-\"]'       "'{print \$3}'" "| grep '5\..*[24680]\.[0-9]'" || return $(_err $LINENO);
     # get docker stable version
@@ -89,7 +90,7 @@ echo;
 
         # tools
         _message_queue --put "_make_sudo";
-        _message_queue --put "_make_procps";
+        _install ncurses-dev;       _message_queue --put "_make_procps";
         _message_queue --put "_make_curl";
         # _message_queue --put "_make_perl5";
         _message_queue --put "__make_libcap2";
@@ -123,7 +124,7 @@ echo;
             $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz \
             $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz \
             $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz \
-            $PROCPS_REPOSITORY.master \
+            $PROCPS_DOWNLOAD/procps-ng-$procps_version.tar.xz \
             $CURL_DOWNLOAD/curl-$curl_version.tar.xz \
             $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
             $DOCKER_DOWNLOAD/docker-$docker_version.tgz;

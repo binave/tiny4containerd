@@ -91,7 +91,7 @@ _thread_valve() {
             shift;
             read -u 5;
             {
-                "$@";
+                "$@" 2>&1 | _prefix "%F %T${1//_/ } ${2##*/}, ";
                 printf "\n" >&5
             } &
         ;;

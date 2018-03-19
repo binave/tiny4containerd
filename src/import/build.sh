@@ -391,15 +391,16 @@ _make_sudo() {
     make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3)
 }
 
+# [need]: ncurses-dev
 _make_procps() {
-    _wait4 procps-master || return $(_err $LINENO 3);
-    cd $CELLAR_DIR/procps-master;
+    _wait4 procps-ng.tar.xz || return $(_err $LINENO 3);
+    _try_patch procps-ng-;
 
     ./configure \
         --prefix=/usr \
         --exec-prefix= \
         --libdir=/usr/lib \
-        --disable-static \
+        --enable-shared \
         --disable-kill && make || return $(_err $LINENO 3);
 
     sed -i -r 's|(pmap_initname)\\\$|\1|' testsuite/pmap.test/pmap.exp;
