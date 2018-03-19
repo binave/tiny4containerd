@@ -452,11 +452,13 @@ _apply_rootfs() {
 
     cd $ROOTFS_DIR;
     mkdir -pv \
-        dev \
         etc/{acpi/events,init.d,ssl/certs,skel,sysconfig} \
         home lib media mnt proc sys \
         usr/{sbin,share};
         # var run
+
+    install -dv -m 0750 $ROOTFS_DIR/root;
+    install -dv -m 1777 $ROOTFS_DIR/tmp;
 
     # replace '/bin/bash' to '/bin/sh', move perl script to '/opt'
     for sh in $(grep -lr '\/bin\/bash\|\/bin\/perl' $ROOTFS_DIR/{,usr/}{,s}bin);

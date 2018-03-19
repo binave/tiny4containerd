@@ -1,5 +1,35 @@
 #!/bin/bash
 
+# TODO
+_create_dev() {
+    [ -s $WORK_DIR/.error ] && return 1;
+
+    mkdir -pv $ROOTFS_DIR/dev/{pts,shm};
+
+    mknod -m 666 $ROOTFS_DIR/dev/null c 1 3;
+    mknod -m 600 $ROOTFS_DIR/dev/console c 5 1;
+
+    mknod -m 666 $ROOTFS_DIR/dev/full c 1 7;
+    mknod -m 666 $ROOTFS_DIR/dev/ptmx c 5 2;
+    mknod -m 666 $ROOTFS_DIR/dev/random c 1 8; # fix: PRNG is not seeded
+    mknod -m 644 $ROOTFS_DIR/dev/urandom c 1 9;
+    mknod -m 666 $ROOTFS_DIR/dev/zero c 1 5;
+    mknod -m 666 $ROOTFS_DIR/dev/tty c 5 0;
+
+    ln -sv /proc/self/fd $ROOTFS_DIR/dev/fd;
+    ln -sv /proc/self/fd/0 $ROOTFS_DIR/dev/stdin;
+    ln -sv /proc/self/fd/1 $ROOTFS_DIR/dev/stdout;
+    ln -sv /proc/self/fd/2 $ROOTFS_DIR/dev/stderr;
+    ln -sv /proc/kcore $ROOTFS_DIR/dev/core;
+
+    # mount -vt devpts devpts $ROOTFS_DIR/dev/pts -o gid=5,mode=620;
+    # mount -vt proc proc $ROOTFS_DIR/proc;
+    # mount -vt sysfs sysfs $ROOTFS_DIR/sys;
+    # mount -v --bind /dev $ROOTFS_DIR/dev;
+    # mount -vt tmpfs tmpfs $ROOTFS_DIR/run;
+
+}
+
 _create_etc() {
     [ -s $WORK_DIR/.error ] && return 1;
 
@@ -142,71 +172,5 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
     printf %s 'event=button/power*
 action=/sbin/poweroff
 ' | tee $ROOTFS_DIR/etc/acpi/events/all;
-
-}
-
-_create_dev() {
-    [ -s $WORK_DIR/.error ] && return 1;
-
-    # http://linuxfromscratch.org/lfs/view/stable/chapter06/kernfs.html
-    mknod -m 666 $ROOTFS_DIR/dev/null c 1 3;
-    mknod -m 666 $ROOTFS_DIR/dev/zero c 1 5;
-    mknod -m 666 $ROOTFS_DIR/dev/random c 1 8; # fix: PRNG is not seeded
-    mknod -m 644 $ROOTFS_DIR/dev/urandom c 1 9;
-    mknod -m 600 $ROOTFS_DIR/dev/console c 5 1;
-
-    mount -v --bind /dev $ROOTFS_DIR/dev;
-    mount -vt devpts devpts $ROOTFS_DIR/dev/pts -o gid=5,mode=620;
-    mount -vt proc proc $ROOTFS_DIR/proc;
-    mount -vt sysfs sysfs $ROOTFS_DIR/sys;
-    mount -vt tmpfs tmpfs $ROOTFS_DIR/run;
-
-    install -dv -m 0750 $ROOTFS_DIR/root;
-    install -dv -m 1777 $ROOTFS_DIR/tmp;
-
-    # http://www.linuxfromscratch.org/lfs/view/6.1.1/chapter06/devices.html
-    mknod -m 622 $ROOTFS_DIR/dev/console c 5 1;
-    mknod -m 666 $ROOTFS_DIR/dev/null c 1 3;
-    mknod -m 666 $ROOTFS_DIR/dev/zero c 1 5;
-    mknod -m 666 $ROOTFS_DIR/dev/ptmx c 5 2;
-    mknod -m 666 $ROOTFS_DIR/dev/tty c 5 0;
-    mknod -m 444 $ROOTFS_DIR/dev/random c 1 8;
-    mknod -m 444 $ROOTFS_DIR/dev/urandom c 1 9;
-
-    chown -v root:tty $ROOTFS_DIR/dev/{console,ptmx,tty};
-
-    ln -sv /proc/self/fd $ROOTFS_DIR/dev/fd;
-    ln -sv /proc/self/fd/0 $ROOTFS_DIR/dev/stdin;
-    ln -sv /proc/self/fd/1 $ROOTFS_DIR/dev/stdout;
-    ln -sv /proc/self/fd/2 $ROOTFS_DIR/dev/stderr;
-    ln -sv /proc/kcore $ROOTFS_DIR/dev/core;
-    mkdir -v $ROOTFS_DIR/dev/pts;
-    mkdir -v $ROOTFS_DIR/dev/shm;
-
-    mount -vt devpts -o gid=4,mode=620 none $ROOTFS_DIR/dev/pts;
-    mount -vt tmpfs none $ROOTFS_DIR/dev/shm;
-
-    # https://wiki.alpinelinux.org/wiki/Installing_Alpine_Linux_in_a_chroot
-    mknod -m 666 $ROOTFS_DIR/dev/full c 1 7;
-    mknod -m 666 $ROOTFS_DIR/dev/ptmx c 5 2;
-    mknod -m 644 $ROOTFS_DIR/dev/random c 1 8;
-    mknod -m 644 $ROOTFS_DIR/dev/urandom c 1 9;
-    mknod -m 666 $ROOTFS_DIR/dev/zero c 1 5;
-    mknod -m 666 $ROOTFS_DIR/dev/tty c 5 0;
-
-    mknod -m 666 $ROOTFS_DIR/dev/sda b 8 0;
-    mknod -m 666 $ROOTFS_DIR/dev/sda1 b 8 1;
-    mknod -m 666 $ROOTFS_DIR/dev/sda2 b 8 2;
-    mknod -m 666 $ROOTFS_DIR/dev/sda3 b 8 3;
-    mknod -m 666 $ROOTFS_DIR/dev/sda4 b 8 4;
-    mknod -m 666 $ROOTFS_DIR/dev/sda5 b 8 5;
-    mknod -m 666 $ROOTFS_DIR/dev/sda6 b 8 6;
-    mknod -m 666 $ROOTFS_DIR/dev/sdb b 8 16;
-    mknod -m 666 $ROOTFS_DIR/dev/sdb1 b 8 17;
-    mknod -m 666 $ROOTFS_DIR/dev/sdb2 b 8 18;
-    mknod -m 666 $ROOTFS_DIR/dev/sdb3 b 8 19;
-    mknod -m 666 $ROOTFS_DIR/dev/sdb4 b 8 20;
-    mknod -m 666 $ROOTFS_DIR/dev/sdb5 b 8 21;
-    mknod -m 666 $ROOTFS_DIR/dev/sdb6 b 8 22;
 
 }
