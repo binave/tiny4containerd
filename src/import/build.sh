@@ -414,6 +414,31 @@ _make_procps() {
 
 }
 
+_make_e2fsprogs() {
+    _wait4 e2fsprogs.tar.xz || return $(_err $LINENO 3);
+    _try_patch e2fsprogs-;
+
+    mkdir -pv _install;
+    local CFLAGS LIBS PKG_CONFIG_PATH;
+
+    LIBS=-L$ROOTFS_DIR/lib \
+    CFLAGS=-I$ROOTFS_DIR/include \
+    PKG_CONFIG_PATH=$ROOTFS_DIR/lib/pkgconfig \
+    ../configure \
+        --prefix=/usr \
+        --bindir=/bin \
+        --with-root-prefix="" \
+        --enable-elf-shlibs \
+        --disable-libblkid \
+        --disable-libuuid \
+        --disable-uuidd \
+        --disable-fsck && make || return $(_err $LINENO 3);
+
+    ln -sfv $ROOTFS_DIR/lib/lib{blk,uu}id.so.1 /lib;
+
+    make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
+}
+
 _make_curl() {
     _wait4 curl.tar.xz || return $(_err $LINENO 3);
     _try_patch curl-;

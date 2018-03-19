@@ -19,7 +19,7 @@ CORES_COUNT=$(nproc);
 LABEL=`date +tc-%y%m%d-%H`;
 
 # linux
-KERNEL_PUB=https://cdn.kernel.org/pub;
+KERNEL_PUB=https://cdn.kernel.org/pub; # https://mirrors.edge.kernel.org/pub
 
 # base
 KERNEL_DOWNLOAD=$KERNEL_PUB/linux/kernel;
@@ -56,6 +56,7 @@ LIBFUSE_DOWNLOAD=https://github.com/libfuse/libfuse;
 SUDO_DOWNLOAD=http://www.sudo.ws/dist;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
 PROCPS_DOWNLOAD=https://jaist.dl.sourceforge.net/project/procps-ng/Production; # PROCPS_REPOSITORY=https://gitlab.com/procps-ng/procps.git; #
+E2FSPROGS_DOWNLOAD=$KERNEL_PUB/linux/kernel/people/tytso/e2fsprogs;
 LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64; # https://docs.docker.com/install/linux/docker-ce/binaries/#prerequisites
 # PERL5_DOWNLOAD=http://www.cpan.org/src/5.0;
