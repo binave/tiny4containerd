@@ -219,8 +219,8 @@ __make_util_linux() {
         make && make install || return $(_err $LINENO 3);
 
     # for 'lvm2' runtime
-    cp -adv /usr/lib/lib{blkid,uuid}.so* $ROOTFS_DIR/usr/lib;
-    cp -adv /lib/lib{blkid,uuid}.so* $ROOTFS_DIR/lib
+    cp -adv /usr/lib/lib{blk,uu}id.so* $ROOTFS_DIR/usr/lib;
+    cp -adv /lib/lib{blk,uu}id.so* $ROOTFS_DIR/lib
 
 }
 
@@ -418,25 +418,17 @@ _make_e2fsprogs() {
     _wait4 e2fsprogs.tar.xz || return $(_err $LINENO 3);
     _try_patch e2fsprogs-;
 
-    mkdir -pv _install;
-    local CFLAGS LIBS PKG_CONFIG_PATH;
+    mkdir -pv _install; cd _install;
 
-    LIBS=-L$ROOTFS_DIR/lib \
-    CFLAGS=-I$ROOTFS_DIR/usr/include \
-    PKG_CONFIG_PATH=$ROOTFS_DIR/usr/lib/pkgconfig \
     ../configure \
         --prefix=/usr \
         --bindir=/bin \
         --with-root-prefix="" \
         --enable-elf-shlibs \
-        --disable-libblkid \
-        --disable-libuuid \
-        --disable-uuidd \
-        --disable-fsck && make || return $(_err $LINENO 3);
+        --disable-uuidd && \
+        make && make DESTDIR=$ROOTFS_DIR install || \
+        return $(_err $LINENO 3);
 
-    ln -sfv $ROOTFS_DIR/lib/lib{blk,uu}id.so.1 /lib;
-
-    make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
 }
 
 _make_curl() {
