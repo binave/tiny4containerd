@@ -30,10 +30,6 @@ _init() {
     # filter environment
     /bin/sed 's/[\|\;\& ]/\n/g' /proc/cmdline | /bin/grep '^[_A-Z]\+=' > /etc/env;
 
-    # /sbin/mdev -s;
-    # pts
-    /bin/mkdir /dev/pts;
-
     # TODO
     # tz
 
