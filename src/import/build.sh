@@ -501,9 +501,6 @@ _apply_rootfs() {
         usr/{sbin,share};
         # var run
 
-    install -dv -m 0750 $ROOTFS_DIR/root;
-    install -dv -m 1777 $ROOTFS_DIR/tmp;
-
     # replace '/bin/bash' to '/bin/sh', move perl script to '/opt'
     for sh in $(grep -lr '\/bin\/bash\|\/bin\/perl' $ROOTFS_DIR/{,usr/}{,s}bin);
     do
@@ -524,10 +521,14 @@ _apply_rootfs() {
     done
 
     # executable
+    chmod +x $ROOTFS_DIR/init;
     find $ROOTFS_DIR/usr/local/{,s}bin -type f -exec chmod -c +x '{}' +
 
     # copy timezone
     cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime;
+
+    # initrd.img
+    ln -fsv bin/busybox $ROOTFS_DIR/linuxrc;
 
     # subversion
     ln -fsv /var/subversion/bin/svn         $ROOTFS_DIR/usr/bin/;

@@ -1,9 +1,6 @@
 #!/bin/busybox ash
 
 _init() {
-    # Mounting devtmpfs filesystem on: /dev
-	/bin/mount -t devtmpfs devtmpfs /dev;
-
 	# Starting udev daemon...
 	/sbin/udevd --daemon 2>/dev/null;
 
