@@ -104,7 +104,7 @@ echo;
         _message_queue --destroy;
 
         # init thread valve
-        _thread_valve --init 2;
+        _thread_valve --init $THREAD_COUNT;
 
         local url;
         for url in \
@@ -194,7 +194,7 @@ printf "mkdir -pv$(set | grep _DIR= | awk -F= '{printf " "$2}')" | bash;
 
     # log path
     printf "\nuse command 'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";
-    [ "$1" ] && printf "\nuse command 'docker cp [container_name]:$OUT_DIR/$1 .' get iso file.\n";
+    [ "$1" ] && printf "use command 'docker cp [container_name]:$OUT_DIR/$1 .' get iso file.\n";
     # complete.
     printf "\ncomplete.\n\n";
     exit 0

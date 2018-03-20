@@ -422,8 +422,8 @@ _make_e2fsprogs() {
     local CFLAGS LIBS PKG_CONFIG_PATH;
 
     LIBS=-L$ROOTFS_DIR/lib \
-    CFLAGS=-I$ROOTFS_DIR/include \
-    PKG_CONFIG_PATH=$ROOTFS_DIR/lib/pkgconfig \
+    CFLAGS=-I$ROOTFS_DIR/usr/include \
+    PKG_CONFIG_PATH=$ROOTFS_DIR/usr/lib/pkgconfig \
     ../configure \
         --prefix=/usr \
         --bindir=/bin \
@@ -495,6 +495,9 @@ __make_libcap2() {
 }
 
 _apply_rootfs() {
+
+    # TODO bionic-base-amd64.tar
+
     [ -s $WORK_DIR/.error ] && return $(_err $LINENO 3);
 
     _create_dev;
