@@ -1,35 +1,5 @@
 #!/bin/bash
 
-# TODO
-_create_dev() {
-    [ -s $WORK_DIR/.error ] && return 1;
-
-    mkdir -pv $ROOTFS_DIR/dev/{pts,shm};
-
-    mknod -m 666 $ROOTFS_DIR/dev/null c 1 3;
-    mknod -m 600 $ROOTFS_DIR/dev/console c 5 1; # ?
-
-    mknod -m 666 $ROOTFS_DIR/dev/full c 1 7;
-    mknod -m 666 $ROOTFS_DIR/dev/ptmx c 5 2;
-    mknod -m 666 $ROOTFS_DIR/dev/random c 1 8; # fix: PRNG is not seeded
-    mknod -m 644 $ROOTFS_DIR/dev/urandom c 1 9;
-    mknod -m 666 $ROOTFS_DIR/dev/zero c 1 5;
-    mknod -m 666 $ROOTFS_DIR/dev/tty c 5 0;
-
-    ln -sv /proc/self/fd $ROOTFS_DIR/dev/fd;
-    ln -sv /proc/self/fd/0 $ROOTFS_DIR/dev/stdin;
-    ln -sv /proc/self/fd/1 $ROOTFS_DIR/dev/stdout;
-    ln -sv /proc/self/fd/2 $ROOTFS_DIR/dev/stderr;
-    ln -sv /proc/kcore $ROOTFS_DIR/dev/core;
-
-    # mount -vt devpts devpts $ROOTFS_DIR/dev/pts -o gid=5,mode=620;
-    # mount -vt proc proc $ROOTFS_DIR/proc;
-    # mount -vt sysfs sysfs $ROOTFS_DIR/sys;
-    # mount -v --bind /dev $ROOTFS_DIR/dev;
-    # mount -vt tmpfs tmpfs $ROOTFS_DIR/run;
-
-}
-
 _create_etc() {
     [ -s $WORK_DIR/.error ] && return 1;
 
@@ -172,5 +142,119 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
     printf %s 'event=button/power*
 action=/sbin/poweroff
 ' | tee $ROOTFS_DIR/etc/acpi/events/all;
+
+}
+
+# Linux allocated devices (4.x+ version), https://www.kernel.org/doc/html/v4.11/admin-guide/devices.html
+_create_dev() {
+    [ -s $WORK_DIR/.error ] && return 1;
+
+    mkdir -pv $ROOTFS_DIR/dev/{pts,shm};
+
+    # Memory devices
+    mknod -m 666 $ROOTFS_DIR/dev/null c 1 3;
+    mknod -m 666 $ROOTFS_DIR/dev/port c 1 4
+    mknod -m 666 $ROOTFS_DIR/dev/zero c 1 5;
+    mknod -m 666 $ROOTFS_DIR/dev/full c 1 7;
+    mknod -m 666 $ROOTFS_DIR/dev/random c 1 8; # fix: PRNG is not seeded
+    mknod -m 644 $ROOTFS_DIR/dev/urandom c 1 9;
+
+    # TTY devices
+    mknod -m 660 $ROOTFS_DIR/dev/tty0 c 4 0
+    mknod -m 620 $ROOTFS_DIR/dev/tty1 c 4 1
+    mknod -m 600 $ROOTFS_DIR/dev/tty2 c 4 2
+    mknod -m 600 $ROOTFS_DIR/dev/tty3 c 4 3
+    mknod -m 600 $ROOTFS_DIR/dev/tty4 c 4 4
+    mknod -m 600 $ROOTFS_DIR/dev/tty5 c 4 5
+    mknod -m 600 $ROOTFS_DIR/dev/tty6 c 4 6
+    mknod -m 600 $ROOTFS_DIR/dev/ttyS0 c 4 64
+
+    # Alternate TTY devices
+    mknod -m 666 $ROOTFS_DIR/dev/tty c 5 0;
+    mknod -m 600 $ROOTFS_DIR/dev/console c 5 1; # ?
+    mknod -m 666 $ROOTFS_DIR/dev/ptmx c 5 2;
+
+    # Compulsory links
+    ln -sv /proc/self/fd    $ROOTFS_DIR/dev/fd;
+    ln -sv /proc/self/fd/0  $ROOTFS_DIR/dev/stdin;
+    ln -sv /proc/self/fd/1  $ROOTFS_DIR/dev/stdout;
+    ln -sv /proc/self/fd/2  $ROOTFS_DIR/dev/stderr;
+
+    # Recommended links
+    ln -sv /proc/kcore  $ROOTFS_DIR/dev/core;
+
+    # mount -vt devpts devpts $ROOTFS_DIR/dev/pts -o gid=5,mode=620;
+    # mount -vt proc proc $ROOTFS_DIR/proc;
+    # mount -vt sysfs sysfs $ROOTFS_DIR/sys;
+    # mount -v --bind /dev $ROOTFS_DIR/dev;
+    # mount -vt tmpfs tmpfs $ROOTFS_DIR/run;
+
+}
+
+_apply_rootfs() {
+
+    # TODO bionic-base-amd64.tar
+
+    [ -s $WORK_DIR/.error ] && return $(_err $LINENO 3);
+
+    _create_dev;
+
+    cd $ROOTFS_DIR;
+    mkdir -pv \
+        etc/{acpi/events,init.d,ssl/certs,skel,sysconfig} \
+        home lib media mnt proc sys \
+        usr/{sbin,share};
+        # var run
+
+    # replace '/bin/bash' to '/bin/sh', move perl script to '/opt'
+    for sh in $(grep -lr '\/bin\/bash\|\/bin\/perl' $ROOTFS_DIR/{,usr/}{,s}bin);
+    do
+        sed -i 's/\/bin\/bash/\/bin\/sh/g' $sh;
+        sh -n $sh || mv -v $sh /opt
+    done
+
+    # Copy our custom rootfs,
+    cp -frv $THIS_DIR/rootfs/* $ROOTFS_DIR;
+
+    # trim suffix
+    local sf sh;
+    for sf in $(cd $THIS_DIR/rootfs; find . -type f -name "*.sh");
+    do
+        sf="$ROOTFS_DIR/${sf#*/}";
+        mv "$sf" "${sf%.*}";
+        # chmod
+    done
+
+    # executable
+    chmod +x $ROOTFS_DIR/init;
+    find $ROOTFS_DIR/usr/local/{,s}bin $ROOTFS_DIR/etc/init.d -type f -exec chmod -c +x '{}' +
+
+    # copy timezone
+    cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime;
+
+    # initrd.img
+    ln -fsv bin/busybox $ROOTFS_DIR/linuxrc;
+
+    # subversion
+    ln -fsv /var/subversion/bin/svn         $ROOTFS_DIR/usr/bin/;
+    ln -fsv /var/subversion/bin/svnadmin    $ROOTFS_DIR/usr/bin/;
+    ln -fsv /var/subversion/bin/svnlook     $ROOTFS_DIR/usr/bin/;
+
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
+    # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
+    rm -frv \
+        $ROOTFS_DIR/usr/bin/passwd \
+        $ROOTFS_DIR/etc/ssl/man \
+        $ROOTFS_DIR/usr/{,local/}include \
+        $ROOTFS_DIR/usr/{,local/}share/{info,man,doc} \
+        $ROOTFS_DIR/{,usr/}lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a
+
+    find $ROOTFS_DIR/{,usr/}lib -name \*.la -delete;
+
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/stripping.html
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/strippingagain.html
+    # Take care not to use '--strip-unneeded' on the libraries
+    strip --strip-debug $ROOTFS_DIR/lib/*;
+    strip --strip-unneeded $ROOTFS_DIR/{,usr/}{,s}bin/*; # --strip-all
 
 }
