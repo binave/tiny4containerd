@@ -1,7 +1,7 @@
 #!/bin/bash
 [ "$SHELL" == "/bin/bash" ] || exit 255;
 
-THIS_DIR=$(cd `dirname $0`; pwd) IMPORT=("${0##*/}" "env" "lib" "build" "profile");
+THIS_DIR=$(cd `dirname $0`; pwd) IMPORT=("${0##*/}" "env.sh" "lib.sh" "build.sh" "profile.sh");
 
 # import script
 . $THIS_DIR/import/env.sh; # load environment variable

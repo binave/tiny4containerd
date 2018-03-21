@@ -120,7 +120,7 @@ _case() {
 _err() {
     [ -s $WORK_DIR/.error ] || {
         mkdir -p $WORK_DIR;
-        printf "[ERROR]: ${IMPORT[${2:-0}]}.sh: $1 line.\n" | tee -a $WORK_DIR/.error
+        printf "[ERROR]: '${IMPORT[${2:-0}]}': $1 line.\n" | tee -a $WORK_DIR/.error
     };
     return 1
 }
