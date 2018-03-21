@@ -152,6 +152,11 @@ echo;
     # refresh libc cache
     chroot $ROOTFS_DIR ldconfig;
 
+    # Generate modules.dep
+    ln -sTv $(ls $ROOTFS_DIR/lib/modules/) $ROOTFS_DIR/lib/modules/`uname -r`;
+    chroot $ROOTFS_DIR depmod;
+    rm -fv $ROOTFS_DIR/lib/modules/`uname -r`;
+
     echo "-------------- addgroup --------------------------";
     # for dockerd: root map user
     # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
@@ -170,7 +175,7 @@ echo;
     tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $(_err $LINENO);
 
     # create ssh key and test docker command
-    chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v && depmod' || return $(_err $LINENO);
+    chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v' || return $(_err $LINENO);
 
     # clear var
     rm -frv $ROOTFS_DIR/var/*;

@@ -56,7 +56,7 @@ _make_glibc() {
     # glibc default configuration, `ldconfig`
     printf '/usr/lib\n' | tee $ROOTFS_DIR/etc/ld.so.conf;
 
-    ln -sT lib $ROOTFS_DIR/lib64
+    ln -sTv lib $ROOTFS_DIR/lib64
 
 }
 

@@ -6,10 +6,11 @@ printf "\n\n[`date`]\nRunning init script...\n";
 /sbin/udevd --daemon 2>/dev/null;
 
 # Udevadm requesting events from the Kernel...
-/sbin/udevadm trigger;
+/sbin/udevadm trigger --action=add >/dev/null 2>&1 &
 
 # Udevadm waiting for the event queue to finish...
 /sbin/udevadm settle --timeout=120;
+/sbin/udevadm control --reload-rules &
 
 # set globle file mode mask
 umask 022;
@@ -48,7 +49,11 @@ umask 022;
 /bin/mkdir -p \
     /var/spool/cron/crontabs \
     /var/tiny/etc/init.d \
-    /log/tiny/${Ymd:0:6};
+    /var/log/tiny/${Ymd:0:6};
+
+# System logging
+/sbin/syslogd;
+/sbin/klogd;
 
 # mdiskd
 /usr/local/sbin/mdisk monitor;
@@ -76,6 +81,7 @@ echo "------ firewall --------------";
 
 # set static ip or start dhcp
 /usr/local/sbin/ifinit;
+# /bin/hostname -F /etc/hostname;
 
 # mount cgroups hierarchy. https://github.com/tianon/cgroupfs-mount
 /bin/sh /usr/local/etc/init.d/cgroupfs mount;
@@ -86,10 +92,10 @@ echo "------ firewall --------------";
 /usr/bin/find /var/tiny/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
 
 # sync the clock
-/usr/sbin/ntpd -d -n -p pool.ntp.org >> /log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
+/usr/sbin/ntpd -d -n -p pool.ntp.org >> /var/log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
 
 # start cron
-/usr/sbin/crond -f -d "${CROND_LOGLEVEL:-8}" >> /log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
+/usr/sbin/crond -f -d "${CROND_LOGLEVEL:-8}" >> /var/log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
 
 /bin/chmod 775 /tmp /var;
 # /bin/chown :staff /tmp /var;
