@@ -208,6 +208,7 @@ __make_util_linux() {
     _wait4 util-linux.tar.xz || return $(_err $LINENO 3);
     _try_patch util-linux-;
 
+    # --libdir
     ./configure \
         --prefix=/usr \
         --disable-all-programs \
@@ -506,6 +507,7 @@ _build_iso() {
 
     _hash $ISO_DIR/boot/initrd.img;
 
+    # copy boot file
     cp -rv $THIS_DIR/isolinux $ISO_DIR/boot/;
     cp -v \
         /usr/lib/ISOLINUX/isolinux.bin \

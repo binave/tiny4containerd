@@ -7,4 +7,5 @@
 
 /bin/mount -t tmpfs -o size=90% tmpfs /mnt;
 
-exec /sbin/init;
+# https://git.busybox.net/busybox/tree/examples/inittab
+exec /sbin/init; # /etc/initta

@@ -16,7 +16,7 @@
 # The DHCP portion is now separated out, in order to not slow the boot down
 _dhcp() {
     # This waits until all devices have registered
-    /usr/sbin/udevadm settle --timeout=5;
+    /sbin/udevadm settle --timeout=5;
 
     echo "-------- dhcp ----------------"
     local n_dev net_devices="$(/usr/bin/awk -F: '/'$IF_PREFIX'.:|tr.:/{print $1}' /proc/net/dev 2>/dev/null)";

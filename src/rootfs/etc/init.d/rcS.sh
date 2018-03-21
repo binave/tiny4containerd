@@ -1,8 +1,38 @@
 #!/bin/busybox ash
 
-# /etc/init.d/rcS - u/bin/sed by /etc/inittab to start the system.
-
 printf "\n\n[`date`]\nRunning init script...\n";
+
+# Starting udev daemon...
+/sbin/udevd --daemon 2>/dev/null;
+
+# Udevadm requesting events from the Kernel...
+/sbin/udevadm trigger;
+
+# Udevadm waiting for the event queue to finish...
+/sbin/udevadm settle --timeout=120;
+
+# set globle file mode mask
+umask 022;
+
+# # Starting system log daemon: syslogd...
+# syslogd -s $TODO;
+# # Starting kernel log daemon: klogd...
+# klogd;
+
+# Mount /proc.
+[ -f /proc/cmdline ] || /bin/mount /proc;
+
+# Remount rootfs rw.
+/bin/mount -o remount,rw /;
+
+# Mount system devices from /etc/fstab.
+/bin/mount -a;
+
+# filter environment
+/bin/sed 's/[\|\;\& ]/\n/g' /proc/cmdline | /bin/grep '^[_A-Z]\+=' > /etc/env;
+
+# TODO
+# tz
 
 # Configure sysctl, Read sysctl.conf
 /sbin/sysctl -p /etc/sysctl.conf;
@@ -100,4 +130,4 @@ fi
 
 printf "Finished init script...\n";
 
-/usr/bin/clear
+# /usr/bin/clear

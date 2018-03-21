@@ -170,7 +170,7 @@ echo;
     tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $(_err $LINENO);
 
     # create ssh key and test docker command
-    chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v' || return $(_err $LINENO);
+    chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v && depmod' || return $(_err $LINENO);
 
     # clear var
     rm -frv $ROOTFS_DIR/var/*;

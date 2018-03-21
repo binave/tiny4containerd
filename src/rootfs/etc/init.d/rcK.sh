@@ -2,7 +2,7 @@
 
 # /etc/init.d/rcK - used by /etc/inittab to shutdown the system.
 
-/usr/bin/clear;
+# /usr/bin/clear;
 
 printf "\n\n[`date`]\n";
 

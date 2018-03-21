@@ -79,7 +79,7 @@ nobody:*:13509:0:99999:7:::
 # Host alias specification
 
 # User alias specification
-Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/sbin/wtmp
+Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/bin/wtmp
 
 # Cmnd alias specification
 
@@ -106,7 +106,7 @@ fi
 
 export LANG LC_ALL PATH PS1 TERM=xterm TMOUT=300 TZ;
 
-sudo /usr/local/sbin/wtmp;
+sudo /usr/local/bin/wtmp;
 
 readonly TMOUT;
 
@@ -148,53 +148,112 @@ action=/sbin/poweroff
 # Linux allocated devices (4.x+ version), https://www.kernel.org/doc/html/v4.11/admin-guide/devices.html
 _create_dev() {
     [ -s $WORK_DIR/.error ] && return 1;
+    cd $ROOTFS_DIR; mkdir -pv dev/{input,pts,shm,usb};
 
-    mkdir -pv $ROOTFS_DIR/dev/{pts,shm};
+    # 1 char: Memory devices
+    mknod -m 640 dev/mem    c 1 1; # Physical memory access
+    mknod -m 640 dev/kmem   c 1 2; # Kernel virtual memory access
+    mknod -m 666 dev/null   c 1 3; # Null device
+    mknod -m 640 dev/port   c 1 4; # I/O port access
+    mknod -m 666 dev/zero   c 1 5; # Null byte source
+    # mknod -m 666 dev/core   c 1 6; # OBSOLETE - replaced by /proc/kcore
+    mknod -m 666 dev/full   c 1 7; # Returns ENOSPC on write
+    mknod -m 444 dev/random c 1 8; # Nondeterministic random number gen. fix: PRNG is not seeded
+    mknod -m 444 dev/urandom    c 1 9; # Faster, less secure random number gen.
 
-    # Memory devices
-    mknod -m 666 $ROOTFS_DIR/dev/null c 1 3;
-    mknod -m 666 $ROOTFS_DIR/dev/port c 1 4
-    mknod -m 666 $ROOTFS_DIR/dev/zero c 1 5;
-    mknod -m 666 $ROOTFS_DIR/dev/full c 1 7;
-    mknod -m 666 $ROOTFS_DIR/dev/random c 1 8; # fix: PRNG is not seeded
-    mknod -m 644 $ROOTFS_DIR/dev/urandom c 1 9;
+    local n;
+    for n in `seq 0 7`;
+    do
+        # 1 block: RAM disk
+        mknod -m 660 dev/ram$n          b 1 $n;
 
-    # TTY devices
-    mknod -m 660 $ROOTFS_DIR/dev/tty0 c 4 0
-    mknod -m 620 $ROOTFS_DIR/dev/tty1 c 4 1
-    mknod -m 600 $ROOTFS_DIR/dev/tty2 c 4 2
-    mknod -m 600 $ROOTFS_DIR/dev/tty3 c 4 3
-    mknod -m 600 $ROOTFS_DIR/dev/tty4 c 4 4
-    mknod -m 600 $ROOTFS_DIR/dev/tty5 c 4 5
-    mknod -m 600 $ROOTFS_DIR/dev/tty6 c 4 6
-    mknod -m 600 $ROOTFS_DIR/dev/ttyS0 c 4 64
+        # 3 block: First MFM, RLL and IDE hard disk/CD-ROM interface
+        mknod -m 660 dev/hda$(_n0 $n)   b 3 $n;
+        mknod -m 660 dev/hdb$(_n0 $n)   b 3 $((n + 64));
+        mknod -m 660 dev/hdc$(_n0 $n)   b 3 $((n + 128));
+        mknod -m 660 dev/hdd$(_n0 $n)   b 3 $((n + 192));
 
-    # Alternate TTY devices
-    mknod -m 666 $ROOTFS_DIR/dev/tty c 5 0;
-    mknod -m 600 $ROOTFS_DIR/dev/console c 5 1; # ?
-    mknod -m 666 $ROOTFS_DIR/dev/ptmx c 5 2;
+        # 4 char: TTY devices (0-63)
+        mknod -m 622 dev/tty$n          c 4 $n;
+
+        # 7 block: Loopback devices
+        mknod -m 660 dev/loop$n         b 7 $n;
+
+        # 7 char: Virtual console capture devices (0-63)
+        mknod -m 600 dev/vcs$(_n0 $n)   c 7 $n;
+        mknod -m 600 dev/vcsa$(_n0 $n)  c 7 $((n + 128));
+
+        # 8 block: SCSI disk devices (0-15) (a-p)
+        mknod -m 660 dev/sda$(_n0 $n)   b 8 $n;
+        mknod -m 660 dev/sdb$(_n0 $n)   b 8 $((n + 16));
+
+        # 13 char: Input core
+        mknod -m 640 dev/input/event$n  c 13 $((n + 64));
+
+        # 180 char: USB devices (0-15)
+        mknod -m 660 dev/usb/hiddev$n   c 180 $((n + 96))
+
+    done
+
+    # 4 char: TTY devices
+    mknod -m 660 dev/ttyS0      c 4 64; # First UART serial port
+
+    # 5 char: Alternate TTY devices
+    mknod -m 666 dev/tty        c 5 0; # Current TTY device
+    mknod -m 622 dev/console    c 5 1; # System console
+    mknod -m 666 dev/ptmx       c 5 2; # PTY master multiplex
+
+    # 10 char: Non-serial mice, misc features
+    mknod -m 660 dev/logibm     c 10 0; # Logitech bus mouse
+    mknod -m 660 dev/psaux      c 10 1; # PS/2-style mouse port
+    mknod -m 660 dev/inportbm   c 10 2; # Microsoft Inport bus mouse
+    mknod -m 660 dev/atibm      c 10 3; # ATI XL bus mouse
+    mknod -m 660 dev/beep       c 10 128; # Fancy beep device
+    mknod -m 660 dev/nvram      c 10 144; # Non-volatile configuration RAM
+    mknod -m 660 dev/agpgart    c 10 175; # AGP Graphics Address Remapping Table
+    mknod -m 666 dev/net/tun    c 10 200; # TAP/TUN network device
+    mknod -m 600 dev/fuse       c 10 229; # Fuse (virtual filesystem in user-space)
+
+    # 13 char: Input core
+    mknod -m 660 dev/input/mouse0   c 13 32; # First mouse
+    mknod -m 660 dev/input/mice     c 13 63; # Unified mouse
+
+    # 14 char: Open Sound System (OSS)
+    mknod -m 660 dev/audio  c 14 4; # Sun-compatible digital audio
+
+    # 29 char: Universal frame buffer (0-31)
+    mknod -m 622 dev/fb0    c 29 0;
+
+    # 108 char: Device independent PPP interface
+    mknod -m 660 dev/ppp    c 108 0; # Device independent PPP interface
 
     # Compulsory links
-    ln -sv /proc/self/fd    $ROOTFS_DIR/dev/fd;
-    ln -sv /proc/self/fd/0  $ROOTFS_DIR/dev/stdin;
-    ln -sv /proc/self/fd/1  $ROOTFS_DIR/dev/stdout;
-    ln -sv /proc/self/fd/2  $ROOTFS_DIR/dev/stderr;
+    ln -sv /proc/self/fd    dev/fd; # File descriptors
+    ln -sv /proc/self/fd/0  dev/stdin; # stdin file descriptor
+    ln -sv /proc/self/fd/1  dev/stdout; # stdout file descriptor
+    ln -sv /proc/self/fd/2  dev/stderr; # stderr file descriptor
 
     # Recommended links
-    ln -sv /proc/kcore  $ROOTFS_DIR/dev/core;
+    ln -sv /proc/kcore      dev/core; # OBSOLETE - replaced by /proc/kcore
+    ln -sv sda1             dev/flash; # Flash memory card (rw)
+    ln -sv ram1             dev/ram; # RAM disk
+    ln -sv vcs0             dev/vcs; # Current vc text contents
+    ln -sv vcsa0            dev/vcsa; # Current vc text/attribute contents
 
-    # mount -vt devpts devpts $ROOTFS_DIR/dev/pts -o gid=5,mode=620;
-    # mount -vt proc proc $ROOTFS_DIR/proc;
-    # mount -vt sysfs sysfs $ROOTFS_DIR/sys;
-    # mount -v --bind /dev $ROOTFS_DIR/dev;
-    # mount -vt tmpfs tmpfs $ROOTFS_DIR/run;
+    # mount -vt devpts    devpts  dev/pts -o gid=5,mode=620;
+    # mount -vt proc      proc    proc;
+    # mount -vt sysfs     sysfs   sys;
+    # mount -v --bind /dev dev;
+    # mount -vt tmpfs     tmpfs   run;
+
+    cd -
 
 }
 
+_n0() { [ $1 == 0 ] || printf %s $1; }
+
+# TODO bionic-base-amd64.tar
 _apply_rootfs() {
-
-    # TODO bionic-base-amd64.tar
-
     [ -s $WORK_DIR/.error ] && return $(_err $LINENO 3);
 
     _create_dev;
@@ -215,6 +274,16 @@ _apply_rootfs() {
 
     # Copy our custom rootfs,
     cp -frv $THIS_DIR/rootfs/* $ROOTFS_DIR;
+
+#     # for /etc/inittab
+#     printf %s '#!/bin/busybox ash
+# if [ -f /var/autologin ]; then
+#     exec /sbin/getty 38400 tty1
+# else
+#     touch /var/autologin;
+#     exec /bin/login
+# fi
+# ' | tee $ROOTFS_DIR/sbin/autologin;
 
     # trim suffix
     local sf sh;
