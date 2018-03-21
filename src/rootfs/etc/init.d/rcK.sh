@@ -12,7 +12,7 @@ printf "\n\n[`date`]\n";
 # shutdown script
 /usr/bin/find /opt/tiny/etc/init.d -type f -perm /u+x -name "K*.sh" -exec /bin/sh -c {} \;
 
-/usr/local/sbin/wtmp;
+/usr/local/bin/wtmp;
 
 # PID USER COMMAND
 /bin/ps -ef | /bin/grep "crond\|monitor\|ntpd\|sshd\|udevd" | /usr/bin/awk "{print \"kill \"\$1}" | /bin/sh 2>/dev/null

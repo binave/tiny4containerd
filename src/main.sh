@@ -49,7 +49,7 @@ _main() {
     _last_version curl_version      $CURL_DOWNLOAD      "'xz\"'"                    '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
     # _last_version perl5_version     $PERL5_DOWNLOAD     "'perl.*bz2\"'"             '-F[-\"]'       "'{print \$3}'" "| grep '5\..*[24680]\.[0-9]'" || return $(_err $LINENO);
     # get docker stable version
-    _last_version docker_version    $DOCKER_DOWNLOAD        docker-                 '-F[-\"]'       "'{print \$3\"-\"\$4}'" || return $(_err $LINENO);
+    _last_version docker_version    $DOCKER_DOWNLOAD    docker-                     '-F[-\"]'       "'{print \$3\"-\"\$4}'" || return $(_err $LINENO);
 echo;
 
     # is need build kernel
