@@ -149,7 +149,7 @@ action=/sbin/poweroff
 _create_dev() {
     [ -s $WORK_DIR/.error ] && return 1;
     rm -frv $ROOTFS_DIR/dev;
-    cd $ROOTFS_DIR; mkdir -pv dev/{input,pts,shm,usb};
+    cd $ROOTFS_DIR; mkdir -pv dev/{input,net,pts,shm,usb};
 
     # 1 char: Memory devices
     mknod -m 640 dev/mem    c 1 1; # Physical memory access
