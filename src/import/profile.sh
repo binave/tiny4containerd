@@ -148,6 +148,7 @@ action=/sbin/poweroff
 # Linux allocated devices (4.x+ version), https://www.kernel.org/doc/html/v4.11/admin-guide/devices.html
 _create_dev() {
     [ -s $WORK_DIR/.error ] && return 1;
+    rm -frv $ROOTFS_DIR/dev;
     cd $ROOTFS_DIR; mkdir -pv dev/{input,pts,shm,usb};
 
     # 1 char: Memory devices
@@ -253,7 +254,6 @@ _n0() { [ $1 == 0 ] || printf %s $1; }
 # TODO bionic-base-amd64.tar
 _apply_rootfs() {
     [ -s $WORK_DIR/.error ] && return $(_err $LINENO 3);
-
     _create_dev;
 
     cd $ROOTFS_DIR;

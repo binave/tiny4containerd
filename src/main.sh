@@ -12,6 +12,8 @@ THIS_DIR=$(cd `dirname $0`; pwd) IMPORT=("${0##*/}" "env.sh" "lib.sh" "build.sh"
 _main() {
     # test complete, then pack it
     [ -f $ROOTFS_DIR/usr/local/bin/docker ] && {
+        _create_etc;
+        _apply_rootfs;
         _build_iso $@;
         return $?
     };
