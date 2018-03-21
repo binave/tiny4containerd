@@ -4,10 +4,7 @@
 THIS_DIR=$(cd `dirname $0`; pwd) IMPORT=("${0##*/}" "env.sh" "lib.sh" "build.sh" "profile.sh");
 
 # import script
-. $THIS_DIR/import/env.sh; # load environment variable
-. $THIS_DIR/import/lib.sh; # load common function
-. $THIS_DIR/import/build.sh; # 3
-. $THIS_DIR/import/profile.sh; # 4
+for i in `seq 1 $((${#IMPORT[@]} - 1))`; do . $THIS_DIR/import/${IMPORT[$i]}; done; unset i;
 
 _main() {
     # test complete, then pack it
@@ -52,7 +49,10 @@ _main() {
     # _last_version perl5_version     $PERL5_DOWNLOAD     "'perl.*bz2\"'"             '-F[-\"]'       "'{print \$3}'" "| grep '5\..*[24680]\.[0-9]'" || return $(_err $LINENO);
     # get docker stable version
     _last_version docker_version    $DOCKER_DOWNLOAD    docker-                     '-F[-\"]'       "'{print \$3\"-\"\$4}'" || return $(_err $LINENO);
-echo;
+
+    # for iso label
+    mv -v $ISO_DIR/version.swp $ISO_DIR/version;
+    echo;
 
     # is need build kernel
     if [ ! -s $ISO_DIR/boot/vmlinuz64 ]; then
@@ -152,11 +152,11 @@ echo;
 
     echo " -------------- run chroot ------------------------";
     # refresh libc cache
-    chroot $ROOTFS_DIR ldconfig;
+    chroot $ROOTFS_DIR ldconfig || return $(_err $LINENO);
 
     # Generate modules.dep
     ln -sTv $(ls $ROOTFS_DIR/lib/modules/) $ROOTFS_DIR/lib/modules/`uname -r`;
-    chroot $ROOTFS_DIR depmod;
+    chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
     rm -fv $ROOTFS_DIR/lib/modules/`uname -r`;
 
     echo "-------------- addgroup --------------------------";
@@ -181,9 +181,6 @@ echo;
 
     # clear var
     rm -frv $ROOTFS_DIR/var/*;
-
-    # for iso label
-    mv -v $ISO_DIR/version.swp $ISO_DIR/version;
 
     # build iso
     _build_iso $@ || return $?;
