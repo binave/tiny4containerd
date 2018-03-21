@@ -175,6 +175,7 @@ _create_dev() {
 
         # 4 char: TTY devices (0-63)
         mknod -m 622 dev/tty$n          c 4 $n;
+        mknod -m 660 dev/ttyS$n         c 4 $((n + 64)); # UART serial port
 
         # 7 block: Loopback devices
         mknod -m 660 dev/loop$n         b 7 $n;
@@ -194,9 +195,6 @@ _create_dev() {
         mknod -m 660 dev/usb/hiddev$n   c 180 $((n + 96))
 
     done
-
-    # 4 char: TTY devices
-    mknod -m 660 dev/ttyS0      c 4 64; # First UART serial port
 
     # 5 char: Alternate TTY devices
     mknod -m 666 dev/tty        c 5 0; # Current TTY device
@@ -237,8 +235,8 @@ _create_dev() {
     ln -sv /proc/kcore      dev/core; # OBSOLETE - replaced by /proc/kcore
     ln -sv sda1             dev/flash; # Flash memory card (rw)
     ln -sv ram1             dev/ram; # RAM disk
-    ln -sv vcs0             dev/vcs; # Current vc text contents
-    ln -sv vcsa0            dev/vcsa; # Current vc text/attribute contents
+    # ln -sv vcs0             dev/vcs; # Current vc text contents
+    # ln -sv vcsa0            dev/vcsa; # Current vc text/attribute contents
 
     # mount -vt devpts    devpts  dev/pts -o gid=5,mode=620;
     # mount -vt proc      proc    proc;
