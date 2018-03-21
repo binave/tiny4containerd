@@ -288,7 +288,7 @@ _apply_rootfs() {
     for sf in $(cd $THIS_DIR/rootfs; find . -type f -name "*.sh");
     do
         sf="$ROOTFS_DIR/${sf#*/}";
-        mv "$sf" "${sf%.*}";
+        mv -f "$sf" "${sf%.*}";
         # chmod
     done
 
