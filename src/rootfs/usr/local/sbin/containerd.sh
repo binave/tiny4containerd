@@ -18,8 +18,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 # dockerd start script
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
-# import settings from env (e.g. HTTP_PROXY, HTTPS_PROXY)
-[ -s /etc/env ] && . /etc/env;
+# import settings from profile (e.g. HTTP_PROXY, HTTPS_PROXY)
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 : ${IF_PREFIX:=eth};
 : ${CONTAINERD_ULIMITS:="1048576"};
@@ -36,10 +36,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 Ymd=`date +%Y%m%d`;
 CERT_INTERFACES="switch0 ${IF_PREFIX}0 ${IF_PREFIX}1 ${IF_PREFIX}2 ${IF_PREFIX}3 ${IF_PREFIX}4";
 
-CONTAINERD_LOG="/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
-CONTAINERD_DIR="/var/${0##*/}ata";
+CONTAINERD_LOG="$PERSISTENT_DATA/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
+CONTAINERD_DIR="$PERSISTENT_DATA/${0##*/}ata";
 
-SERVER_TLS_DIR="/var/tiny/tls";
+SERVER_TLS_DIR="$PERSISTENT_DATA/tiny/tls";
 SERVER_KEY="$SERVER_TLS_DIR/serverkey.pem";
 SERVER_CSR="$SERVER_TLS_DIR/servercsr.pem";
 SERVER_CERT="$SERVER_TLS_DIR/server.pem";
@@ -61,8 +61,8 @@ _start() {
     };
 
     [ -e "/etc/docker" ] || {
-        mkdir -p "/var/tiny/etc/docker";
-        ln -sf "/var/tiny/etc/docker" "/etc/docker"
+        mkdir -p "$PERSISTENT_DATA/tiny/etc/docker";
+        ln -sf "$PERSISTENT_DATA/tiny/etc/docker" "/etc/docker"
     };
 
     _install_tls;
@@ -95,7 +95,7 @@ _srv_ext_var() {
     local ip interface;
     for interface in ${CERT_INTERFACES};
     do
-        for ip in $(ip addr show $interface 2>/dev/null | sed -nEe 's/^[ \t]*inet[ \t]*([0-9.]+)\/.*$/\1/p');
+        for ip in $(ifconfig $interface 2>/dev/null | sed -nEe 's/^[ \t].*addr:([0-9.]+)[ \t].*$/\1/p');
         do
             printf %s ",IP:$ip";
         done
@@ -257,6 +257,8 @@ _install_tls() {
     return 0
 
 }
+
+mkdir -p /var/run;
 
 case $1 in
     start) _start;;

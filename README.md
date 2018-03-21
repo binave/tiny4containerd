@@ -66,10 +66,10 @@ A:
 
 > |路径|说明|样例|备注
 > |---|---|---|---
-> |/var/tiny/etc/passwd|密码配置|`root:$1$AgCGptrX$hL7QB536iJ9KKjO1KtfVA.`|使用 `openssl passwd -1 [password]` 生成加密密码
+> |/var/tiny/etc/pw.cfg|密码配置|`root:$1$AgCGptrX$hL7QB536iJ9KKjO1KtfVA.`|使用 `openssl passwd -1 [password]` 生成加密密码
 > |/var/tiny/etc/if.cfg|静态 ip 配置|`eth0 192.168.1.123 192.168.1.255 255.255.255.0`|
 > |/var/tiny/etc/init.d/[SK]*.sh|启动、关机脚本|S01_ftpd.sh K20_ftpd.sh|`S*.sh` 在服务启动前执行<br/>`K*.sh` 设备关机前执行
-> |/var/tiny/etc/env|环境变量配置|`EXTRA_ARGS="--registry-mirror=https://xxx.mirror.aliyuncs.com"`|
+> |/var/tiny/etc/env.cfg|环境变量配置|`EXTRA_ARGS="--registry-mirror=https://xxx.mirror.aliyuncs.com"`|
 > |/var/tiny/etc/rc.local|启动最后阶段执行||需要赋予可执行权限
 > |isolinux.cfg|启动参数和环境变量配置||需要编辑源代码中的配置文件
 <p><br/></p>
@@ -123,7 +123,7 @@ A:
 > |CHUNK|128|RAID 块大小|mdisk|不建议修改
 <br/>
 
-> 公用配置 `/var/tiny/etc/env`：
+> 公用配置 `/var/tiny/etc/env.cfg`：
 
 > |环境变量名称|默认值|说明|所属命令|备注
 > |---|---|---|---|---

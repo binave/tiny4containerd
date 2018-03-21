@@ -159,6 +159,9 @@ _main() {
     chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
     rm -fv $ROOTFS_DIR/lib/modules/`uname -r`;
 
+    # create sshd key
+    chroot $ROOTFS_DIR ssh-keygen -A || return $(_err $LINENO);
+
     echo "-------------- addgroup --------------------------";
     # for dockerd: root map user
     # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
@@ -174,13 +177,8 @@ _main() {
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;
-    tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 || return $(_err $LINENO);
-
-    # create ssh key and test docker command
-    chroot $ROOTFS_DIR sh -xc 'ssh-keygen -A && docker -v' || return $(_err $LINENO);
-
-    # clear var
-    rm -frv $ROOTFS_DIR/var/*;
+    tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
+        chroot $ROOTFS_DIR docker -v || return $(_err $LINENO); # test docker command
 
     # build iso
     _build_iso $@ || return $?;

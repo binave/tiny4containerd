@@ -2,6 +2,15 @@
 
 printf "\n\n[`date`]\nRunning init script...\n";
 
+[ -d /root ]    || mkdir -m 0750 /root;
+[ -d /sys ]     || mkdir /sys;
+[ -d /proc ]    || mkdir /proc;
+[ -d /tmp ]     || mkdir -m 1777 /tmp;
+
+# Mount /proc.
+/bin/mount -t proc proc /proc;
+/bin/mount -t tmpfs -o size=90% tmpfs /mnt;
+
 # Starting udev daemon...
 /sbin/udevd --daemon 2>/dev/null;
 
@@ -12,25 +21,20 @@ printf "\n\n[`date`]\nRunning init script...\n";
 /sbin/udevadm settle --timeout=120;
 /sbin/udevadm control --reload-rules &
 
-# set globle file mode mask
-umask 022;
-
-# # Starting system log daemon: syslogd...
-# syslogd -s $TODO;
-# # Starting kernel log daemon: klogd...
-# klogd;
-
-# Mount /proc.
-[ -f /proc/cmdline ] || /bin/mount /proc;
-
 # Remount rootfs rw.
 /bin/mount -o remount,rw /;
 
 # Mount system devices from /etc/fstab.
 /bin/mount -a;
 
-# filter environment
-/bin/sed 's/[\|\;\& ]/\n/g' /proc/cmdline | /bin/grep '^[_A-Z]\+=' > /etc/env;
+# set globle file mode mask
+umask 022;
+
+# filter environment variable
+{
+    /bin/sed 's/[\|\;\& ]/\n/g' /proc/cmdline | /bin/grep '^[_A-Z]\+=';
+    printf "export PERSISTENT_DATA=$PERSISTENT_DATA\n"
+} > /etc/profile.d/boot_envar.sh;
 
 # TODO
 # tz
@@ -48,39 +52,29 @@ umask 022;
 # for find/crond/log
 /bin/mkdir -p \
     /var/spool/cron/crontabs \
-    /var/tiny/etc/init.d \
-    /var/log/tiny/${Ymd:0:6};
+    $PERSISTENT_DATA/tiny/etc/init.d \
+    $PERSISTENT_DATA/log/tiny/${Ymd:0:6};
 
-# System logging
+# Starting system log daemon: syslogd...
 /sbin/syslogd;
+# Starting kernel log daemon: klogd...
 /sbin/klogd;
 
 # mdiskd
 /usr/local/sbin/mdisk monitor;
 
-# create empty config
-[ -s /var/tiny/etc/env ] || printf \
-    "# set environment variable\n\n" > \
-    /var/tiny/etc/env;
-
-# filter env
-/usr/bin/awk -F# '{print $1}' /var/tiny/etc/env 2>/dev/null | /bin/sed 's/[\|\;\&]/\n/g;s/export//g;s/^[ ]\+//g' | \
-    /bin/grep '^[_A-Z]\+=' >> /etc/env;
-
-echo >> /etc/env;
-
-# init environment
-. /etc/env;
+# init environment from disk
+/usr/local/sbin/envset;
 
 # change password
-/usr/local/sbin/pw load;
+/usr/local/sbin/pwset;
 
 echo "------ firewall --------------";
 # http://wiki.tinycorelinux.net/wiki:firewall tce-load -wi iptables; -> /usr/local/sbin/basic-firewall
 /bin/sh /usr/local/etc/init.d/firewall init;
 
 # set static ip or start dhcp
-/usr/local/sbin/ifinit;
+/usr/local/sbin/ifset;
 # /bin/hostname -F /etc/hostname;
 
 # mount cgroups hierarchy. https://github.com/tianon/cgroupfs-mount
@@ -89,28 +83,28 @@ echo "------ firewall --------------";
 /bin/sleep 2;
 
 # init
-/usr/bin/find /var/tiny/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
+/usr/bin/find $PERSISTENT_DATA/tiny/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
 
 # sync the clock
-/usr/sbin/ntpd -d -n -p pool.ntp.org >> /var/log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
+/usr/sbin/ntpd -d -n -p pool.ntp.org >> $PERSISTENT_DATA/log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
 
 # start cron
-/usr/sbin/crond -f -d "${CROND_LOGLEVEL:-8}" >> /var/log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
+/usr/sbin/crond -f -d "${CROND_LOGLEVEL:-8}" >> $PERSISTENT_DATA/log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
 
-/bin/chmod 775 /tmp /var;
-# /bin/chown :staff /tmp /var;
-/bin/chgrp staff /tmp /var;
+/bin/chmod 775 /tmp $PERSISTENT_DATA;
+# /bin/chown :staff /tmp $PERSISTENT_DATA;
+/bin/chgrp staff /tmp $PERSISTENT_DATA;
 
 # hide directory
-/bin/chmod 700 /var/tiny/etc;
+/bin/chmod 700 $PERSISTENT_DATA/tiny/etc;
 
 #maybe the links will be up by now - trouble is, on some setups, they may never happen, so we can't just wait until they are
 /bin/sleep 3;
 
 # set the hostname
-echo tiny$(/sbin/ip addr | /bin/grep -A 2 'eth[0-9]*:' | /bin/grep inet | /usr/bin/awk -F'[.]|/' '{print "-"$4}' | /usr/bin/awk '{printf $_}') | \
-    /usr/bin/tee /var/tiny/etc/hostname;
-HOSTNAME=`cat /var/tiny/etc/hostname` && /usr/bin/sethostname $HOSTNAME;
+echo tc$(/sbin/ifconfig | /bin/grep -A 1 'eth[0-9]' | /bin/grep addr: | /usr/bin/awk '{print $2}' | /usr/bin/awk -F\. '{printf "-"$4}') | \
+    /usr/bin/tee $PERSISTENT_DATA/tiny/etc/hostname;
+HOSTNAME=`cat $PERSISTENT_DATA/tiny/etc/hostname` && /bin/hostname $HOSTNAME;
 
 # ssh dameon start
 /bin/sh /usr/local/etc/init.d/sshd;
@@ -128,10 +122,10 @@ echo "----- containerd -------------";
 /usr/local/sbin/containerd start;
 
 # Allow rc.local customisation
-/bin/touch /var/tiny/etc/rc.local;
-if [ -x /var/tiny/etc/rc.local ]; then
+/bin/touch $PERSISTENT_DATA/tiny/etc/rc.local;
+if [ -x $PERSISTENT_DATA/tiny/etc/rc.local ]; then
     echo "------ rc.local --------------";
-    . /var/tiny/etc/rc.local
+    . $PERSISTENT_DATA/tiny/etc/rc.local
 fi
 
 printf "Finished init script...\n";

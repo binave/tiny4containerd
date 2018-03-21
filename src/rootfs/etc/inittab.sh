@@ -63,7 +63,7 @@
 # tty4::askfirst:/sbin/getty 38400 tty4
 
 # /sbin/getty invocations for selected ttys
-tty1::respawn:-/bin/login
+tty1::respawn:/sbin/getty -nl /sbin/autologin 38400 tty1
 # tty4::respawn:/sbin/getty 38400 tty5
 # tty5::respawn:/sbin/getty 38400 tty6
 

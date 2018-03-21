@@ -53,10 +53,11 @@ _make_glibc() {
     sed -i 's/-O2//g' ./config.make ./config.status;
     make && make install_root=$ROOTFS_DIR install;
 
-    # glibc default configuration, `ldconfig`
-    printf '/usr/lib\n' | tee $ROOTFS_DIR/etc/ld.so.conf;
+    mkdir -pv $ROOTFS_DIR/lib64;
+    ln -sv ../lib/$(readlink $ROOTFS_DIR/lib/ld-linux-x86-64.so.*) $ROOTFS_DIR/lib64/$(cd $ROOTFS_DIR/lib; ls ld-linux-x86-64.so.*);
 
-    ln -sTv lib $ROOTFS_DIR/lib64
+    # glibc default configuration, `ldconfig`
+    printf '/usr/lib\n' | tee $ROOTFS_DIR/etc/ld.so.conf
 
 }
 
@@ -494,6 +495,9 @@ _build_iso() {
         printf "\n[WARN] skip create iso.\n";
         return 0
     };
+
+    # clear var -> $WRITE_TARGET
+    rm -frv $ROOTFS_DIR/var/*;
 
     set ${1##*/};
 

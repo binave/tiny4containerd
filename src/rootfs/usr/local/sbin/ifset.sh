@@ -4,17 +4,19 @@
 
 [ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
-# import settings from env
-[ -s /etc/env ] && . /etc/env;
+# import settings from profile
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
-: ${IF_PREFIX:=eth};
-: ${IF_CONFIG:='/var/tiny/etc/if.cfg'};
+: ${IF_PREFIX:='eth'};
+: ${IF_CONFIG:="$PERSISTENT_DATA/tiny/etc/if.cfg"};
 
 # init
 [ -s $IF_CONFIG ] || printf "# [interface] [ip] [broadcast] [netmask]\n\n" > $IF_CONFIG;
 
 # The DHCP portion is now separated out, in order to not slow the boot down
 _dhcp() {
+    mkdir -p /var/run;
+
     # This waits until all devices have registered
     /sbin/udevadm settle --timeout=5;
 

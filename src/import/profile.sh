@@ -69,24 +69,24 @@ lp:*:13510:0:99999:7:::
 nobody:*:13509:0:99999:7:::
 ' | tee $ROOTFS_DIR/etc/shadow;
 
-    # sudoers
-    printf %s "#
-# This file MUST be edited with the 'visudo' command as root.
-#
-# See the man page for details on how to write a sudoers file.
-#
+#     # sudoers
+#     printf %s "#
+# # This file MUST be edited with the 'visudo' command as root.
+# #
+# # See the man page for details on how to write a sudoers file.
+# #
 
-# Host alias specification
+# # Host alias specification
 
-# User alias specification
-Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/bin/wtmp
+# # User alias specification
+# Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/bin/wtmp
 
-# Cmnd alias specification
+# # Cmnd alias specification
 
-# User privilege specification
-root    ALL=(ALL) ALL
+# # User privilege specification
+# root    ALL=(ALL) ALL
 
-" | tee $ROOTFS_DIR/etc/sudoers;
+# " | tee $ROOTFS_DIR/etc/sudoers;
 
     # profile
     printf %s "# /etc/profile: system-wide .profile file for the Bourne shells
@@ -104,20 +104,21 @@ fi
 [ -f /etc/sysconfig/language ] && . /etc/sysconfig/language;
 [ -f /etc/sysconfig/timezone ] && . /etc/sysconfig/timezone;
 
-export LANG LC_ALL PATH PS1 TERM=xterm TMOUT=300 TZ;
-
 sudo /usr/local/bin/wtmp;
 
-readonly TMOUT;
+for i in /etc/profile.d/*.sh; do [ -r \$i ] && . \$i; done; unset i;
 
-for i in /etc/profile.d/*.sh; do [ -r \$i ] && . \$i; done
-unset i
+export LANG LC_ALL PATH PS1 TERM=xterm TMOUT=300 TZ;
+
+readonly TMOUT
+
 " | tee $ROOTFS_DIR/etc/profile;
 
     mkdir -pv $ROOTFS_DIR/etc/{skel,sysconfig};
 
     # .profile
     printf %s "# ~/.profile: Executed by Bourne-compatible login SHells.
+
 PS1='\u@\h:\W\$ '
 PAGER='less -EM'
 MANPAGER='less -isR'
@@ -273,15 +274,15 @@ _apply_rootfs() {
     # Copy our custom rootfs,
     cp -frv $THIS_DIR/rootfs/* $ROOTFS_DIR;
 
-#     # for /etc/inittab
-#     printf %s '#!/bin/busybox ash
-# if [ -f /var/autologin ]; then
-#     exec /sbin/getty 38400 tty1
-# else
-#     touch /var/autologin;
-#     exec /bin/login
-# fi
-# ' | tee $ROOTFS_DIR/sbin/autologin;
+    # for /etc/inittab
+    printf %s '#!/bin/busybox ash
+if [ -f /var/autologin ]; then
+    exec /sbin/getty 38400 tty1
+else
+    touch /var/autologin;
+    exec /bin/login
+fi
+' | tee $ROOTFS_DIR/sbin/autologin;
 
     # trim suffix
     local sf sh;
