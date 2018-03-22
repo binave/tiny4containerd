@@ -509,6 +509,16 @@ _build_iso() {
 
     find $ROOTFS_DIR/{,usr/}lib -name \*.la -delete;
 
+    # '/*' is necessary !
+    find $ROOTFS_DIR/usr/share/locale/* \
+        $ROOTFS_DIR/usr/share/i18n/locales/* \
+        $ROOTFS_DIR/usr/share/i18n/charmaps/* \
+        -maxdepth 1 \
+        ! -name "en*" ! -name "eu*" ! -name "ja*" ! -name "ko*" ! -name "uk*" ! -name "zh_*" \
+        ! -name "ANSI_X3.*" ! -name "BIG5*" ! -name "GB*" ! -name "ISO-8859-*" \
+        ! -name "JIS_*" ! -name "KOI*" ! -name "UTF*" ! -name "*.alias" \
+        -exec rm -frv {} +
+
     set ${1##*/};
 
     echo " ------------- build iso --------------------------";
