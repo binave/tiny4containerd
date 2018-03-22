@@ -158,6 +158,23 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
 action=/sbin/poweroff
 ' | tee $ROOTFS_DIR/etc/acpi/events/all;
 
+    # securetty
+    echo '# /etc/securetty: List of terminals on which root is allowed to login.
+console
+
+# For people with serial port consoles
+# ttyS0
+
+# Standard consoles
+tty1
+tty2
+tty3
+tty4
+tty5
+tty6
+tty7
+' | tee $ROOTFS_DIR/etc/securetty;
+
     # shells
     echo '# /etc/shells: valid login shells
 /bin/sh
