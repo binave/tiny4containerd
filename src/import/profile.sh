@@ -297,9 +297,8 @@ _apply_rootfs() {
     cd $ROOTFS_DIR;
     mkdir -pv \
         etc/{acpi/events,init.d,modprobe.d,skel,ssl/certs,profile.d,sysconfig} \
-        home lib mnt proc root run sys tmp \
+        home lib mnt proc root run sys tmp var \
         usr/{sbin,share};
-        # var run
 
     # test and move unexecutable script to '$OUT_DIR/uexe'
     for sh in $(grep -lr '\/bin\/bash\|\/bin\/perl' $ROOTFS_DIR/{,usr/}{,s}bin);
