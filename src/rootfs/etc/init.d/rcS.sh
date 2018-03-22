@@ -8,8 +8,13 @@ printf "\n\n[`date`]\nRunning init script...\n";
 [ -d /tmp ]     || mkdir -m 1777 /tmp;
 
 # Mount /proc.
-/bin/mount -t proc proc /proc;
-/bin/mount -t tmpfs -o size=90% tmpfs /mnt;
+[ -f /proc/cmdline ] || /bin/mount /proc;
+
+# Remount rootfs rw.
+/bin/mount -o remount,rw /;
+
+# Mount system devices from /etc/fstab.
+/bin/mount -a;
 
 # Starting udev daemon...
 /sbin/udevd --daemon 2>/dev/null;
@@ -17,15 +22,29 @@ printf "\n\n[`date`]\nRunning init script...\n";
 # Udevadm requesting events from the Kernel...
 /sbin/udevadm trigger --action=add >/dev/null 2>&1 &
 
+/sbin/modprobe loop 2>/dev/null;
+
+# # start swap
+# /sbin/modprobe -q zram;
+# /sbin/modprobe -q zcache;
+# /sbin/mkswap /dev/zram0 >/dev/null 2>&1;
+# /sbin/swapon /dev/zram0;
+
 # Udevadm waiting for the event queue to finish...
-/sbin/udevadm settle --timeout=120;
 /sbin/udevadm control --reload-rules &
 
-# Remount rootfs rw.
-/bin/mount -o remount,rw /;
+# Starting system log daemon: syslogd...
+/sbin/syslogd;
+# Starting kernel log daemon: klogd...
+/sbin/klogd;
 
-# Mount system devices from /etc/fstab.
-/bin/mount -a;
+# init ip
+/sbin/ifconfig lo 127.0.0.1 up;
+/sbin/route add 127.0.0.1 lo &
+
+/bin/chmod u+s /bin/busybox.suid /usr/bin/sudo;
+
+/sbin/modprobe -q squashfs 2>/dev/null;
 
 # set globle file mode mask
 umask 022;
@@ -54,11 +73,6 @@ umask 022;
     /var/spool/cron/crontabs \
     $PERSISTENT_DATA/tiny/etc/init.d \
     $PERSISTENT_DATA/log/tiny/${Ymd:0:6};
-
-# Starting system log daemon: syslogd...
-/sbin/syslogd;
-# Starting kernel log daemon: klogd...
-/sbin/klogd;
 
 # mdiskd
 /usr/local/sbin/mdisk monitor;

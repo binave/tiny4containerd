@@ -24,6 +24,20 @@ rpc: files
 # End /etc/nsswitch.conf
 ' | tee $ROOTFS_DIR/etc/nsswitch.conf
 
+    # hostname
+    printf %s 'tiny2containerd
+' | tee $ROOTFS_DIR/etc/hostname;
+
+    # host.conf
+    printf %s '# The "order" line is only used by old versions of the C library.
+order hosts,bind
+multi on
+' | tee $ROOTFS_DIR/etc/host.conf;
+
+    # hosts
+    printf %s '127.0.0.1	box	localhost localhost.local
+' | tee $ROOTFS_DIR/etc/hosts;
+
     # sysctl
     printf %s 'net.ipv4.ip_forward=1
 # net.ipv6.conf.all.forwarding=1
@@ -144,6 +158,12 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
 action=/sbin/poweroff
 ' | tee $ROOTFS_DIR/etc/acpi/events/all;
 
+    # shells
+    echo '# /etc/shells: valid login shells
+/bin/sh
+/bin/ash
+' | tee $ROOTFS_DIR/etc/shells;
+
 }
 
 # Linux allocated devices (4.x+ version), https://www.kernel.org/doc/html/v4.11/admin-guide/devices.html
@@ -259,8 +279,8 @@ _apply_rootfs() {
 
     cd $ROOTFS_DIR;
     mkdir -pv \
-        etc/{acpi/events,init.d,ssl/certs,skel,sysconfig} \
-        home lib media mnt proc root sys tmp \
+        etc/{acpi/events,init.d,modprobe.d,skel,ssl/certs,profile.d,sysconfig} \
+        home lib mnt proc root run sys tmp \
         usr/{sbin,share};
         # var run
 
@@ -280,7 +300,7 @@ if [ -f /etc/sysconfig/autologin ]; then
     exec /sbin/getty 38400 tty1
 else
     touch /etc/sysconfig/autologin;
-    exec /bin/login
+    exec /bin/login -f root
 fi
 ' | tee $ROOTFS_DIR/sbin/autologin;
 
