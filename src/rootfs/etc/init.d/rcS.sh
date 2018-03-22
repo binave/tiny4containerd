@@ -91,10 +91,6 @@ echo "------ firewall --------------";
 # start cron
 /usr/sbin/crond -f -d "${CROND_LOGLEVEL:-8}" >> $PERSISTENT_DATA/log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
 
-/bin/chmod 775 /tmp $PERSISTENT_DATA;
-# /bin/chown :staff /tmp $PERSISTENT_DATA;
-/bin/chgrp staff /tmp $PERSISTENT_DATA;
-
 # hide directory
 /bin/chmod 700 $PERSISTENT_DATA/tiny/etc;
 

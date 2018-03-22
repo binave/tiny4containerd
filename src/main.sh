@@ -167,13 +167,15 @@ _main() {
     # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
     chroot $ROOTFS_DIR sh -xc 'addgroup -S dockremap && adduser -S -G dockremap dockremap';
     echo "dockremap:165536:65536" | tee $ROOTFS_DIR/etc/subgid > $ROOTFS_DIR/etc/subuid;
+    chroot $ROOTFS_DIR sh addgroup -S docker;
 
+    echo "--------------- adduser --------------------------";
     # add user: tc
-    chroot $ROOTFS_DIR sh -xc 'addgroup -S docker && \
-        adduser -s /bin/sh -G staff -D tc && \
-        addgroup tc docker && \
-        printf "tc:tcuser" | /usr/sbin/chpasswd -m';
-	printf "tc\tALL=NOPASSWD: ALL" >> $ROOTFS_DIR/etc/sudoers;
+    local add_user=tc;
+    chroot $ROOTFS_DIR sh -xc "adduser -s /bin/sh -G staff -D $add_user && \
+        addgroup $add_user docker && \
+        printf $add_user:tcuser | /usr/sbin/chpasswd -m";
+	printf "$add_user\tALL=NOPASSWD: ALL\n" >> $ROOTFS_DIR/etc/sudoers.d/${add_user}_sudo;
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;

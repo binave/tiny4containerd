@@ -496,8 +496,18 @@ _build_iso() {
         return 0
     };
 
-    # clear var -> $WRITE_TARGET
-    rm -frv $ROOTFS_DIR/var/*;
+    # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
+    # clear var
+    # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
+    rm -frv \
+        $ROOTFS_DIR/var/* \
+        $ROOTFS_DIR/usr/bin/passwd \
+        $ROOTFS_DIR/etc/{ssl/man,*-,sysconfig/autologin} \
+        $ROOTFS_DIR/usr/{,local/}include \
+        $ROOTFS_DIR/usr/{,local/}share/{info,man,doc} \
+        $ROOTFS_DIR/{,usr/}lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a;
+
+    find $ROOTFS_DIR/{,usr/}lib -name \*.la -delete;
 
     set ${1##*/};
 

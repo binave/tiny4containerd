@@ -38,7 +38,7 @@ tmpfs           /dev/shm     tmpfs   defaults          0       0
 ' | tee $ROOTFS_DIR/etc/fstab;
 
     # group
-    printf %s '
+    [ -f $ROOTFS_DIR/etc/group ] && printf "[WARN] skip group\n" || printf %s '
 root:x:0:
 lp:x:7:lp
 nogroup:x:65534:
@@ -46,7 +46,7 @@ staff:x:50:
 ' | tee $ROOTFS_DIR/etc/group;
 
     # gshadow
-    printf %s '
+    [ -f $ROOTFS_DIR/etc/gshadow ] && printf "[WARN] skip 'gshadow'\n" || printf %s '
 root:*::
 nogroup:!::
 staff:!::
@@ -56,37 +56,37 @@ nobody:x:65534:65534:nobody:/nonexistent:/bin/false
 ' | tee $ROOTFS_DIR/etc/gshadow;
 
     # passwd
-    printf %s '
+    [ -f $ROOTFS_DIR/etc/passwd ] && printf "[WARN] skip 'passwd'\n" || printf %s '
 root:x:0:0:root:/root:/bin/sh
 lp:x:7:7:lp:/var/spool/lpd:/bin/sh
 nobody:x:65534:65534:nobody:/nonexistent:/bin/false
 ' | tee $ROOTFS_DIR/etc/passwd;
 
     # shadow
-    printf %s '
+    [ -f $ROOTFS_DIR/etc/shadow ] && printf "[WARN] skip 'shadow'\n" || printf %s '
 root:*:13525:0:99999:7:::
 lp:*:13510:0:99999:7:::
 nobody:*:13509:0:99999:7:::
 ' | tee $ROOTFS_DIR/etc/shadow;
 
-#     # sudoers
-#     printf %s "#
-# # This file MUST be edited with the 'visudo' command as root.
-# #
-# # See the man page for details on how to write a sudoers file.
-# #
+    # sudoers
+    printf %s "#
+# This file MUST be edited with the 'visudo' command as root.
+#
+# See the man page for details on how to write a sudoers file.
+#
 
-# # Host alias specification
+# Host alias specification
 
-# # User alias specification
-# Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/bin/wtmp
+# User alias specification
+Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/bin/wtmp
 
-# # Cmnd alias specification
+# Cmnd alias specification
 
-# # User privilege specification
-# root    ALL=(ALL) ALL
+# User privilege specification
+root    ALL=(ALL) ALL
 
-# " | tee $ROOTFS_DIR/etc/sudoers;
+" # | tee $ROOTFS_DIR/etc/sudoers;
 
     # profile
     printf %s "# /etc/profile: system-wide .profile file for the Bourne shells
@@ -260,7 +260,7 @@ _apply_rootfs() {
     cd $ROOTFS_DIR;
     mkdir -pv \
         etc/{acpi/events,init.d,ssl/certs,skel,sysconfig} \
-        home lib media mnt proc sys \
+        home lib media mnt proc root sys tmp \
         usr/{sbin,share};
         # var run
 
@@ -276,10 +276,10 @@ _apply_rootfs() {
 
     # for /etc/inittab
     printf %s '#!/bin/busybox ash
-if [ -f /var/autologin ]; then
+if [ -f /etc/sysconfig/autologin ]; then
     exec /sbin/getty 38400 tty1
 else
-    touch /var/autologin;
+    touch /etc/sysconfig/autologin;
     exec /bin/login
 fi
 ' | tee $ROOTFS_DIR/sbin/autologin;
@@ -297,27 +297,25 @@ fi
     chmod +x $ROOTFS_DIR/init;
     find $ROOTFS_DIR/usr/local/{,s}bin $ROOTFS_DIR/etc/init.d -type f -exec chmod -c +x '{}' +
 
+    chmod 0750 $ROOTFS_DIR/root;
+    chmod 1777 $ROOTFS_DIR/tmp;
+
     # copy timezone
     cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime;
 
     # initrd.img
-    ln -fsv bin/busybox $ROOTFS_DIR/linuxrc;
+    ln -fsv bin/busybox                     $ROOTFS_DIR/linuxrc;
+
+    # git-core
+    ln -fsv /var/git-core/bin/git           $ROOTFS_DIR/usr/bin/;
 
     # subversion
     ln -fsv /var/subversion/bin/svn         $ROOTFS_DIR/usr/bin/;
     ln -fsv /var/subversion/bin/svnadmin    $ROOTFS_DIR/usr/bin/;
     ln -fsv /var/subversion/bin/svnlook     $ROOTFS_DIR/usr/bin/;
 
-    # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
-    # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
-    rm -frv \
-        $ROOTFS_DIR/usr/bin/passwd \
-        $ROOTFS_DIR/etc/ssl/man \
-        $ROOTFS_DIR/usr/{,local/}include \
-        $ROOTFS_DIR/usr/{,local/}share/{info,man,doc} \
-        $ROOTFS_DIR/{,usr/}lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a
-
-    find $ROOTFS_DIR/{,usr/}lib -name \*.la -delete;
+    # visudo
+    ln -fsv $(readlink $ROOTFS_DIR/usr/bin/readlink)    $ROOTFS_DIR/usr/bin/vi;
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/stripping.html
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/strippingagain.html
