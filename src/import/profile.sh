@@ -301,11 +301,19 @@ _apply_rootfs() {
         usr/{sbin,share};
         # var run
 
-    # replace '/bin/bash' to '/bin/sh', move perl script to '/opt'
+    # test and move unexecutable script to '$OUT_DIR/uexe'
     for sh in $(grep -lr '\/bin\/bash\|\/bin\/perl' $ROOTFS_DIR/{,usr/}{,s}bin);
     do
-        sed -i 's/\/bin\/bash/\/bin\/sh/g' $sh;
-        sh -n $sh || mv -v $sh /opt
+        # file $sh | grep -q 'ELF' && continue;
+        if file $sh | grep -q 'text executable'; then
+            # replace '/bin/bash' to '/bin/sh'
+            sed -i 's/\/bin\/bash/\/bin\/sh/g' $sh;
+            sh -n $sh || {
+                mkdir -pv $OUT_DIR/uexe;
+                printf '[unexecutable]: ';
+                mv -v $sh $OUT_DIR/uexe
+            }
+        fi
     done
 
     # Copy our custom rootfs,
