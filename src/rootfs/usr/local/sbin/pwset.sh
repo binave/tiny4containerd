@@ -66,9 +66,6 @@ do
     # sudo -i, -s mast use root password
     [ "$user" == "root" ] && printf '\nDefaults rootpw\n\n' >> /etc/sudoers;
 
-    # # no auto login
-    # echo booting > /etc/sysconfig/noautologin;
-
 done
 
 exit 0

@@ -38,7 +38,7 @@ tmpfs           /dev/shm     tmpfs   defaults          0       0
 ' | tee $ROOTFS_DIR/etc/fstab;
 
     # group
-    [ -f $ROOTFS_DIR/etc/group ] && printf "[WARN] skip group\n" || printf %s '
+    [ -f $ROOTFS_DIR/etc/group ] && printf "[WARN] skip '/etc/group'\n" || printf %s '
 root:x:0:
 lp:x:7:lp
 nogroup:x:65534:
@@ -46,7 +46,7 @@ staff:x:50:
 ' | tee $ROOTFS_DIR/etc/group;
 
     # gshadow
-    [ -f $ROOTFS_DIR/etc/gshadow ] && printf "[WARN] skip 'gshadow'\n" || printf %s '
+    [ -f $ROOTFS_DIR/etc/gshadow ] && printf "[WARN] skip '/etc/gshadow'\n" || printf %s '
 root:*::
 nogroup:!::
 staff:!::
@@ -56,14 +56,14 @@ nobody:x:65534:65534:nobody:/nonexistent:/bin/false
 ' | tee $ROOTFS_DIR/etc/gshadow;
 
     # passwd
-    [ -f $ROOTFS_DIR/etc/passwd ] && printf "[WARN] skip 'passwd'\n" || printf %s '
+    [ -f $ROOTFS_DIR/etc/passwd ] && printf "[WARN] skip '/etc/passwd'\n" || printf %s '
 root:x:0:0:root:/root:/bin/sh
 lp:x:7:7:lp:/var/spool/lpd:/bin/sh
 nobody:x:65534:65534:nobody:/nonexistent:/bin/false
 ' | tee $ROOTFS_DIR/etc/passwd;
 
     # shadow
-    [ -f $ROOTFS_DIR/etc/shadow ] && printf "[WARN] skip 'shadow'\n" || printf %s '
+    [ -f $ROOTFS_DIR/etc/shadow ] && printf "[WARN] skip '/etc/shadow'\n" || printf %s '
 root:*:13525:0:99999:7:::
 lp:*:13510:0:99999:7:::
 nobody:*:13509:0:99999:7:::
@@ -149,7 +149,7 @@ action=/sbin/poweroff
 # Linux allocated devices (4.x+ version), https://www.kernel.org/doc/html/v4.11/admin-guide/devices.html
 _create_dev() {
     [ -s $WORK_DIR/.error ] && return 1;
-    rm -frv $ROOTFS_DIR/dev;
+    rm -fr $ROOTFS_DIR/dev;
     cd $ROOTFS_DIR; mkdir -pv dev/{input,net,pts,shm,usb};
 
     # 1 char: Memory devices
