@@ -13,45 +13,59 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-_load() {
-    # load MD5-based password, use: openssl passwd -1 [string]
-    [ $(id -u) = 0 ] || { echo 'must be root' >&2; return 1; }
+# load MD5-based password, create user and/or group
+[ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
-    # import settings from env
-    [ -s /etc/env ] && . /etc/env;
+# import settings from profile
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
-    : ${PW_CONFIG:='/opt/tiny/etc/passwd'};
+: ${PW_CONFIG:="$PERSISTENT_DATA/tiny/etc/pw.cfg"};
 
-    [ -s $PW_CONFIG ] || printf \
-        "# [username]:[MD5-based password (openssl passwd -1 [password])]\n\n" > $PW_CONFIG;
+[ -s $PW_CONFIG ] || printf "# [username]:[[group]]:[MD5-based password]\n\
+# 'MD5-based password':    /usr/bin/openssl passwd -1 [password]\n\n" > $PW_CONFIG;
 
-    awk -F# '{print $1}' $PW_CONFIG | grep '[a-z]\+:[$a-zA-Z\.]\+' | chpasswd -e 2>&1 | \
-        grep -q 'password.*changed' || return 1;
+/usr/bin/awk -F# '{print $1}' $PW_CONFIG | \
+    /usr/bin/awk '{print $1}' | \
+    /bin/grep '^[a-z]\+:[a-zA-Z]\+\?:[$A-Za-z0-9\/\.]\+$' | \
+    /usr/bin/awk -F: '{print $1" "$3" "$2}' | \
+while read user passwd group;
+do
+    # test password length
+    [ ${#passwd} == 34 ] || continue;
+    is_add_user=false is_add_group=false;
 
-    # no auto login
-    echo booting > /etc/sysconfig/noautologin;
+    # test group exist
+    [ "$group" ] || group=$user;
+    /usr/bin/awk -F# '{print $1}' /etc/group | /usr/bin/awk '{print $1}' | \
+        /bin/grep -q ^$group: || {
+            /usr/sbin/addgroup -S $group && is_add_group=true
+    };
+
+    # add user
+    if /usr/bin/id $user >/dev/null 2>&1; then
+        /usr/sbin/addgroup $user $group
+    else
+        /usr/sbin/adduser -s /bin/sh -G $group -D $user && is_add_user=true
+    fi
+
+    # update password
+    printf "$user:$passwd" | /usr/sbin/chpasswd -e 2>&1 | \
+        /bin/grep -q 'password.*changed' || {
+        $is_add_user && /usr/sbin/deluser $user;
+        $is_add_group && /usr/sbin/delgroup $group;
+        printf "Failed to change the password for '$user:$group'.\n" >&2;
+        continue
+    };
+
+    printf "Successfully changed '$user:$group' password.\n";
 
     # chang sudo
-    sed -i 's/NOPASSWD/PASSWD/g' /etc/sudoers && \
-        echo -e '\n%staff ALL=(ALL) NOPASSWD: WRITE_CMDS\n' >> /etc/sudoers;
+    /bin/sed -i 's/NOPASSWD/PASSWD/g' /etc/sudoers && \
+        printf '\n%%staff ALL=(ALL) NOPASSWD: WRITE_CMDS\n' >> /etc/sudoers;
 
     # sudo -i, -s mast use root password
-    awk -F# '{print $1}' $PW_CONFIG | grep -q 'root:[$a-zA-Z\.]\+' && \
-        printf '\nDefaults rootpw\n\n' >> /etc/sudoers
-}
+    [ "$user" == "root" ] && printf '\nDefaults rootpw\n\n' >> /etc/sudoers;
 
-_string() {
-    openssl rand -base64 ${1:-9} | tr -d '\n' | sed "s/[^0-9A-Za-z]/${RANDOM:0:1}/g";
-    printf "\n"
-}
+done
 
-case $1 in
-    load) _load;;
-    -s|string)
-        shift;
-        _string $@
-    ;;
-    *) echo "Usage ${0##*/} {load|string|-s}" >&2; exit 1
-esac
-
-exit $?
+exit 0

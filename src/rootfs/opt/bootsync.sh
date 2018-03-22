@@ -47,18 +47,18 @@ LOG_DIR=/log/tiny/${STAMP:0:6};
     . /etc/env;
 
     # change password
-    /usr/local/sbin/pw load;
+    /usr/local/sbin/pwset;
 
     echo "------ firewall --------------";
     # http://wiki.tinycorelinux.net/wiki:firewall
     # tce-load -wi iptables; -> /usr/local/sbin/basic-firewall
-    sh /usr/local/etc/init.d/firewall.sh init;
+    sh /usr/local/etc/init.d/firewall init;
 
     # set static ip or start dhcp
-    /usr/local/sbin/ifinit;
+    /usr/local/sbin/ifset;
 
     # mount cgroups hierarchy. https://github.com/tianon/cgroupfs-mount
-    sh /usr/local/etc/init.d/cgroupfs.sh mount;
+    sh /usr/local/etc/init.d/cgroupfs mount;
 
     sleep 2;
 
