@@ -423,19 +423,19 @@ _lv_online() {
     swapon $lv_swap;
 
     # data
-    mkdir -p $PERSISTENT_DATA;
-    mount $lv_data $PERSISTENT_DATA;
+    mkdir -p $PERSISTENT_PATH;
+    mount $lv_data $PERSISTENT_PATH;
 
     # log
-    mkdir -p $PERSISTENT_DATA/log;
-    mount $lv_log $PERSISTENT_DATA/log;
+    mkdir -p $PERSISTENT_PATH/log;
+    mount $lv_log $PERSISTENT_PATH/log;
 
-    _dir_online $PERSISTENT_DATA;
+    _dir_online $PERSISTENT_PATH;
     return 0
 }
 
 _dir_online() {
-    # clean $PERSISTENT_DATA/*
+    # clean $PERSISTENT_PATH/*
     mkdir -p \
         $1/run \
         $1/home \
@@ -492,20 +492,20 @@ _lv_offline() {
 }
 
 _logger() {
-    local mdisk_log="$PERSISTENT_DATA/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
+    local mdisk_log="$PERSISTENT_PATH/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
     mkdir -p "${mdisk_log%/*}";
     awk '{print strftime("%F %T, '"$@"'") $0}' >> $mdisk_log
 }
 
 _log_out() {
-    local mdisk_log="$PERSISTENT_DATA/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
+    local mdisk_log="$PERSISTENT_PATH/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
     mkdir -p "${mdisk_log%/*}";
     tee -a $mdisk_log
 }
 
 # main
 _init() {
-    [ -d $PERSISTENT_DATA/log ] && {
+    [ -d $PERSISTENT_PATH/log ] && {
         printf "[WARN] disk is already initialized.\n" >&2;
         return 0
     };
@@ -533,7 +533,7 @@ _init() {
 
 _destroy() {
     umount -f /home;
-    umount -f $PERSISTENT_DATA;
+    umount -f $PERSISTENT_PATH;
     umount -f /run;
     umount -f /tmp;
     _lv_offline;
@@ -710,11 +710,11 @@ case $1 in
         ls /dev/md* >/dev/null 2>&1 || exit 1;
 
         # kill monitor
-        cat $PERSISTENT_DATA/run/md.pid 2>/dev/null | xargs kill 2>/dev/null;
+        cat $PERSISTENT_PATH/run/md.pid 2>/dev/null | xargs kill 2>/dev/null;
 
         # mdadm --monitor --oneshot /dev/md*
-        mdadm --monitor --program=$0 --daemonise --pid-file=$PERSISTENT_DATA/run/md.pid /dev/md*
-        # mdadm --monitor --mail=root@localhost --program=$0 --daemonise --pid-file=$PERSISTENT_DATA/run/md.pid /dev/md*
+        mdadm --monitor --program=$0 --daemonise --pid-file=$PERSISTENT_PATH/run/md.pid /dev/md*
+        # mdadm --monitor --mail=root@localhost --program=$0 --daemonise --pid-file=$PERSISTENT_PATH/run/md.pid /dev/md*
     ;;
     add) _add $2 $3 2>&1 | _log_out;;
     rebuild) _rebuild 2>&1 | _log_out;;

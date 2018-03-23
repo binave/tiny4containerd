@@ -52,7 +52,7 @@ umask 022;
 # filter environment variable
 {
     /bin/sed 's/[\|\;\& ]/\n/g' /proc/cmdline | /bin/grep '^[_A-Z]\+=';
-    printf "export PERSISTENT_DATA=$PERSISTENT_DATA\n"
+    printf "export PERSISTENT_PATH=$PERSISTENT_PATH\n"
 } > /etc/profile.d/boot_envar.sh;
 
 # TODO
@@ -71,8 +71,8 @@ umask 022;
 # for find/crond/log
 /bin/mkdir -p \
     /var/spool/cron/crontabs \
-    $PERSISTENT_DATA/tiny/etc/init.d \
-    $PERSISTENT_DATA/log/tiny/${Ymd:0:6};
+    $PERSISTENT_PATH/tiny/etc/init.d \
+    $PERSISTENT_PATH/log/tiny/${Ymd:0:6};
 
 # mdiskd
 /usr/local/sbin/mdisk monitor;
@@ -97,24 +97,24 @@ echo "------ firewall --------------";
 /bin/sleep 2;
 
 # init
-/usr/bin/find $PERSISTENT_DATA/tiny/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
+/usr/bin/find $PERSISTENT_PATH/tiny/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
 
 # sync the clock
-/usr/sbin/ntpd -d -n -p pool.ntp.org >> $PERSISTENT_DATA/log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
+/usr/sbin/ntpd -d -n -p pool.ntp.org >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
 
 # start cron
-/usr/sbin/crond -f -d "${CROND_LOGLEVEL:-8}" >> $PERSISTENT_DATA/log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
+/usr/sbin/crond -f -d "${CROND_LOGLEVEL:-8}" >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
 
 # hide directory
-/bin/chmod 700 $PERSISTENT_DATA/tiny/etc;
+/bin/chmod 700 $PERSISTENT_PATH/tiny/etc;
 
 #maybe the links will be up by now - trouble is, on some setups, they may never happen, so we can't just wait until they are
 /bin/sleep 3;
 
 # set the hostname
 echo tc$(/sbin/ifconfig | /bin/grep -A 1 'eth[0-9]' | /bin/grep addr: | /usr/bin/awk '{print $2}' | /usr/bin/awk -F\. '{printf "-"$4}') | \
-    /usr/bin/tee $PERSISTENT_DATA/tiny/etc/hostname;
-HOSTNAME=`cat $PERSISTENT_DATA/tiny/etc/hostname` && /bin/hostname $HOSTNAME;
+    /usr/bin/tee $PERSISTENT_PATH/tiny/etc/hostname;
+HOSTNAME=`cat $PERSISTENT_PATH/tiny/etc/hostname` && /bin/hostname $HOSTNAME;
 
 # ssh dameon start
 /bin/sh /usr/local/etc/init.d/sshd;
@@ -132,10 +132,10 @@ echo "----- containerd -------------";
 /usr/local/sbin/containerd start;
 
 # Allow rc.local customisation
-/bin/touch $PERSISTENT_DATA/tiny/etc/rc.local;
-if [ -x $PERSISTENT_DATA/tiny/etc/rc.local ]; then
+/bin/touch $PERSISTENT_PATH/tiny/etc/rc.local;
+if [ -x $PERSISTENT_PATH/tiny/etc/rc.local ]; then
     echo "------ rc.local --------------";
-    . $PERSISTENT_DATA/tiny/etc/rc.local
+    . $PERSISTENT_PATH/tiny/etc/rc.local
 fi
 
 printf "Finished init script...\n";

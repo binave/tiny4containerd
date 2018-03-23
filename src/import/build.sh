@@ -3,6 +3,8 @@
 
 # [need]: 'bc'
 _make_kernel() {
+    [ -s $ISO_DIR/boot/vmlinuz64 ] && { printf "[WARN] skip make 'kernel'\n"; return 0; };
+
     # fix: Directory renamed before its status could be extracted
     _untar $CELLAR_DIR/linux.tar.xz || return $(_err $LINENO 3);
     _try_patch linux-;
@@ -32,6 +34,8 @@ _make_kernel() {
 # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
 # [need]: 'bison', 'gawk'
 _make_glibc() {
+    [ -s $ROOTFS_DIR/etc/ld.so.conf ] && { printf "[WARN] skip make 'glibc'\n"; return 0; };
+
     _wait4 glibc.tar.xz || return $(_err $LINENO 3);
     _try_patch glibc-;
 
@@ -62,6 +66,8 @@ _make_glibc() {
 }
 
 _make_busybox() {
+    [ -s $ROOTFS_DIR/bin/busybox ] && { printf "[WARN] skip make 'busybox'\n"; return 0; };
+
     _wait4 busybox.tar.bz2 || return $(_err $LINENO 3);
     _try_patch busybox-;
 
@@ -85,6 +91,8 @@ _make_busybox() {
 
 # for 'openssl' build, 'openssh' runtime
 __make_zlib() {
+    [ -s $ROOTFS_DIR/usr/lib/libz.so ] && { printf "[WARN] skip make 'zlib'\n"; return 0; };
+
     _wait4 zlib.tar.gz || return $(_err $LINENO 3);
     _try_patch zlib-;
 
@@ -100,6 +108,8 @@ __make_zlib() {
 
 # [need]: 'zlib'
 _make_openssl() {
+    [ -s $ROOTFS_DIR/usr/bin/openssl ] && { printf "[WARN] skip make 'openssl'\n"; return 0; };
+
     _wait4 openssl.tar.gz || return $(_err $LINENO 3);
     _try_patch openssl-;
 
@@ -120,6 +130,8 @@ _make_openssl() {
 # http://www.linuxfromscratch.org/blfs/view/stable/postlfs/make-ca.html
 # [need]: 'python' build
 _make_ca() {
+    [ -s $ROOTFS_DIR/etc/ca-certificates.conf ] && { printf "[WARN] skip make 'ca'\n"; return 0; };
+
     [ -s $WORK_DIR/.error ] || \
         curl --retry 10 -L -o $CELLAR_DIR/${CERTDATA_DOWNLOAD##*/} $CERTDATA_DOWNLOAD || return $(_err $LINENO 3);
 
@@ -137,6 +149,8 @@ _make_ca() {
 
 # [need]: 'zlib'
 _make_openssh() {
+    [ -s $ROOTFS_DIR/usr/sbin/sshd ] && { printf "[WARN] skip make 'openssh'\n"; return 0; };
+
     _wait4 openssh.tar.gz || return $(_err $LINENO 3);
     _try_patch openssh- openssl-$OPENSSL_VERSION; # e.g. openssh-7.6p1-openssl-1.1.0-1.patch
 
@@ -164,6 +178,8 @@ _make_openssh() {
 
 # TODO _nftables
 _make_iptables() {
+    [ -s $ROOTFS_DIR/sbin/xtables-multi ] && { printf "[WARN] skip make 'iptables'\n"; return 0; };
+
     _wait4 iptables.tar.bz2 || return $(_err $LINENO 3);
     _try_patch iptables-;
 
@@ -198,6 +214,8 @@ _make_iptables() {
 
 # kernel version 4.4.2 or above.
 _make_mdadm() {
+    [ -s $ROOTFS_DIR/sbin/mdadm ] && { printf "[WARN] skip make 'mdadm'\n"; return 0; };
+
     _wait4 mdadm.tar.xz || return $(_err $LINENO 3);
     _try_patch mdadm-;
 
@@ -206,6 +224,8 @@ _make_mdadm() {
 
 # for '_make_eudev'
 __make_util_linux() {
+    [ -s $ROOTFS_DIR/usr/lib/libuuid.so ] && { printf "[WARN] skip make 'util-linux'\n"; return 0; };
+
     _wait4 util-linux.tar.xz || return $(_err $LINENO 3);
     _try_patch util-linux-;
 
@@ -229,6 +249,8 @@ __make_util_linux() {
 # http://linuxfromscratch.org/lfs/view/stable/chapter06/eudev.html
 # for '_make_lvm2', [need]: 'gperf', 'util-linux'
 _make_eudev() {
+    [ -s $ROOTFS_DIR/sbin/udevd ] && { printf "[WARN] skip make 'eudev'\n"; return 0; };
+
     _wait4 eudev.tar.gz || return $(_err $LINENO 3);
     _try_patch eudev-;
 
@@ -257,6 +279,8 @@ BLKID_CFLAGS=\"-I/usr/include\"
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/lvm2.html
 # kernel version 4.4.2 or above. [need]: 'pkg-config', 'udev'
 _make_lvm2() {
+    [ -s $ROOTFS_DIR/usr/sbin/lvm ] && { printf "[WARN] skip make 'lvm2'\n"; return 0; };
+
     _wait4 LVM.tgz || return $(_err $LINENO 3);
     _try_patch LVM2;
 
@@ -276,6 +300,9 @@ _make_lvm2() {
 
 # for '_make_fuse' '_make_sshfs'
 _build_meson() {
+    [ -s $ROOTFS_DIR/usr/bin/fusermount3 -a -s $ROOTFS_DIR/usr/bin/sshfs ] && \
+        { printf "[WARN] skip make 'meson'\n"; return 0; };
+
     _wait4 ninja-release || return $(_err $LINENO 3);
 
     cd $CELLAR_DIR/ninja-release && ./configure.py --bootstrap || \
@@ -290,6 +317,8 @@ _build_meson() {
 
 # for '_make_sshfs' build, [need]: 'ninja', 'meson', 'udev'
 _make_fuse() {
+    [ -s $ROOTFS_DIR/usr/bin/fusermount3 ] && { printf "[WARN] skip make 'fuse'\n"; return 0; };
+
     _wait4 fuse.tar.gz || return $(_err $LINENO 3);
     _try_patch libfuse-;
 
@@ -307,6 +336,8 @@ _make_fuse() {
 
 # for '__make_glib', [need]: 'libbz2-dev' 'libreadline-dev'
 __make_pcre() {
+    [ -s $ROOTFS_DIR/usr/lib/libpcre.so ] && { printf "[WARN] skip make 'pcre'\n"; return 0; };
+
     _wait4 pcre.tar.bz2 || return $(_err $LINENO 3);
     _try_patch pcre-;
     ./configure \
@@ -330,6 +361,8 @@ __make_pcre() {
 
 # for '_make_sshfs' runtime, [need]: 'zlib', 'libffi-dev', 'gettext'
 __make_glib() {
+    [ -s $ROOTFS_DIR/usr/lib/libglib-2.0.so ] && { printf "[WARN] skip make 'glib'\n"; return 0; };
+
     _wait4 glib.tar.xz || return $(_err $LINENO 3);
     _try_patch glib-;
     ./configure \
@@ -360,6 +393,8 @@ __make_glib() {
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/sshfs.html
 # [need]: 'fuse', 'python-docutils'
 _make_sshfs() {
+    [ -s $ROOTFS_DIR/usr/bin/sshfs ] && { printf "[WARN] skip make 'sshfs'\n"; return 0; };
+
     _wait4 sshfs.tar.gz || return $(_err $LINENO 3);
     _try_patch sshfs-;
 
@@ -379,6 +414,8 @@ _make_sshfs() {
 }
 
 _make_sudo() {
+    [ -s $ROOTFS_DIR/usr/bin/sudo ] && { printf "[WARN] skip make 'sudo'\n"; return 0; };
+
     _wait4 sudo.tar.gz || return $(_err $LINENO 3);
     _try_patch sudo-;
 
@@ -393,30 +430,9 @@ _make_sudo() {
     make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3)
 }
 
-# [need]: ncurses-dev
-_make_procps() {
-    _wait4 procps-ng.tar.xz || return $(_err $LINENO 3);
-    _try_patch procps-ng-;
-
-    ./configure \
-        --prefix=/usr \
-        --exec-prefix= \
-        --libdir=/usr/lib \
-        --enable-shared \
-        --disable-kill && make || return $(_err $LINENO 3);
-
-    sed -i -r 's|(pmap_initname)\\\$|\1|' testsuite/pmap.test/pmap.exp;
-    sed -i '/set tty/d' testsuite/pkill.test/pkill.exp;
-    rm testsuite/pgrep.test/pgrep.exp;
-
-    make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
-
-    mv -v $ROOTFS_DIR/usr/lib/libprocps.so.* $ROOTFS_DIR/lib;
-    ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libprocps.so) $ROOTFS_DIR/usr/lib/libprocps.so
-
-}
-
 _make_e2fsprogs() {
+    [ -s $ROOTFS_DIR/sbin/resize2fs ] && { printf "[WARN] skip make 'e2fsprogs'\n"; return 0; };
+
     _wait4 e2fsprogs.tar.xz || return $(_err $LINENO 3);
     _try_patch e2fsprogs-;
 
@@ -434,6 +450,8 @@ _make_e2fsprogs() {
 }
 
 _make_curl() {
+    [ -s $ROOTFS_DIR/usr/bin/curl ] && { printf "[WARN] skip make 'curl'\n"; return 0; };
+
     _wait4 curl.tar.xz || return $(_err $LINENO 3);
     _try_patch curl-;
 
@@ -453,23 +471,9 @@ _make_curl() {
     ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libcurl.so) $ROOTFS_DIR/usr/lib/libcurl.so
 }
 
-# for '_make_openssl' [/usr/bin/c_rehash]
-_make_perl5() {
-    _wait4 perl.tar.bz2 || return $(_err $LINENO 3);
-    _try_patch perl-;
-
-    sh Configure \
-        -des \
-        -Dprefix=/usr \
-        -Dvendorprefix=/usr \
-        -Dpager="/usr/bin/less -isR" \
-        -Duseshrplib \
-        -Dusethreads || return $(_err $LINENO 3);
-
-    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3)
-}
-
 __make_libcap2() {
+    [ -s $ROOTFS_DIR/usr/lib/libcap.so ] && { printf "[WARN] skip make 'libcap2'\n"; return 0; };
+
     _wait4 libcap.tar.xz || return $(_err $LINENO 3);
     _try_patch libcap-;
 
@@ -497,17 +501,14 @@ _build_iso() {
     };
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
-    # clear var
-    # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
+    # clear var, drop passwd: /usr/bin/passwd -> /bin/busybox.suid, static library
     rm -frv \
         $ROOTFS_DIR/var/* \
         $ROOTFS_DIR/usr/bin/passwd \
         $ROOTFS_DIR/etc/{ssl/man,*-,sysconfig/autologin} \
         $ROOTFS_DIR/usr/{,local/}include \
         $ROOTFS_DIR/usr/{,local/}share/{info,man,doc} \
-        $ROOTFS_DIR/{,usr/}lib/lib{bz2,com_err,e2p,ext2fs,ss,ltdl,fl,fl_pic,z,bfd,opcodes}.a;
-
-    find $ROOTFS_DIR/{,usr/}lib -name \*.la -delete;
+        $ROOTFS_DIR/{,usr/}lib/lib*.{,l}a;
 
     # '/*' is necessary !
     find $ROOTFS_DIR/usr/share/locale/* \

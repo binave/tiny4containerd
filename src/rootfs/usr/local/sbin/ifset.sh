@@ -8,7 +8,7 @@
 for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 : ${IF_PREFIX:='eth'};
-: ${IF_CONFIG:="$PERSISTENT_DATA/tiny/etc/if.cfg"};
+: ${IF_CONFIG:="$PERSISTENT_PATH/tiny/etc/if.cfg"};
 
 # init
 [ -s $IF_CONFIG ] || printf "# [interface] [ip] [broadcast] [netmask]\n\n" > $IF_CONFIG;

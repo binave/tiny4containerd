@@ -19,8 +19,7 @@ _main() {
     [ -s $ISO_DIR/version ] && . $ISO_DIR/version;
 
     # clean the rootfs, prepare the build directory ($ISO_DIR)
-    rm -fr $ISO_DIR $ROOTFS_DIR;
-    mkdir -pv $ISO_DIR/boot $ROOTFS_DIR;
+    rm -fr $ROOTFS_DIR; mkdir -pv $ISO_DIR/boot $ROOTFS_DIR;
 
     echo " ------------- init apt-get ------------------------";
     # install pkg
@@ -43,10 +42,8 @@ _main() {
     _last_version sshfs_version     $SSHFS_DOWNLOAD/tags    tag-name                '-F[-_\>\<]'    "'{print \$5}'" || return $(_err $LINENO);
     _last_version libcap2_version   $LIBCAP2_DOWNLOAD   "'xz\"'"                    '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version sudo_version      $SUDO_DOWNLOAD      "'sudo-.*tar\\.gz\"'"       '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
-    _last_version procps_version    $PROCPS_DOWNLOAD    "'\-ng-.*.tar.xz\"'"        '-F[-\"]'       "'{print \$10}'"|| return $(_err $LINENO);
     _last_version e2fsprogs_version $E2FSPROGS_DOWNLOAD "'v.*/'"                    '-F[v/]'        "'{print \$2}'" || return $(_err $LINENO);
     _last_version curl_version      $CURL_DOWNLOAD      "'xz\"'"                    '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
-    # _last_version perl5_version     $PERL5_DOWNLOAD     "'perl.*bz2\"'"             '-F[-\"]'       "'{print \$3}'" "| grep '5\..*[24680]\.[0-9]'" || return $(_err $LINENO);
     # get docker stable version
     _last_version docker_version    $DOCKER_DOWNLOAD    docker-                     '-F[-\"]'       "'{print \$3\"-\"\$4}'" || return $(_err $LINENO);
 
@@ -54,94 +51,86 @@ _main() {
     mv -v $ISO_DIR/version.swp $ISO_DIR/version;
     echo;
 
-    # is need build kernel
-    if [ ! -s $ISO_DIR/boot/vmlinuz64 ]; then
+    # Fetch the kernel sources
+    _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz - || return $(_err $LINENO);
 
-        # Fetch the kernel sources
-        _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz - || return $(_err $LINENO);
+    echo " ------------- put in queue -----------------------"
+    _message_queue --init;
 
-        echo " ------------- put in queue -----------------------"
-        _message_queue --init;
+    # kernel, libc, rootfs
+    _install bc;                _message_queue --put "_make_kernel"; # this may use most time
+    _install bison gawk;        _message_queue --put "_make_glibc"; # this may use long time
+    _message_queue --put "_make_busybox";
 
-        # kernel, libc, rootfs
-        _install bc;                _message_queue --put "_make_kernel"; # this may use most time
-        _install bison gawk;        _message_queue --put "_make_glibc"; # this may use long time
-        _message_queue --put "_make_busybox";
+    # ssl
+    _message_queue --put "__make_zlib";
+    _message_queue --put "_make_openssl";
+    # libnss3-tools p11-kit
+    _install python;            _message_queue --put "_make_ca";
+    _message_queue --put "_make_openssh";
 
-        # ssl
-        _message_queue --put "__make_zlib";
-        _message_queue --put "_make_openssl";
-        # libnss3-tools p11-kit
-        _install python;            _message_queue --put "_make_ca";
-        _message_queue --put "_make_openssh";
+    # firewall
+    _message_queue --put "_make_iptables";
 
-        # firewall
-        _message_queue --put "_make_iptables";
+    # dev
+    _message_queue --put "_make_mdadm";
+    _message_queue --put "__make_util_linux";
+    _install gperf;             _message_queue --put "_make_eudev";
+    _install pkg-config;        _message_queue --put "_make_lvm2";
 
-        # dev
-        _message_queue --put "_make_mdadm";
-        _message_queue --put "__make_util_linux";
-        _install gperf;             _message_queue --put "_make_eudev";
-        _install pkg-config;        _message_queue --put "_make_lvm2";
+    # sshfs
+    _install re2c python3;      _message_queue --put "_build_meson";
+    _message_queue --put "_make_fuse";
+    _install libbz2-dev libreadline-dev;    _message_queue --put "__make_pcre";
+    _install libffi-dev gettext;            _message_queue --put "__make_glib";
+    _install python-docutils;   _message_queue --put "_make_sshfs";
 
-        # sshfs
-        _install re2c python3;      _message_queue --put "_build_meson";
-        _message_queue --put "_make_fuse";
-        _install libbz2-dev libreadline-dev;    _message_queue --put "__make_pcre";
-        _install libffi-dev gettext;            _message_queue --put "__make_glib";
-        _install python-docutils;   _message_queue --put "_make_sshfs";
+    # tools
+    _message_queue --put "_make_sudo";
+    _message_queue --put "_make_e2fsprogs";
+    _message_queue --put "_make_curl";
+    _message_queue --put "__make_libcap2";
 
-        # tools
-        _message_queue --put "_make_sudo";
-        _install ncurses-dev;       _message_queue --put "_make_procps";
-        _message_queue --put "_make_e2fsprogs";
-        _message_queue --put "_make_curl";
-        # _message_queue --put "_make_perl5";
-        _message_queue --put "__make_libcap2";
+    # add file
+    _message_queue --put "_create_etc";
+    _message_queue --put "_apply_rootfs";
 
-        # add file
-        _message_queue --put "_create_etc";
-        _message_queue --put "_apply_rootfs";
+    _message_queue --destroy;
 
-        _message_queue --destroy;
+    # init thread valve
+    _thread_valve --init $THREAD_COUNT;
 
-        # init thread valve
-        _thread_valve --init $THREAD_COUNT;
+    local url;
+    for url in \
+        $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz \
+        $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 \
+        $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz \
+        $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz \
+        $CA_CERTIFICATES_REPOSITORY.master \
+        $OPENSSH_DOWNLOAD/openssh-$openssh_version.tar.gz \
+        $IPTABLES_DOWNLOAD/iptables-$iptables_version.tar.bz2 \
+        $MDADM_DOWNLOAD/mdadm-$mdadm_version.tar.xz \
+        $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION/util-linux-$util_linux_version.tar.xz \
+        $EUDEV_DOWNLOAD/eudev-$eudev_version.tar.gz \
+        $LVM2_DOWNLOAD/LVM$lvm2_version.tgz \
+        $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION/glib-$glib_version.tar.xz \
+        $PCRE_DOWNLOAD/pcre-$pcre_version.tar.bz2 \
+        $MESON_REPOSITORY.master \
+        $NINJA_REPOSITORY.release \
+        $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz \
+        $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz \
+        $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz \
+        $E2FSPROGS_DOWNLOAD/v$e2fsprogs_version/e2fsprogs-$e2fsprogs_version.tar.xz \
+        $CURL_DOWNLOAD/curl-$curl_version.tar.xz \
+        $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
+        $DOCKER_DOWNLOAD/docker-$docker_version.tgz;
+    do
+        # get thread and run
+        _thread_valve --run _downlock $url
+    done
 
-        local url;
-        for url in \
-            $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz \
-            $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 \
-            $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz \
-            $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz \
-            $CA_CERTIFICATES_REPOSITORY.master \
-            $OPENSSH_DOWNLOAD/openssh-$openssh_version.tar.gz \
-            $IPTABLES_DOWNLOAD/iptables-$iptables_version.tar.bz2 \
-            $MDADM_DOWNLOAD/mdadm-$mdadm_version.tar.xz \
-            $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION/util-linux-$util_linux_version.tar.xz \
-            $EUDEV_DOWNLOAD/eudev-$eudev_version.tar.gz \
-            $LVM2_DOWNLOAD/LVM$lvm2_version.tgz \
-            $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION/glib-$glib_version.tar.xz \
-            $PCRE_DOWNLOAD/pcre-$pcre_version.tar.bz2 \
-            $MESON_REPOSITORY.master \
-            $NINJA_REPOSITORY.release \
-            $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz \
-            $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz \
-            $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz \
-            $PROCPS_DOWNLOAD/procps-ng-$procps_version.tar.xz \
-            $E2FSPROGS_DOWNLOAD/v$e2fsprogs_version/e2fsprogs-$e2fsprogs_version.tar.xz \
-            $CURL_DOWNLOAD/curl-$curl_version.tar.xz \
-            $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
-            $DOCKER_DOWNLOAD/docker-$docker_version.tgz;
-            # $PERL5_DOWNLOAD/perl-$perl5_version.tar.bz2
-        do
-            # get thread and run
-            _thread_valve --run _downlock $url
-        done
-
-        # destroy thread valve
-        _thread_valve --destroy;
-    fi
+    # destroy thread valve
+    _thread_valve --destroy;
 
     # for '_build_iso'
     _install cpio genisoimage isolinux syslinux xorriso xz-utils || return $(_err $LINENO);
@@ -183,8 +172,8 @@ _main() {
         chroot $ROOTFS_DIR docker -v || return $(_err $LINENO); # test docker command
 
     # build iso
-    _build_iso $@ || return $?;
-    return 0
+    _build_iso $@;
+    return $?
 }
 
 # create directory

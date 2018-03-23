@@ -36,10 +36,10 @@ for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 Ymd=`date +%Y%m%d`;
 CERT_INTERFACES="switch0 ${IF_PREFIX}0 ${IF_PREFIX}1 ${IF_PREFIX}2 ${IF_PREFIX}3 ${IF_PREFIX}4";
 
-CONTAINERD_LOG="$PERSISTENT_DATA/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
-CONTAINERD_DIR="$PERSISTENT_DATA/${0##*/}ata";
+CONTAINERD_LOG="$PERSISTENT_PATH/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
+CONTAINERD_DIR="$PERSISTENT_PATH/${0##*/}ata";
 
-SERVER_TLS_DIR="$PERSISTENT_DATA/tiny/tls";
+SERVER_TLS_DIR="$PERSISTENT_PATH/tiny/tls";
 SERVER_KEY="$SERVER_TLS_DIR/serverkey.pem";
 SERVER_CSR="$SERVER_TLS_DIR/servercsr.pem";
 SERVER_CERT="$SERVER_TLS_DIR/server.pem";
@@ -61,8 +61,8 @@ _start() {
     };
 
     [ -e "/etc/docker" ] || {
-        mkdir -p "$PERSISTENT_DATA/tiny/etc/docker";
-        ln -sf "$PERSISTENT_DATA/tiny/etc/docker" "/etc/docker"
+        mkdir -p "$PERSISTENT_PATH/tiny/etc/docker";
+        ln -sf "$PERSISTENT_PATH/tiny/etc/docker" "/etc/docker"
     };
 
     _install_tls;
