@@ -129,6 +129,7 @@ _err() {
 _wait4(){
     [ -s $WORK_DIR/.error ] && return 1;
     [ "$1" ] || return 1;
+    set $CELLAR_DIR/${1##*/}*; # autocomplete and trim last
     set ${1##*/};
     local count=0 times=$((TIMEOUT_SEC / TIMELAG_SEC));
     until [ -f "$LOCK_DIR/$1.lock" ];
@@ -148,13 +149,16 @@ _wait4(){
 
 # decompression
 _untar() {
+    local ex="$2" ex2="$3";
+    set $1*; # autocomplete and trim last
+    set $1 "$ex" "$3";
     _hash $1 || return 1;
     case $1 in
-        *.tar.gz) tar -C $WORK_DIR -xzf $1 || return 1;;
-        *.tar.bz2) tar -C $WORK_DIR -xjf $1 || return 1;;
-        *.tar.xz) bsdtar -C $WORK_DIR -xJf $1 || return 1;;
-        *.tcz) unsquashfs -f -d $2 $1 || return 1;;
-        *.tgz) tar -C $WORK_DIR -zxf $1 || return 1;;
+        *.tar.gz) tar -C ${2:-$WORK_DIR} $3 -xzf $1 || return 1;;
+        *.tar.bz2) tar -C ${2:-$WORK_DIR} $3 -xjf $1 || return 1;;
+        *.tar.xz) bsdtar -C ${2:-$WORK_DIR} $3 -xJf $1 || return 1;;
+        *.tcz) unsquashfs -f -d ${2:-$WORK_DIR} $1 || return 1;;
+        *.tgz) tar -C ${2:-$WORK_DIR} $3 -zxf $1 || return 1;;
         *) return 1;;
     esac
     return 0
@@ -202,8 +206,8 @@ _last_version() {
 _downlock() {
     mkdir -p $CELLAR_DIR $LOCK_DIR $WORK_DIR;
     [ -s $WORK_DIR/.error ] && return 1;
-    local pre=${1##*/} suf swp;
     if [[ $1 == *\.git\.* ]]; then
+        local pre=${1##*/} suf swp;
         pre=${pre%\.git\.*};
         suf=${1##*\.git\.};
         swp="$CELLAR_DIR/$pre-$suf";
@@ -225,30 +229,18 @@ _downlock() {
         fi
         rm -fr "$swp"
     else
-        if [ "$pre" != "${pre#*[0-9]}" ]; then
-            # have int
-            suf=${pre##*\.t}; # 'cz' 'gz' 'ar.gz' 'ar.xz' 'ar.bz2'
-            if [ "$pre" != "$suf" -a "$suf" != "cz" ]; then
-                swp=${pre%%-[0-9]*};
-                [ "$swp" == "$pre" ] && pre=${pre%%[0-9]*} || pre=$swp;
-                suf=".t$suf";
-            else
-                unset suf
-            fi
-        # else pre is full name;
-        fi
-        printf "will download '$pre$suf' to '$CELLAR_DIR'.\n";
-        if [ ! -f "$CELLAR_DIR/$pre$suf" ]; then
+        printf "will download '${1##*/}' to '$CELLAR_DIR'.\n";
+        if [ ! -f "$CELLAR_DIR/${1##*/}" ]; then
             mkdir -p $CELLAR_DIR;
-            swp=$$$RANDOM.$RANDOM;
+            local swp=$$$RANDOM.$RANDOM;
             curl -L --retry 10 -o $CELLAR_DIR/$swp $1 || {
                 rm -f $CELLAR_DIR/$swp;
-                printf "[ERROR] download '$pre' fail.\n" | tee -a $WORK_DIR/.error;
+                printf "[ERROR] download '${1##*/}' fail.\n" | tee -a $WORK_DIR/.error;
                 return 1
             };
-            mv $CELLAR_DIR/$swp $CELLAR_DIR/$pre$suf
+            mv $CELLAR_DIR/$swp $CELLAR_DIR/${1##*/}
         fi
-        touch $LOCK_DIR/$pre$suf.lock;
+        touch $LOCK_DIR/${1##*/}.lock;
         return 0
     fi
 }

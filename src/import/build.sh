@@ -5,7 +5,7 @@ _make_kernel() {
     [ -s $ISO_DIR/boot/vmlinuz64 ] && { printf "[WARN] skip make 'kernel'\n"; return 0; };
 
     # fix: Directory renamed before its status could be extracted
-    _untar $CELLAR_DIR/linux.tar.xz || return $(_err $LINENO 3);
+    _untar $CELLAR_DIR/linux- || return $(_err $LINENO 3);
     _try_patch linux-;
 
     # make ARCH=x86_64 menuconfig # ncurses-dev
@@ -30,7 +30,7 @@ _make_kernel() {
 _make_libcap2(){
     [ -s $ROOTFS_DIR/usr/lib/libcap.so ] && { printf "[WARN] skip make 'libcap2'\n"; return 0; };
 
-    _wait4 libcap.tar.xz || return $(_err $LINENO 3);
+    _wait4 libcap- || return $(_err $LINENO 3);
     _try_patch libcap-;
 
     sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
@@ -57,10 +57,10 @@ _undep() {
     done
     cd $ROOTFS_DIR;
 
-    _hash $CELLAR_DIR/rootfs.gz;
+    _hash $CELLAR_DIR/rootfs64.gz;
 
     # Install Tiny Core Linux rootfs
-    zcat $CELLAR_DIR/rootfs.gz | cpio -f -i -H newc -d --no-absolute-filenames || \
+    zcat $CELLAR_DIR/rootfs64.gz | cpio -f -i -H newc -d --no-absolute-filenames || \
         return $(_err $LINENO 3)
 
 }

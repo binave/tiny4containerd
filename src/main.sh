@@ -84,7 +84,7 @@ _main() {
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;
-    tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
+    _untar docker- $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
         chroot $ROOTFS_DIR docker -v || return $(_err $LINENO); # test docker command
 
     # build iso
