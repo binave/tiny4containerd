@@ -226,28 +226,31 @@ _downlock() {
     else
         # have int
         if [ "$pre" != "${pre#*[0-9]}" ]; then
-            suf=${pre##*\.t}; # 'gz' 'ar.gz' 'ar.xz' 'ar.bz2'
-            if [ "$pre" != "$suf" ]; then
+            # have int
+            suf=${pre##*\.t}; # 'cz' 'gz' 'ar.gz' 'ar.xz' 'ar.bz2'
+            if [ "$pre" != "$suf" -a "$suf" != "cz" ]; then
                 swp=${pre%%-[0-9]*};
                 [ "$swp" == "$pre" ] && pre=${pre%%[0-9]*} || pre=$swp;
                 suf=".t$suf";
-                printf "will download '$pre$suf' to '$CELLAR_DIR'.\n";
-                if [ ! -f "$CELLAR_DIR/$pre$suf" ]; then
-                    mkdir -p $CELLAR_DIR;
-                    swp=$$$RANDOM.$RANDOM;
-                    curl -L --retry 10 -o $CELLAR_DIR/$swp $1 || {
-                        rm -f $CELLAR_DIR/$swp;
-                        printf "[ERROR] download '$pre' fail.\n" | tee -a $WORK_DIR/.error;
-                        return 1
-                    };
-                    mv $CELLAR_DIR/$swp $CELLAR_DIR/$pre$suf
-                fi
-                touch $LOCK_DIR/$pre$suf.lock;
-                return 0
+            else
+                unset suf;
             fi
+        # else pre is full name;
         fi
+        printf "will download '$pre$suf' to '$CELLAR_DIR'.\n";
+        if [ ! -f "$CELLAR_DIR/$pre$suf" ]; then
+            mkdir -p $CELLAR_DIR;
+            swp=$$$RANDOM.$RANDOM;
+            curl -L --retry 10 -o $CELLAR_DIR/$swp $1 || {
+                rm -f $CELLAR_DIR/$swp;
+                printf "[ERROR] download '$pre' fail.\n" | tee -a $WORK_DIR/.error;
+                return 1
+            };
+            mv $CELLAR_DIR/$swp $CELLAR_DIR/$pre$suf
+        fi
+        touch $LOCK_DIR/$pre$suf.lock;
+        return 0
     fi
-    return 1
 }
 
 _install() {

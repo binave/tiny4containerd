@@ -52,7 +52,7 @@ _main() {
     echo;
 
     # Fetch the kernel sources
-    _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz - || return $(_err $LINENO);
+    _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz || return $(_err $LINENO);
 
     echo " ------------- put in queue -----------------------"
     _message_queue --init;

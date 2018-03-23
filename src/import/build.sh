@@ -500,6 +500,7 @@ _build_iso() {
         return 0
     };
 
+    echo " --------------- trim file -------------------------";
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
     # clear var, drop passwd: /usr/bin/passwd -> /bin/busybox.suid, static library
     rm -frv \
@@ -520,7 +521,7 @@ _build_iso() {
         ! -name "JIS_*" ! -name "KOI*"  ! -name "UTF*"  ! -name "*.alias" \
         -exec rm -frv {} +
 
-    set ${1##*/};
+    set ${1##*/}; # trim path
 
     echo " ------------- build iso --------------------------";
     cd $ROOTFS_DIR || return $(_err $LINENO 3);
