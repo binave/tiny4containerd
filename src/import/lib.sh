@@ -117,6 +117,13 @@ _case() {
     printf %s "$@" | tr "[:${pre}er:]" "[:${suf}er:]"
 }
 
+# autocomplete and get the last match arguments
+_la() {
+    set $1*;
+    while [ "$2" ]; do shift; done;
+    printf "$1";
+}
+
 _err() {
     [ -s $WORK_DIR/.error ] || {
         mkdir -p $WORK_DIR;
@@ -129,8 +136,8 @@ _err() {
 _wait4(){
     [ -s $WORK_DIR/.error ] && return 1;
     [ "$1" ] || return 1;
-    set $CELLAR_DIR/${1##*/}*; # autocomplete and trim last
-    set ${1##*/};
+    set $(_la $CELLAR_DIR/${1##*/}) $2;
+    set ${1##*/} $2;
     local count=0 times=$((TIMEOUT_SEC / TIMELAG_SEC));
     until [ -f "$LOCK_DIR/$1.lock" ];
     do
@@ -149,16 +156,16 @@ _wait4(){
 
 # decompression
 _untar() {
-    local ex="$2" ex2="$3";
-    set $1*; # autocomplete and trim last
-    set $1 "$ex" "$3";
+    local _1=$(_la $1) _2=${2:-$WORK_DIR};
+    shift; shift;
+    set $_1 $_2 $@;
     _hash $1 || return 1;
     case $1 in
-        *.tar.gz) tar -C ${2:-$WORK_DIR} $3 -xzf $1 || return 1;;
-        *.tar.bz2) tar -C ${2:-$WORK_DIR} $3 -xjf $1 || return 1;;
-        *.tar.xz) bsdtar -C ${2:-$WORK_DIR} $3 -xJf $1 || return 1;;
-        *.tcz) unsquashfs -f -d ${2:-$WORK_DIR} $1 || return 1;;
-        *.tgz) tar -C ${2:-$WORK_DIR} $3 -zxf $1 || return 1;;
+        *.tar.gz) tar -C $2 $3 -xzf $1 || return 1;;
+        *.tar.bz2) tar -C $2 $3 -xjf $1 || return 1;;
+        *.tar.xz) bsdtar -C $2 $3 -xJf $1 || return 1;;
+        *.tcz) unsquashfs -f -d $2 $1 || return 1;;
+        *.tgz) tar -C $2 $3 -zxf $1 || return 1;;
         *) return 1;;
     esac
     return 0
