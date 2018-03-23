@@ -2,6 +2,8 @@
 
 # [need]: 'bc'
 _make_kernel() {
+    [ -s $ISO_DIR/boot/vmlinuz64 ] && { printf "[WARN] skip make 'kernel'\n"; return 0; };
+
     # fix: Directory renamed before its status could be extracted
     _untar $CELLAR_DIR/linux.tar.xz || return $(_err $LINENO 3);
     _try_patch linux-;
@@ -26,6 +28,8 @@ _make_kernel() {
 }
 
 _make_libcap2(){
+    [ -s $ROOTFS_DIR/usr/lib/libcap.so ] && { printf "[WARN] skip make 'libcap2'\n"; return 0; };
+
     _wait4 libcap.tar.xz || return $(_err $LINENO 3);
     _try_patch libcap-;
 
@@ -40,6 +44,7 @@ _make_libcap2(){
         install || return $(_err $LINENO 3);
 
     cp -adv $PWD/_install/lib64/* $ROOTFS_DIR/usr/local/lib;
+    rm -fv $ROOTFS_DIR/usr/local/lib*.a
 
 }
 

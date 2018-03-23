@@ -5,8 +5,7 @@
 
 printf "${YELLOW}Running init script...$NORMAL\n";
 
-STAMP=`date +%Y%m%d`;
-LOG_DIR=/log/tiny/${STAMP:0:6};
+Ymd=`date +%Y%m%d`;
 
 # This log is started before the persistence partition is mounted
 {
@@ -27,7 +26,7 @@ LOG_DIR=/log/tiny/${STAMP:0:6};
     mkdir -p \
         /opt/tiny/etc/crontabs \
         /opt/tiny/etc/init.d \
-        $LOG_DIR;
+        /log/tiny/${Ymd:0:6};
 
     # mdiskd
     /usr/local/sbin/mdisk monitor;
@@ -66,16 +65,15 @@ LOG_DIR=/log/tiny/${STAMP:0:6};
     find /opt/tiny/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
 
     # sync the clock
-    ntpd -d -n -p pool.ntp.org >> $LOG_DIR/ntpd_$STAMP.log 2>&1 &
+    ntpd -d -n -p pool.ntp.org >> /log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
 
     # start cron
-    crond -f -d "${CROND_LOGLEVEL:-8}" >> $LOG_DIR/crond_$STAMP.log 2>&1 &
+    crond -f -d "${CROND_LOGLEVEL:-8}" >> /log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
 
     # if we have the tc user, let's add it do the docker group
     grep -q '^tc:' /etc/passwd && addgroup tc docker;
 
-    chmod 775 /tmp /volume1;
-    chown :staff /tmp /volume1;
+    chmod 1777 /tmp /volume1;
 
     # hide directory
     chmod 700 /opt/tiny/etc;
@@ -115,15 +113,15 @@ LOG_DIR=/log/tiny/${STAMP:0:6};
         . /opt/tiny/etc/rc.local
     fi
 
-} 2>&1 | tee -a /var/log/boot_$STAMP.log;
+} 2>&1 | tee -a /var/log/boot_$Ymd.log;
 
 # move log
 {
     printf "\n\n[`date`]\n";
     cat /var/log/boot_*.log
-} >> $LOG_DIR/boot_$STAMP.log && rm -f /var/log/boot_*.log;
+} >> /log/tiny/${Ymd:0:6}/boot_$Ymd.log && rm -f /var/log/boot_*.log;
 
-unset LOG_DIR STAMP;
+unset Ymd;
 
 printf "${YELLOW}Finished init script...$NORMAL\n";
 

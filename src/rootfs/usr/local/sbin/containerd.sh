@@ -33,10 +33,10 @@
 
 : ${WAIT_LIMIT:=20};
 
-STAMP=`date +%Y%m%d`;
+Ymd=`date +%Y%m%d`;
 CERT_INTERFACES="switch0 ${IF_PREFIX}0 ${IF_PREFIX}1 ${IF_PREFIX}2 ${IF_PREFIX}3 ${IF_PREFIX}4";
 
-CONTAINERD_LOG="/log/tiny/${STAMP:0:6}/${0##*/}_$STAMP.log";
+CONTAINERD_LOG="/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
 CONTAINERD_DIR="/opt/${0##*/}ata";
 
 SERVER_TLS_DIR="/opt/tiny/tls";

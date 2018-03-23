@@ -9,19 +9,22 @@
 : ${CELLAR_DIR:=$STATE_DIR/cellar};
 
 : ${KERNEL_MAJOR_VERSION:=4.9};
+# : ${LIBCAP2_VERSION:=2.22};
+
+: ${THREAD_COUNT:=2};
 
 LOCK_DIR=$STATE_DIR/lock;
 ROOTFS_DIR=$STATE_DIR/rootfs;
 WORK_DIR=$STATE_DIR/work;
 CORES_COUNT=$(nproc);
 LABEL=`date +tc-%y%m%d-%H`;
-# : ${LIBCAP2_VERSION:=2.22};
 
 # linux
 KERNEL_PUB=https://cdn.kernel.org/pub; # https://mirrors.edge.kernel.org/pub
 
 # linux
 KERNEL_DOWNLOAD=$KERNEL_PUB/linux/kernel;
+LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64; # https://docs.docker.com/install/linux/docker-ce/binaries/#prerequisites
 TCL_REPO_DOWNLOAD=http://www.tinycorelinux.net/9.x/x86_64; # tiny core linux
 

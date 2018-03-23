@@ -36,8 +36,8 @@ grep -q 'noautorebuild' /proc/cmdline 2>/dev/null && NOAUTOREBUILD=1 || unset NO
 : ${BLOCK_SIZE:=4};
 : ${CHUNK:=128};
 
-STAMP=`date +%Y%m%d`;
-MDISK_LOG="/log/tiny/${STAMP:0:6}/${0##*/}_$STAMP.log";
+Ymd=`date +%Y%m%d`;
+MDISK_LOG="/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
 
 export PATH=$PATH:/usr/local/sbin;
 

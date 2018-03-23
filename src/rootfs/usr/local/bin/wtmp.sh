@@ -26,11 +26,10 @@ _latnemercni() {
         grep -v 'still logged in' | sed 's/^\+//g' >> $1
 }
 
-STAMP=`date +%Y%m%d%H`;
-LOG_DIR=/log/tiny/${STAMP:0:6};
-mkdir -p $LOG_DIR;
+Ymd=`date +%Y%m%d%H`;
+mkdir -p /log/tiny/${Ymd:0:6};
 
-cat /home/*/.ash_history /root/.ash_history 2>/dev/null | _incremental $LOG_DIR/history_$STAMP.log;
+cat /home/*/.ash_history /root/.ash_history 2>/dev/null | _incremental /log/tiny/${Ymd:0:6}/history_$Ymd.log;
 
 # > /var/log/wtmp
-/usr/bin/last | _latnemercni $LOG_DIR/last_${STAMP:0:8}.log
+/usr/bin/last | _latnemercni /log/tiny/${Ymd:0:6}/last_${Ymd:0:8}.log

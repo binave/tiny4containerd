@@ -17,7 +17,7 @@
 [ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from profile
-for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
+[ -s /etc/env ] && . /etc/env;
 
 : ${PW_CONFIG:="$PERSISTENT_DATA/tiny/etc/pw.cfg"};
 
