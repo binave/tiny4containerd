@@ -171,7 +171,7 @@ _hash() {
 _try_patch() {
     [ "$1" ] || return 1;
     cd $WORK_DIR/$1* || return 1;
-    find $THIS_DIR/patch -type f -iname "${PWD##*/}*$2*.patch" -exec patch -Ntp1 -i {} \;
+    # find $THIS_DIR/patch -type f -iname "${PWD##*/}*$2*.patch" -exec patch -Ntp1 -i {} \;
     return $?
 }
 
@@ -225,28 +225,36 @@ _downlock() {
         fi
         rm -fr "$swp"
     else
-        # have int
-        if [ "$pre" != "${pre#*[0-9]}" ]; then
-            suf=${pre##*\.t}; # 'gz' 'ar.gz' 'ar.xz' 'ar.bz2'
-            if [ "$pre" != "$suf" ]; then
-                swp=${pre%%-[0-9]*};
-                [ "$swp" == "$pre" ] && pre=${pre%%[0-9]*} || pre=$swp;
-                suf=".t$suf";
-                printf "will download '$pre$suf' to '$CELLAR_DIR'.\n";
-                if [ ! -f "$CELLAR_DIR/$pre$suf" ]; then
-                    mkdir -p $CELLAR_DIR;
-                    swp=$$$RANDOM.$RANDOM;
-                    curl -L --retry 10 -o $CELLAR_DIR/$swp $1 || {
-                        rm -f $CELLAR_DIR/$swp;
-                        printf "[ERROR] download '$pre' fail.\n" | tee -a $WORK_DIR/.error;
-                        return 1
-                    };
-                    mv $CELLAR_DIR/$swp $CELLAR_DIR/$pre$suf
-                fi
-                touch $LOCK_DIR/$pre$suf.lock;
-                return 0
+        if [ "${pre##*\.t}" == "cz" ]; then
+            suf=".${pre##*.}";
+            pre=${pre%.*};
+        elif [ "$pre" != "${pre#*[0-9]}" ]; then
+            # have int
+            suf=${pre##*\.t}; # 'cz' 'gz' 'ar.gz' 'ar.xz' 'ar.bz2'
+            if [ "$pre" == "$suf" ]; then
+                printf "[ERROR] download file '$pre' suffix not support.\n" | tee -a $WORK_DIR/.error;
+                return 1;
             fi
+            swp=${pre%%-[0-9]*};
+            [ "$swp" == "$pre" ] && pre=${pre%%[0-9]*} || pre=$swp;
+            suf=".t$suf";
+        else
+            printf "[ERROR] download file '$pre' name not support.\n" | tee -a $WORK_DIR/.error;
+            return 1
         fi
+        printf "will download '$pre$suf' to '$CELLAR_DIR'.\n";
+        if [ ! -f "$CELLAR_DIR/$pre$suf" ]; then
+            mkdir -p $CELLAR_DIR;
+            swp=$$$RANDOM.$RANDOM;
+            curl -L --retry 10 -o $CELLAR_DIR/$swp $1 || {
+                rm -f $CELLAR_DIR/$swp;
+                printf "[ERROR] download '$pre' fail.\n" | tee -a $WORK_DIR/.error;
+                return 1
+            };
+            mv $CELLAR_DIR/$swp $CELLAR_DIR/$pre$suf
+        fi
+        touch $LOCK_DIR/$pre$suf.lock;
+        return 0
     fi
     return 1
 }
