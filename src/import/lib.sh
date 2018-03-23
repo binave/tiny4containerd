@@ -225,22 +225,17 @@ _downlock() {
         fi
         rm -fr "$swp"
     else
-        if [ "${pre##*\.t}" == "cz" ]; then
-            suf=".${pre##*.}";
-            pre=${pre%.*};
-        elif [ "$pre" != "${pre#*[0-9]}" ]; then
+        if [ "$pre" != "${pre#*[0-9]}" ]; then
             # have int
             suf=${pre##*\.t}; # 'cz' 'gz' 'ar.gz' 'ar.xz' 'ar.bz2'
-            if [ "$pre" == "$suf" ]; then
-                printf "[ERROR] download file '$pre' suffix not support.\n" | tee -a $WORK_DIR/.error;
-                return 1;
+            if [ "$pre" != "$suf" -a "$suf" != "cz" ]; then
+                swp=${pre%%-[0-9]*};
+                [ "$swp" == "$pre" ] && pre=${pre%%[0-9]*} || pre=$swp;
+                suf=".t$suf";
+            else
+                unset suf
             fi
-            swp=${pre%%-[0-9]*};
-            [ "$swp" == "$pre" ] && pre=${pre%%[0-9]*} || pre=$swp;
-            suf=".t$suf";
-        else
-            printf "[ERROR] download file '$pre' name not support.\n" | tee -a $WORK_DIR/.error;
-            return 1
+        # else pre is full name;
         fi
         printf "will download '$pre$suf' to '$CELLAR_DIR'.\n";
         if [ ! -f "$CELLAR_DIR/$pre$suf" ]; then
@@ -256,7 +251,6 @@ _downlock() {
         touch $LOCK_DIR/$pre$suf.lock;
         return 0
     fi
-    return 1
 }
 
 _install() {

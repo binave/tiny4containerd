@@ -52,7 +52,6 @@ _undep() {
     local dep;
     for dep in $CELLAR_DIR/*.tcz;
     do
-        [ "${dep##*/}" == "rootfs.gz" ] && continue;
         printf "\nundep '${dep##*/}', ";
         _wait4 ${dep##*/} $ROOTFS_DIR || return $(_err $LINENO 3);
     done
