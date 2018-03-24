@@ -2,10 +2,10 @@
 
 # [need]: 'bc'
 _make_kernel() {
-    local CONFIG_LOCALVERSION;
-    eval $(grep 'CONFIG_LOCALVERSION=' $THIS_DIR/config/kernel.cfg);
+    local suffix;
+    eval suffix=$(grep 'CONFIG_LOCALVERSION=' $THIS_DIR/config/kernel.cfg | awk -F= '{print $2}');
     [ -s $ISO_DIR/boot/vmlinuz64 -a \
-        -s $ROOTFS_DIR/lib/modules/$kernel_version$CONFIG_LOCALVERSION/modules.dep ] && \
+        -s $ROOTFS_DIR/lib/modules/$kernel_version$suffix/modules.dep ] && \
         { printf "[WARN] skip make 'kernel'\n"; return 0; };
 
     # fix: Directory renamed before its status could be extracted
