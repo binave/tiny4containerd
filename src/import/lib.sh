@@ -120,8 +120,13 @@ _case() {
 # autocomplete and get the last match arguments
 _la() {
     set $1*;
+    [ -e "$1" ] || {
+        printf "[ERROR] '$1' not found." >&2;
+        return 1;
+    };
     while [ "$2" ]; do shift; done;
     printf "$1";
+    return 0
 }
 
 _err() {
