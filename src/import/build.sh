@@ -43,7 +43,10 @@ _make_libcap2(){
         prefix=$PWD/_install \
         install || return $(_err $LINENO 3);
 
-    cp -adv $PWD/_install/lib64/* $ROOTFS_DIR/usr/local/lib;
+    # cp -adv $PWD/_install/lib64/* $ROOTFS_DIR/usr/local/lib;
+    cp -adv ./_install/lib/libcap.so* $ROOTFS_DIR/usr/lib;
+    mv -v $ROOTFS_DIR/usr/lib/libcap.so.* $ROOTFS_DIR/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libcap.so) $ROOTFS_DIR/usr/lib/libcap.so;
     rm -fv $ROOTFS_DIR/usr/local/lib*.a
 
 }
@@ -67,6 +70,8 @@ _undep() {
 
 
 _apply_rootfs(){
+    [ -s $WORK_DIR/.error ] && return $(_err $LINENO 3);
+
     # Copy our custom rootfs,
     cp -frv $THIS_DIR/rootfs/* $ROOTFS_DIR;
 
@@ -76,7 +81,7 @@ _apply_rootfs(){
     do
         [ "${sf#**/}" == "bootsync.sh" ] && continue;
         sf="$ROOTFS_DIR/${sf#*/}";
-        mv -f "$sf" "${sf%.*}";
+        mv -fv "$sf" "${sf%.*}";
         # chmod
     done
 

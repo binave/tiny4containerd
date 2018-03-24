@@ -40,7 +40,7 @@ _main() {
 
     _install bc;                _message_queue --put "_make_kernel"; # this may use most time
     _message_queue --put "_make_libcap2";
-    _install squashfs-tools;    _message_queue --put "_undep";
+    _install cpio squashfs-tools;    _message_queue --put "_undep";
     _message_queue --put "_apply_rootfs";
 
     _message_queue --destroy;
@@ -65,7 +65,7 @@ _main() {
     _thread_valve --destroy;
 
     # for '_build_iso'
-    _install cpio genisoimage isolinux syslinux xorriso xz-utils || return $(_err $LINENO);
+    _install genisoimage isolinux syslinux xorriso xz-utils || return $(_err $LINENO);
     wait;
 
     # test queue error
