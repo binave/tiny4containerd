@@ -21,6 +21,8 @@
 
 : ${PW_CONFIG:="$PERSISTENT_DATA/tiny/etc/pw.cfg"};
 
+mkdir -p ${PW_CONFIG%/*};
+
 [ -s $PW_CONFIG ] || printf "# [username]:[[group]]:[MD5-based password]\n\
 # 'MD5-based password':    /usr/bin/openssl passwd -1 [password]\n\n" > $PW_CONFIG;
 

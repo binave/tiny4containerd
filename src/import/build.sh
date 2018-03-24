@@ -2,7 +2,11 @@
 
 # [need]: 'bc'
 _make_kernel() {
-    [ -s $ISO_DIR/boot/vmlinuz64 ] && { printf "[WARN] skip make 'kernel'\n"; return 0; };
+    local CONFIG_LOCALVERSION;
+    eval $(grep 'CONFIG_LOCALVERSION=' $THIS_DIR/config/kernel.cfg);
+    [ -s $ISO_DIR/boot/vmlinuz64 -a \
+        -s $ROOTFS_DIR/lib/modules/$kernel_version$CONFIG_LOCALVERSION/modules.dep ] && \
+        { printf "[WARN] skip make 'kernel'\n"; return 0; };
 
     # fix: Directory renamed before its status could be extracted
     _untar $CELLAR_DIR/linux- || return $(_err $LINENO 3);
@@ -18,7 +22,7 @@ _make_kernel() {
     make INSTALL_MOD_PATH=$ROOTFS_DIR modules_install firmware_install || return $(_err $LINENO 3);
 
     # remove empty link
-    rm -fv $ROOTFS_DIR/lib/modules/[0-9]*-tc/{build,source};
+    rm -fv $ROOTFS_DIR/lib/modules/[0-9]*/{build,source};
 
     _hash ./arch/x86/boot/bzImage;
 

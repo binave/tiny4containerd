@@ -37,10 +37,11 @@ Ymd=`date +%Y%m%d`;
         /opt/tiny/etc/env;
 
     # filter env
-    awk -F# '{print $1}' /opt/tiny/etc/env 2>/dev/null | sed 's/[\|\;\&]/\n/g;s/export//g;s/^[ ]\+//g' | \
-        grep '^[_A-Z]\+=' >> /etc/env;
-
-    echo >> /etc/env;
+    {
+        awk -F# '{print $1}' /opt/tiny/etc/env 2>/dev/null | \
+            sed 's/[\|\;\&]/\n/g;s/export//g;s/^[ ]\+//g' | grep '^[_A-Z]\+='
+        printf "PERSISTENT_DATA=/opt\n\n"
+    } >> /etc/env;
 
     # init env
     . /etc/env;
