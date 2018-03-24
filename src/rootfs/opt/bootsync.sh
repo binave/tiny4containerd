@@ -93,7 +93,7 @@ Ymd=`date +%Y%m%d`;
     /usr/bin/sethostname $HOSTNAME;
 
     # ssh dameon start
-    sh /usr/local/etc/init.d/sshd.sh;
+    sh /usr/local/etc/init.d/sshd;
 
     # Launch ACPId (shutdown)
     /usr/local/etc/init.d/acpid start;

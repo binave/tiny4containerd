@@ -19,7 +19,7 @@ net.ipv4.ip_forward=1
     # reset PS1
     sed -i 's/\\w/\\W/g;s/\/apps/\/opt/' $ROOTFS_DIR/etc/profile $ROOTFS_DIR/etc/skel/.profile;
     _mkcfg +$ROOTFS_DIR/etc/profile"
-sudo /usr/local/sbin/wtmp
+sudo /usr/local/bin/wtmp
 export TERM=xterm TMOUT=300
 readonly TMOUT
 ";
