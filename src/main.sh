@@ -39,8 +39,8 @@ _main() {
     _message_queue --init;
 
     _install bc;                _message_queue --put "_make_kernel"; # this may use most time
-    _message_queue --put "_make_libcap2";
     _install cpio squashfs-tools;    _message_queue --put "_undep";
+    _message_queue --put "_make_libcap2";
     _message_queue --put "_apply_rootfs";
 
     _message_queue --destroy;
@@ -84,7 +84,7 @@ _main() {
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;
-    _untar docker- $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
+    _untar $CELLAR_DIR/docker- $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
         chroot $ROOTFS_DIR docker -v || return $(_err $LINENO); # test docker command
 
     # build iso

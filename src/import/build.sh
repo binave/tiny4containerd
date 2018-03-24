@@ -27,6 +27,30 @@ _make_kernel() {
 
 }
 
+_undep() {
+    local dep;
+    for dep in $CELLAR_DIR/*.tcz;
+    do
+        _wait4 ${dep##*/} $ROOTFS_DIR || return $(_err $LINENO 3);
+    done
+
+    _hash $CELLAR_DIR/rootfs64.gz;
+    cd $ROOTFS_DIR;
+
+    # Install Tiny Core Linux rootfs
+    zcat $CELLAR_DIR/rootfs64.gz | \
+        cpio \
+            --nonmatching \
+            --verbose \
+            --extract \
+            --format=newc \
+            --make-directories \
+            --no-absolute-filenames || return $(_err $LINENO 3)
+    # http://www.gnu.org/software/cpio/manual/cpio.html
+    # 'newc': The new (SVR4) portable format, which supports file systems having more than 65536 i-nodes.
+
+}
+
 _make_libcap2(){
     [ -s $ROOTFS_DIR/usr/lib/libcap.so ] && { printf "[WARN] skip make 'libcap2'\n"; return 0; };
 
@@ -48,23 +72,6 @@ _make_libcap2(){
     mv -v $ROOTFS_DIR/usr/lib/libcap.so.* $ROOTFS_DIR/lib;
     ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libcap.so) $ROOTFS_DIR/usr/lib/libcap.so;
     rm -fv $ROOTFS_DIR/usr/local/lib*.a
-
-}
-
-_undep() {
-    local dep;
-    for dep in $CELLAR_DIR/*.tcz;
-    do
-        printf "\nundep '${dep##*/}', ";
-        _wait4 ${dep##*/} $ROOTFS_DIR || return $(_err $LINENO 3);
-    done
-    cd $ROOTFS_DIR;
-
-    _hash $CELLAR_DIR/rootfs64.gz;
-
-    # Install Tiny Core Linux rootfs
-    zcat $CELLAR_DIR/rootfs64.gz | cpio -f -i -H newc -d --no-absolute-filenames || \
-        return $(_err $LINENO 3)
 
 }
 
