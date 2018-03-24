@@ -3,10 +3,8 @@
 
 # [need]: 'bc'
 _make_kernel() {
-    local suffix;
-    eval suffix=$(grep 'CONFIG_LOCALVERSION=' $THIS_DIR/config/kernel.cfg | awk -F= '{print $2}');
     [ -s $ISO_DIR/boot/vmlinuz64 -a \
-        -s $ROOTFS_DIR/lib/modules/$kernel_version$suffix/modules.dep ] && \
+        -d $ROOTFS_DIR/lib/modules/$kernel_version$CONFIG_LOCALVERSION/kernel ] && \
         { printf "[WARN] skip make 'kernel'\n"; return 0; };
 
     # fix: Directory renamed before its status could be extracted
@@ -548,7 +546,7 @@ _build_iso() {
         return 0
     };
 
-    echo " --------------- trim file -------------------------";
+    echo " --------------- trim file ------------------------";
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
     # clear var, drop passwd: /usr/bin/passwd -> /bin/busybox.suid, static library
     rm -frv \

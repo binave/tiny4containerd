@@ -151,9 +151,12 @@ _main() {
     chroot $ROOTFS_DIR ldconfig || return $(_err $LINENO);
 
     # Generate modules.dep
-    ln -sTv $(ls $ROOTFS_DIR/lib/modules/) $ROOTFS_DIR/lib/modules/`uname -r`;
+    find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
+    [ "$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+        ln -sTv $kernel_version$CONFIG_LOCALVERSION $ROOTFS_DIR/lib/modules/`uname -r`;
     chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
-    rm -fv $ROOTFS_DIR/lib/modules/`uname -r`;
+    [ "$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+        rm -v $ROOTFS_DIR/lib/modules/`uname -r`;
 
     # create sshd key
     chroot $ROOTFS_DIR ssh-keygen -A || return $(_err $LINENO);

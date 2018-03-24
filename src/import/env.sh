@@ -77,3 +77,5 @@ deb-src http://ftp.cn.debian.org/debian stretch-updates main contrib non-free
 deb http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-free
 deb-src http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-free
 ';
+
+eval $(grep 'CONFIG_LOCALVERSION=' $THIS_DIR/config/kernel.cfg) || return $(_err $LINENO 1)
