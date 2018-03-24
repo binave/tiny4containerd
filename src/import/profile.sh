@@ -194,48 +194,52 @@ _create_dev() {
     cd $ROOTFS_DIR; mkdir -pv dev/{input,net,pts,shm,usb};
 
     # 1 char: Memory devices
-    mknod -m 640 dev/mem    c 1 1; # Physical memory access
-    mknod -m 640 dev/kmem   c 1 2; # Kernel virtual memory access
+    mknod -m 664 dev/mem    c 1 1; # Physical memory access
+    mknod -m 664 dev/kmem   c 1 2; # Kernel virtual memory access
     mknod -m 666 dev/null   c 1 3; # Null device
-    mknod -m 640 dev/port   c 1 4; # I/O port access
-    mknod -m 666 dev/zero   c 1 5; # Null byte source
-    # mknod -m 666 dev/core   c 1 6; # OBSOLETE - replaced by /proc/kcore
-    mknod -m 666 dev/full   c 1 7; # Returns ENOSPC on write
-    mknod -m 444 dev/random c 1 8; # Nondeterministic random number gen. fix: PRNG is not seeded
-    mknod -m 444 dev/urandom    c 1 9; # Faster, less secure random number gen.
+    mknod -m 664 dev/port   c 1 4; # I/O port access
+    mknod -m 664 dev/zero   c 1 5; # Null byte source
+    # mknod -m 664 dev/core   c 1 6; # OBSOLETE - replaced by /proc/kcore
+    mknod -m 664 dev/full   c 1 7; # Returns ENOSPC on write
+    mknod -m 664 dev/random c 1 8; # Nondeterministic random number gen. fix: PRNG is not seeded
+    mknod -m 664 dev/urandom    c 1 9; # Faster, less secure random number gen.
 
     local n;
     for n in `seq 0 7`;
     do
-        # 1 block: RAM disk
-        mknod -m 660 dev/ram$n          b 1 $n;
+        # 1 block: RAM disk, (ubuntu no)
+        mknod -m 664 dev/ram$n          b 1 $n;
 
-        # 3 block: First MFM, RLL and IDE hard disk/CD-ROM interface
-        mknod -m 660 dev/hda$(_n0 $n)   b 3 $n;
-        mknod -m 660 dev/hdb$(_n0 $n)   b 3 $((n + 64));
-        mknod -m 660 dev/hdc$(_n0 $n)   b 3 $((n + 128));
-        mknod -m 660 dev/hdd$(_n0 $n)   b 3 $((n + 192));
+        # 3 block: First MFM, RLL and IDE hard disk/CD-ROM interface, (ubuntu no)
+        mknod -m 664 dev/hda$(_n0 $n)   b 3 $n;
+        mknod -m 664 dev/hdb$(_n0 $n)   b 3 $((n + 64));
+        mknod -m 664 dev/hdc$(_n0 $n)   b 3 $((n + 128));
+        mknod -m 664 dev/hdd$(_n0 $n)   b 3 $((n + 192));
 
         # 4 char: TTY devices (0-63)
-        mknod -m 622 dev/tty$n          c 4 $n;
-        mknod -m 660 dev/ttyS$n         c 4 $((n + 64)); # UART serial port
+        mknod -m 666 dev/tty$n          c 4 $n;
+        mknod -m 666 dev/ttyS$n         c 4 $((n + 64)); # UART serial port
 
         # 7 block: Loopback devices
-        mknod -m 660 dev/loop$n         b 7 $n;
+        mknod -m 664 dev/loop$n         b 7 $n;
 
         # 7 char: Virtual console capture devices (0-63)
-        mknod -m 600 dev/vcs$(_n0 $n)   c 7 $n;
-        mknod -m 600 dev/vcsa$(_n0 $n)  c 7 $((n + 128));
+        mknod -m 664 dev/vcs$(_n0 $n)   c 7 $n;
+        mknod -m 664 dev/vcsa$(_n0 $n)  c 7 $((n + 128));
 
-        # 8 block: SCSI disk devices (0-15) (a-p)
-        mknod -m 660 dev/sda$(_n0 $n)   b 8 $n;
-        mknod -m 660 dev/sdb$(_n0 $n)   b 8 $((n + 16));
+        # 8 block: SCSI disk devices (0-15) (a-p), (ubuntu no)
+        mknod -m 664 dev/sda$(_n0 $n)   b 8 $n;
+        mknod -m 664 dev/sdb$(_n0 $n)   b 8 $((n + 16));
+
+        # 11 block: SCSI CD-ROM devices,
+        # The prefix /dev/sr (instead of /dev/scd) has been deprecated.
+        mknod -m 664 dev/sr$n           b 11 $n;
 
         # 13 char: Input core
-        mknod -m 640 dev/input/event$n  c 13 $((n + 64));
+        mknod -m 664 dev/input/event$n  c 13 $((n + 64));
 
-        # 180 char: USB devices (0-15)
-        mknod -m 660 dev/usb/hiddev$n   c 180 $((n + 96))
+        # 180 char: USB devices (0-15), (ubuntu no)
+        mknod -m 664 dev/usb/hiddev$n   c 180 $((n + 96))
 
     done
 
@@ -245,28 +249,28 @@ _create_dev() {
     mknod -m 666 dev/ptmx       c 5 2; # PTY master multiplex
 
     # 10 char: Non-serial mice, misc features
-    mknod -m 660 dev/logibm     c 10 0; # Logitech bus mouse
-    mknod -m 660 dev/psaux      c 10 1; # PS/2-style mouse port
-    mknod -m 660 dev/inportbm   c 10 2; # Microsoft Inport bus mouse
-    mknod -m 660 dev/atibm      c 10 3; # ATI XL bus mouse
-    mknod -m 660 dev/beep       c 10 128; # Fancy beep device
-    mknod -m 660 dev/nvram      c 10 144; # Non-volatile configuration RAM
-    mknod -m 660 dev/agpgart    c 10 175; # AGP Graphics Address Remapping Table
-    mknod -m 666 dev/net/tun    c 10 200; # TAP/TUN network device
-    mknod -m 600 dev/fuse       c 10 229; # Fuse (virtual filesystem in user-space)
+    mknod -m 664 dev/logibm     c 10 0; # Logitech bus mouse, (ubuntu no)
+    mknod -m 664 dev/psaux      c 10 1; # PS/2-style mouse port
+    mknod -m 664 dev/inportbm   c 10 2; # Microsoft Inport bus mouse, (ubuntu no)
+    mknod -m 664 dev/atibm      c 10 3; # ATI XL bus mouse, (ubuntu no)
+    mknod -m 664 dev/beep       c 10 128; # Fancy beep device, (ubuntu no)
+    mknod -m 664 dev/nvram      c 10 144; # Non-volatile configuration RAM, (ubuntu no)
+    mknod -m 664 dev/agpgart    c 10 175; # AGP Graphics Address Remapping Table, (ubuntu no)
+    mknod -m 664 dev/net/tun    c 10 200; # TAP/TUN network device
+    mknod -m 666 dev/fuse       c 10 229; # Fuse (virtual filesystem in user-space)
 
     # 13 char: Input core
-    mknod -m 660 dev/input/mouse0   c 13 32; # First mouse
-    mknod -m 660 dev/input/mice     c 13 63; # Unified mouse
+    mknod -m 664 dev/input/mouse0   c 13 32; # First mouse
+    mknod -m 664 dev/input/mice     c 13 63; # Unified mouse
 
     # 14 char: Open Sound System (OSS)
-    mknod -m 660 dev/audio  c 14 4; # Sun-compatible digital audio
+    mknod -m 664 dev/audio  c 14 4; # Sun-compatible digital audio, (ubuntu no)
 
     # 29 char: Universal frame buffer (0-31)
     mknod -m 622 dev/fb0    c 29 0;
 
     # 108 char: Device independent PPP interface
-    mknod -m 660 dev/ppp    c 108 0; # Device independent PPP interface
+    mknod -m 664 dev/ppp    c 108 0; # Device independent PPP interface
 
     # Compulsory links
     ln -sv /proc/self/fd    dev/fd; # File descriptors
@@ -287,7 +291,7 @@ _create_dev() {
     # mount -v --bind /dev dev;
     # mount -vt tmpfs     tmpfs   run;
 
-    cd -
+    cd $STATE_DIR
 
 }
 
