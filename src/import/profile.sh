@@ -34,7 +34,7 @@ mkdir -p $LOG_DIR\
     \/usr\/local\/sbin\/containerd stop\n\
     # shutdown script\
     find \/opt\/tiny\/etc\/init.d -type f -perm \/u+x -name "K*.sh" -exec \/bin\/sh -c {} \\\;\n\
-    \/usr\/local\/sbin\/wtmp\n\
+    \/usr\/local\/bin\/wtmp\n\
     # PID USER COMMAND\
     ps -ef | grep "crond\\|monitor\\|ntpd\\|sshd\\|udevd" | awk "{print \\"kill \\"\\$1}" | sh 2>\/dev\/null\
 \n} 2>\&1 \| tee -a $LOG_DIR\/shut_$STAMP.log\n\
