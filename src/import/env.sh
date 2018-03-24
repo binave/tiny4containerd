@@ -37,7 +37,7 @@ TCZ_DEPS="
     openssh openssl ncurses ncursesw
     git curl ca-certificates expat2
     iproute2 iptables
-    sshfs-fuse glib2 fuse
+    sshfs-fuse glib2 fuse libffi
     lvm2 liblvm2 udev-lib readline
     rsync libdb
     tar acl attr

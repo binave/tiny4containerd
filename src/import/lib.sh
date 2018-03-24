@@ -219,7 +219,7 @@ _hash() {
 # Usage: _try_patch [prefix_name]-
 _try_patch() {
     [ "$1" ] || return 1;
-    cd $WORK_DIR/$1* || return 1;
+    cd $(_la $WORK_DIR/$1) || return 1;
     # find $THIS_DIR/patch -type f -iname "${PWD##*/}*$2*.patch" -exec patch -Ntp1 -i {} \;
     return $?
 }
