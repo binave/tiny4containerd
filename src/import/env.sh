@@ -69,21 +69,15 @@ deb http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-fr
 deb-src http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-free
 ';
 
-APT_GET_LIST_MAKE="
-    automake
-    bc bsdtar build-essential
-    curl
-    kmod
-    libc6 libc6-dev
-    pkg-config
-    squashfs-tools
-    unzip
-";
-
-# APT_GET_LIST_ISO="
-#     cpio
-#     genisoimage
-#     isolinux
-#     syslinux
-#     xorriso xz-utils
+# APT_GET_LIST_MAKE="
+#     automake
+#     bc bsdtar build-essential
+#     curl
+#     kmod
+#     libc6 libc6-dev
+#     pkg-config
+#     squashfs-tools
+#     unzip
 # ";
+
+eval $(grep 'CONFIG_LOCALVERSION=' $THIS_DIR/config/kernel.cfg) || return $(_err $LINENO 1)

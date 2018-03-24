@@ -2,10 +2,8 @@
 
 # [need]: 'bc'
 _make_kernel() {
-    local suffix;
-    eval suffix=$(grep 'CONFIG_LOCALVERSION=' $THIS_DIR/config/kernel.cfg | awk -F= '{print $2}');
     [ -s $ISO_DIR/boot/vmlinuz64 -a \
-        -s $ROOTFS_DIR/lib/modules/$kernel_version$suffix/modules.dep ] && \
+        -d $ROOTFS_DIR/lib/modules/$kernel_version$CONFIG_LOCALVERSION/kernel ] && \
         { printf "[WARN] skip make 'kernel'\n"; return 0; };
 
     # fix: Directory renamed before its status could be extracted
@@ -110,7 +108,17 @@ _apply_rootfs(){
     ' || return $(_err $LINENO 3);
 
     ln -sTv lib                  $ROOTFS_DIR/lib64;
-    ln -sTv ../usr/local/etc/ssl $ROOTFS_DIR/etc/ssl
+    ln -sTv ../usr/local/etc/ssl $ROOTFS_DIR/etc/ssl;
+
+    echo "----------- refresh modules ----------------------";
+    # Generate modules.dep
+    find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
+    [ "$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+        ln -sTv $kernel_version$CONFIG_LOCALVERSION $ROOTFS_DIR/lib/modules/`uname -r`;
+    chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
+    [ "$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+        rm -v $ROOTFS_DIR/lib/modules/`uname -r`
+
 
 }
 
