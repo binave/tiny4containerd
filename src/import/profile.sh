@@ -319,17 +319,19 @@ _apply_rootfs() {
 
     # Copy our custom rootfs,
     echo "---------- copy custom rootfs --------------------";
-    cp -frv $THIS_DIR/rootfs/* $ROOTFS_DIR;
-
-    echo "---------- trim script suffix --------------------";
-    # trim suffix
-    local sf sh;
-    for sf in $(cd $THIS_DIR/rootfs; find . -type f -name "*.sh");
+    cd $THIS_DIR/rootfs;
+    local sf;
+    for sf in $(find . -type f);
     do
-        sf="$ROOTFS_DIR/${sf#*/}";
-        mv -fv "$sf" "${sf%.*}";
-        # chmod
+        sf="${sf#*/}"; # trim './' head
+        mkdir -pv "$ROOTFS_DIR/${sf%/*}";
+        if [ "${sf##*.}" == "sh" ]; then
+            cp -fv "./$sf" "$ROOTFS_DIR/${sf%.*}"
+        else
+            cp -fv "./$sf" "$ROOTFS_DIR/${sf%/*}"
+        fi
     done
+    cd $STATE_DIR;
 
     # for /etc/inittab
     _mkcfg $ROOTFS_DIR/sbin/autologin'
