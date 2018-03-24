@@ -16,8 +16,7 @@ _main() {
 
     # load version info (upper key)
     [ -s $ISO_DIR/version ] && . $ISO_DIR/version;
-
-    rm -fr $ROOTFS_DIR; mkdir -pv $ISO_DIR/boot $ROOTFS_DIR;
+    mkdir -pv $ISO_DIR/boot;
 
     echo " ------------- init apt-get ------------------------";
     # install pkg
