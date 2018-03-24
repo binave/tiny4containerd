@@ -4,10 +4,9 @@ _create_etc() {
     [ -s $WORK_DIR/.error ] && return 1;
 
     echo " ------------- create etc -------------------------";
-
     # glibc
-    printf %s '# GNU Name Service Switch config.
-# Begin /etc/nsswitch.conf
+    _mkcfg $ROOTFS_DIR/etc/nsswitch.conf'
+# GNU Name Service Switch config.
 
 passwd: files
 group: files
@@ -20,71 +19,73 @@ protocols: files
 services: files
 ethers: files
 rpc: files
-
-# End /etc/nsswitch.conf
-' | tee $ROOTFS_DIR/etc/nsswitch.conf
+';
 
     # hostname
-    printf %s 'tiny2containerd
-' | tee $ROOTFS_DIR/etc/hostname;
+    printf "tiny2containerd\n" > $ROOTFS_DIR/etc/hostname;
 
     # host.conf
-    printf %s '# The "order" line is only used by old versions of the C library.
+    _mkcfg $ROOTFS_DIR/etc/host.conf'
+# The "order" line is only used by old versions of the C library.
 order hosts,bind
 multi on
-' | tee $ROOTFS_DIR/etc/host.conf;
+';
 
     # hosts
-    printf %s '127.0.0.1	box	localhost localhost.local
-' | tee $ROOTFS_DIR/etc/hosts;
+    _mkcfg $ROOTFS_DIR/etc/hosts'
+127.0.0.1	box	localhost localhost.local
+';
 
     # sysctl
-    printf %s 'net.ipv4.ip_forward=1
+    _mkcfg $ROOTFS_DIR/etc/sysctl.conf'
+net.ipv4.ip_forward=1
 # net.ipv6.conf.all.forwarding=1
-' | tee $ROOTFS_DIR/etc/sysctl.conf;
+';
 
     # fstab
-    printf %s '# /etc/fstab
+    _mkcfg $ROOTFS_DIR/etc/fstab'
+# /etc/fstab
 proc            /proc        proc    defaults          0       0
 sysfs           /sys         sysfs   defaults          0       0
 devpts          /dev/pts     devpts  defaults          0       0
 tmpfs           /dev/shm     tmpfs   defaults          0       0
-' | tee $ROOTFS_DIR/etc/fstab;
+';
 
     # group
-    [ -f $ROOTFS_DIR/etc/group ] && printf "[WARN] skip '/etc/group'\n" || printf %s '
+    _mkcfg $ROOTFS_DIR/etc/group'
 root:x:0:
 lp:x:7:lp
 nogroup:x:65534:
 staff:x:50:
-' | tee $ROOTFS_DIR/etc/group;
+';
 
     # gshadow
-    [ -f $ROOTFS_DIR/etc/gshadow ] && printf "[WARN] skip '/etc/gshadow'\n" || printf %s '
+    _mkcfg $ROOTFS_DIR/etc/gshadow'
 root:*::
 nogroup:!::
 staff:!::
 floppy:!::tcroot:x:0:0:root:/root:/bin/sh
 lp:x:7:7:lp:/var/spool/lpd:/bin/sh
 nobody:x:65534:65534:nobody:/nonexistent:/bin/false
-' | tee $ROOTFS_DIR/etc/gshadow;
+';
 
     # passwd
-    [ -f $ROOTFS_DIR/etc/passwd ] && printf "[WARN] skip '/etc/passwd'\n" || printf %s '
+    _mkcfg $ROOTFS_DIR/etc/passwd'
 root:x:0:0:root:/root:/bin/sh
 lp:x:7:7:lp:/var/spool/lpd:/bin/sh
 nobody:x:65534:65534:nobody:/nonexistent:/bin/false
-' | tee $ROOTFS_DIR/etc/passwd;
+';
 
     # shadow
-    [ -f $ROOTFS_DIR/etc/shadow ] && printf "[WARN] skip '/etc/shadow'\n" || printf %s '
+    _mkcfg $ROOTFS_DIR/etc/shadow'
 root:*:13525:0:99999:7:::
 lp:*:13510:0:99999:7:::
 nobody:*:13509:0:99999:7:::
-' | tee $ROOTFS_DIR/etc/shadow;
+';
 
     # sudoers
-    printf %s "#
+    _mkcfg $ROOTFS_DIR/etc/sudoers"
+#
 # This file MUST be edited with the 'visudo' command as root.
 #
 # See the man page for details on how to write a sudoers file.
@@ -100,10 +101,11 @@ Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/bin/wtmp
 # User privilege specification
 root    ALL=(ALL) ALL
 
-" # | tee $ROOTFS_DIR/etc/sudoers;
+";
 
     # profile
-    printf %s "# /etc/profile: system-wide .profile file for the Bourne shells
+    _mkcfg $ROOTFS_DIR/etc/profile"
+# /etc/profile: system-wide .profile file for the Bourne shells
 
 umask 022;
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
@@ -126,12 +128,11 @@ export LANG LC_ALL PATH PS1 TERM=xterm TMOUT=300 TZ;
 
 readonly TMOUT
 
-" | tee $ROOTFS_DIR/etc/profile;
-
-    mkdir -pv $ROOTFS_DIR/etc/{skel,sysconfig};
+";
 
     # .profile
-    printf %s "# ~/.profile: Executed by Bourne-compatible login SHells.
+    _mkcfg $ROOTFS_DIR/etc/skel/.profile"
+# ~/.profile: Executed by Bourne-compatible login SHells.
 
 PS1='\u@\h:\W\$ '
 PAGER='less -EM'
@@ -143,23 +144,25 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
 
 [ -f \$HOME/.ashrc ] && . \$HOME/.ashrc
 
-" | tee $ROOTFS_DIR/etc/skel/.profile;
+";
 
     touch $ROOTFS_DIR/etc/{skel/.ashrc,skel/.ash_history,motd};
 
     # fix "su -"
-    echo root > $ROOTFS_DIR/etc/sysconfig/superuser;
+    mkdir -pv $ROOTFS_DIR/etc/sysconfig;
+    printf %s 'root' > $ROOTFS_DIR/etc/sysconfig/superuser;
 
     # add some timezone files so we're explicit about being UTC
-    echo 'UTC' | tee $ROOTFS_DIR/etc/timezone;
+    printf %s 'UTC' | tee $ROOTFS_DIR/etc/timezone;
 
-    mkdir -pv $ROOTFS_DIR/etc/acpi/events;
-    printf %s 'event=button/power*
+    _mkcfg $ROOTFS_DIR/etc/acpi/events/all'
+event=button/power*
 action=/sbin/poweroff
-' | tee $ROOTFS_DIR/etc/acpi/events/all;
+';
 
     # securetty
-    echo '# /etc/securetty: List of terminals on which root is allowed to login.
+    _mkcfg $ROOTFS_DIR/etc/securetty'
+# /etc/securetty: List of terminals on which root is allowed to login.
 console
 
 # For people with serial port consoles
@@ -173,13 +176,14 @@ tty4
 tty5
 tty6
 tty7
-' | tee $ROOTFS_DIR/etc/securetty;
+';
 
     # shells
-    echo '# /etc/shells: valid login shells
+    _mkcfg $ROOTFS_DIR/etc/shells'
+# /etc/shells: valid login shells
 /bin/sh
 /bin/ash
-' | tee $ROOTFS_DIR/etc/shells;
+'
 
 }
 
@@ -287,8 +291,6 @@ _create_dev() {
 
 }
 
-_n0() { [ $1 == 0 ] || printf %s $1; }
-
 # TODO bionic-base-amd64.tar
 _apply_rootfs() {
     [ -s $WORK_DIR/.error ] && return $(_err $LINENO 3);
@@ -316,26 +318,29 @@ _apply_rootfs() {
     done
 
     # Copy our custom rootfs,
+    echo "---------- copy custom rootfs --------------------";
     cp -frv $THIS_DIR/rootfs/* $ROOTFS_DIR;
 
+    echo "---------- trim script suffix --------------------";
+    # trim suffix
+    local sf sh;
+    for sf in $(cd $THIS_DIR/rootfs; find . -type f -name "*.sh");
+    do
+        sf="$ROOTFS_DIR/${sf#*/}";
+        mv -fv "$sf" "${sf%.*}";
+        # chmod
+    done
+
     # for /etc/inittab
-    printf %s '#!/bin/busybox ash
+    _mkcfg $ROOTFS_DIR/sbin/autologin'
+#!/bin/busybox ash
 if [ -f /etc/sysconfig/autologin ]; then
     exec /sbin/getty 38400 tty1
 else
     touch /etc/sysconfig/autologin;
     exec /bin/login -f root
 fi
-' | tee $ROOTFS_DIR/sbin/autologin;
-
-    # trim suffix
-    local sf sh;
-    for sf in $(cd $THIS_DIR/rootfs; find . -type f -name "*.sh");
-    do
-        sf="$ROOTFS_DIR/${sf#*/}";
-        mv -f "$sf" "${sf%.*}";
-        # chmod
-    done
+';
 
     # executable
     chmod +x $ROOTFS_DIR/init;
@@ -350,15 +355,12 @@ fi
     # initrd.img
     ln -fsv bin/busybox                     $ROOTFS_DIR/linuxrc;
 
-    # git-core
-    ln -fsv /var/git-core/bin/git           $ROOTFS_DIR/usr/bin/;
-
     # subversion
     ln -fsv /var/subversion/bin/svn         $ROOTFS_DIR/usr/bin/;
     ln -fsv /var/subversion/bin/svnadmin    $ROOTFS_DIR/usr/bin/;
     ln -fsv /var/subversion/bin/svnlook     $ROOTFS_DIR/usr/bin/;
 
-    # visudo
+    # for visudo
     ln -fsv $(readlink $ROOTFS_DIR/usr/bin/readlink)    $ROOTFS_DIR/usr/bin/vi;
 
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter05/stripping.html

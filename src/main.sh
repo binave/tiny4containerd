@@ -41,6 +41,8 @@ _main() {
     _last_version pcre_version      $PCRE_DOWNLOAD      "'pcre-.*bz2\"'"            '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version sshfs_version     $SSHFS_DOWNLOAD/tags    tag-name                '-F[-_\>\<]'    "'{print \$5}'" || return $(_err $LINENO);
     _last_version libcap2_version   $LIBCAP2_DOWNLOAD   "'xz\"'"                    '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
+    # _last_version procps_version    $PROCPS_DOWNLOAD    "'\-ng-.*.tar.xz\"'"        '-F[-\"]'       "'{print \$10}'"|| return $(_err $LINENO);
+    _last_version git_version       $GIT_DOWNLOAD       "'git-[0-9].*tar.xz'"       '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version sudo_version      $SUDO_DOWNLOAD      "'sudo-.*tar\\.gz\"'"       '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version e2fsprogs_version $E2FSPROGS_DOWNLOAD "'v.*/'"                    '-F[v/]'        "'{print \$2}'" || return $(_err $LINENO);
     _last_version curl_version      $CURL_DOWNLOAD      "'xz\"'"                    '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
@@ -86,6 +88,8 @@ _main() {
     _install python-docutils;   _message_queue --put "_make_sshfs";
 
     # tools
+    _message_queue --put "_make_git";
+    # _install ncurses-dev;       _message_queue --put "_make_procps";
     _message_queue --put "_make_sudo";
     _message_queue --put "_make_e2fsprogs";
     _message_queue --put "_make_curl";
@@ -106,6 +110,7 @@ _main() {
         $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 \
         $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz \
         $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz \
+        $CERTDATA_DOWNLOAD \
         $CA_CERTIFICATES_REPOSITORY.master \
         $OPENSSH_DOWNLOAD/openssh-$openssh_version.tar.gz \
         $IPTABLES_DOWNLOAD/iptables-$iptables_version.tar.bz2 \
@@ -119,11 +124,13 @@ _main() {
         $NINJA_REPOSITORY.release \
         $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz \
         $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz \
+        $GIT_DOWNLOAD/git-$git_version.tar.xz \
         $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz \
         $E2FSPROGS_DOWNLOAD/v$e2fsprogs_version/e2fsprogs-$e2fsprogs_version.tar.xz \
         $CURL_DOWNLOAD/curl-$curl_version.tar.xz \
         $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
         $DOCKER_DOWNLOAD/docker-$docker_version.tgz;
+        # $PROCPS_DOWNLOAD/procps-ng-$procps_version.tar.xz \
     do
         # get thread and run
         _thread_valve --run _downlock $url
@@ -168,7 +175,7 @@ _main() {
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;
-    tar -zxvf $CELLAR_DIR/docker.tgz -C $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
+    _untar $CELLAR_DIR/docker- $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
         chroot $ROOTFS_DIR docker -v || return $(_err $LINENO); # test docker command
 
     # build iso

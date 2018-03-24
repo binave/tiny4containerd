@@ -55,6 +55,8 @@ SSHFS_DOWNLOAD=https://github.com/libfuse/sshfs;
 LIBFUSE_DOWNLOAD=https://github.com/libfuse/libfuse;
 
 # tools
+GIT_DOWNLOAD=$KERNEL_PUB/software/scm/git;
+# PROCPS_DOWNLOAD=https://jaist.dl.sourceforge.net/project/procps-ng/Production; # PROCPS_REPOSITORY=https://gitlab.com/procps-ng/procps.git; #
 SUDO_DOWNLOAD=http://www.sudo.ws/dist;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
 E2FSPROGS_DOWNLOAD=$KERNEL_PUB/linux/kernel/people/tytso/e2fsprogs;
