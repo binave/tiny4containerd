@@ -125,9 +125,9 @@ _build_iso() {
     # create initrd.img
     find | cpio -o -H newc | \
         xz -9 --format=lzma --verbose --verbose --threads=0 --extreme > \
-        $ISO_DIR/iso/boot/initrd.img || return $(_err $LINENO 3);
+        $ISO_DIR/boot/initrd.img || return $(_err $LINENO 3);
 
-    _hash $ISO_DIR/iso/boot/initrd.img;
+    _hash $ISO_DIR/boot/initrd.img;
 
     # copy boot file
     cp -rv $THIS_DIR/isolinux $ISO_DIR/boot/;
