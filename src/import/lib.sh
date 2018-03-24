@@ -132,6 +132,39 @@ _err() {
     return 1
 }
 
+# Usage: _mkcfg [+-][path]'
+# [text]
+# '
+_mkcfg() {
+    local args file_path force=false LF="
+";
+    file_path="${@%%$LF*}";
+    if [ "${file_path:0:1}" == "-" ]; then
+        file_path="${file_path:1}";
+        force=true # override
+    elif [ "${file_path:0:1}" == "+" ]; then
+        file_path="${file_path:1}";
+        force=true;
+        args="-a" # appand
+    fi
+    if ! $force && [ -s $file_path ]; then
+        printf "[ERROR] '$file_path' already exist.\n" >&2;
+        return 1
+    else
+        mkdir -p ${file_path%/*};
+        if [ "$args" ]; then
+            printf "[INFO] will appand"
+        elif $force; then
+            printf "[WARN] will override"
+        else
+            printf "[INFO] will create"
+        fi
+        printf " '$file_path'.\n";
+        printf %s "${@#*$LF}" | tee $args ${file_path}
+    fi
+    return 0
+}
+
 # Usage: _wait4 [file]
 _wait4(){
     [ -s $WORK_DIR/.error ] && return 1;

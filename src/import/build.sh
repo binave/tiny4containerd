@@ -80,13 +80,15 @@ _apply_rootfs(){
     [ -s $WORK_DIR/.error ] && return $(_err $LINENO 3);
 
     # Copy our custom rootfs,
+    echo "---------- copy custom rootfs --------------------";
     cp -frv $THIS_DIR/rootfs/* $ROOTFS_DIR;
 
+    echo "---------- trim script suffix --------------------";
     # trim suffix
     local sf sh;
     for sf in $(cd $THIS_DIR/rootfs; find . -type f -name "*.sh");
     do
-        [ "${sf#**/}" == "bootsync.sh" ] && continue;
+        [ "${sf##*/}" == "bootsync.sh" ] && continue;
         sf="$ROOTFS_DIR/${sf#*/}";
         mv -fv "$sf" "${sf%.*}";
         # chmod

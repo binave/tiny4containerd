@@ -2,26 +2,27 @@
 
 _modify_config() {
     # acpi http://wiki.tinycorelinux.net/wiki:using_acpid_to_control_your_pc_buttons
-    mkdir -p $ROOTFS_DIR/usr/local/etc/acpi/events/;
-    printf %s 'event=button/power*
+    _mkcfg $ROOTFS_DIR/usr/local/etc/acpi/events/all'
+event=button/power*
 action=/sbin/poweroff
-' | tee $ROOTFS_DIR/usr/local/etc/acpi/events/all;
+';
 
     # sysctl
-    printf %s 'net.ipv4.ip_forward=1
+    _mkcfg -$ROOTFS_DIR/etc/sysctl.conf'
+net.ipv4.ip_forward=1
 # net.ipv6.conf.all.forwarding=1
-' | tee $ROOTFS_DIR/etc/sysctl.conf;
+';
 
     # clean motd
     > $ROOTFS_DIR/etc/motd;
 
     # reset PS1
     sed -i 's/\\w/\\W/g;s/\/apps/\/opt/' $ROOTFS_DIR/etc/profile $ROOTFS_DIR/etc/skel/.profile;
-    printf %s "
+    _mkcfg +$ROOTFS_DIR/etc/profile"
 sudo /usr/local/sbin/wtmp
 export TERM=xterm TMOUT=300
 readonly TMOUT
-" | tee -a $ROOTFS_DIR/etc/profile;
+";
 
     # insert shutdown command
     sed -i ':a;N;$!ba;s/# Sync.*-9 $K5_SKIP/STAMP=`date +%Y%m%d`\
@@ -64,6 +65,7 @@ Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/sbin/wtmp
     rm -f $ROOTFS_DIR/usr/bin/passwd;
 
     # fix "su -"
+    mkdir -p $ROOTFS_DIR/etc/sysconfig;
     echo root > $ROOTFS_DIR/etc/sysconfig/superuser;
 
     # add some timezone files so we're explicit about being UTC
