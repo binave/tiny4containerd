@@ -91,8 +91,7 @@ _apply_rootfs(){
     do
         sf="${sf#*/}"; # trim './' head
         mkdir -pv "$ROOTFS_DIR/${sf%/*}";
-        if [ "${sf##*.}" == "sh" ]; then
-            [ "${sf##*/}" == "bootsync.sh" ] && continue;
+        if [ "${sf##*.}" == "sh" -a "${sf##*/}" != "bootsync.sh" ]; then
             cp -fv "./$sf" "$ROOTFS_DIR/${sf%.*}"
         else
             cp -fv "./$sf" "$ROOTFS_DIR/${sf%/*}"
@@ -122,6 +121,9 @@ _build_iso() {
         printf "\n[WARN] skip create iso.\n";
         return 0
     };
+
+    echo " --------------- trim file ------------------------";
+    rm -fv $ROOTFS_DIR/etc/*-;
 
     set ${1##*/};
 
