@@ -145,7 +145,7 @@ _build_iso() {
         -c boot/isolinux/boot.cat \
         -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
         -o "$OUT_DIR/$1" \
-        $TMP/iso || return $(_err $LINENO 3);
+        $ISO_DIR || return $(_err $LINENO 3);
 
     _hash "$OUT_DIR/$1";
 
