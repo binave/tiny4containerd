@@ -107,8 +107,11 @@ _apply_rootfs(){
         && /usr/local/tce.installed/ca-certificates \
     ' || return $(_err $LINENO 3);
 
-    ln -sTv lib                  $ROOTFS_DIR/lib64;
     ln -sTv ../usr/local/etc/ssl $ROOTFS_DIR/etc/ssl;
+
+    # link 'lib64'
+    mkdir -pv $ROOTFS_DIR/lib64;
+    ln -sv ../lib/$(readlink $ROOTFS_DIR/lib/ld-linux-x86-64.so.*) $ROOTFS_DIR/lib64/$(cd $ROOTFS_DIR/lib; ls ld-linux-x86-64.so.*);
 
     echo "----------- refresh modules ----------------------";
     # Generate modules.dep

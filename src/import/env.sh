@@ -34,17 +34,16 @@ TCL_REPO_DOWNLOAD=http://www.tinycorelinux.net/9.x/x86_64; # tiny core linux
 
 # fork: https://github.com/boot2docker/boot2docker/blob/master/Dockerfile
 TCZ_DEPS="
-    openssh openssl ncurses
+    openssh openssl
     git curl ca-certificates expat2
-    iproute2 db
+    iproute2
     iptables
-    sshfs-fuse glib2 fuse libffi
+    sshfs-fuse fuse
     lvm2 liblvm2 udev-lib readline
-    cryptsetup libgcrypt libgpg-error
-    rsync popt
+    rsync
     tar acl attr
-    xz liblzma
-    pcre bzip2-lib
+    xz
+    pcre
     ntpclient
     mdadm
     e2fsprogs
