@@ -58,8 +58,14 @@ sync; sleep 1; sync; sleep 1\n\
 
     # password
     sed -i "s/^tc.*//;/# Cmnd alias specification/i\
-Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/sbin/wtmp\n\
+Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/bin/wtmp\n\
 \n" $ROOTFS_DIR/etc/sudoers;
+
+    _mkcfg -$ROOTFS_DIR/init'
+#!/bin/sh
+exec /sbin/init
+';
+    chmod +x $ROOTFS_DIR/init;
 
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -f $ROOTFS_DIR/usr/bin/passwd;
