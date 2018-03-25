@@ -101,9 +101,8 @@ printf "mkdir -pv$(set | grep _DIR= | awk -F= '{printf " "$2}')" | bash;
     time _main $@ || cat $WORK_DIR/.error >&2;
 
     # log path
-    printf "\nuse command 'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";
-    [ "$1" ] && printf "use command 'docker cp [container_name]:$OUT_DIR/$1 .' get iso file.\n";
-    # complete.
+    printf "\nuse command:\n    'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";
+    [ "$1" ] && printf "    'docker cp [container_name]:$OUT_DIR/$1 .' get iso file.\n";
     printf "\ncomplete.\n\n";
     exit 0
 

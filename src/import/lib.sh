@@ -232,7 +232,7 @@ _last_version() {
     # source $ISO_DIR/version
     value=$(eval printf \$$(_case --up $key) 2>/dev/null) || {
         value=$(printf %s "curl -L $2 2>/dev/null | grep $3 | awk $4 $5 $6 $7" | bash | \
-            grep '[0-9]' | grep -v 'beta\|[-0-9]rc\|[-0-9]RC' | sed 's/LVM\|\.tgz\|\.zip\|\.tar.*\|\///g' | \
+            grep '[0-9]' | grep -v 'beta\|[-0-9]rc\|[-0-9]RC' | sed 's/^[^0-9]\+\|\.t.*\|\.zip\|\///g' | \
             sort --version-sort | tail -1);
     };
     tmp=$(_case --up $key);
