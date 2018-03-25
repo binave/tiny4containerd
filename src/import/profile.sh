@@ -7,19 +7,25 @@ _create_etc() {
     # glibc
     _mkcfg $ROOTFS_DIR/etc/nsswitch.conf'
 # GNU Name Service Switch config.
+#
 
-passwd: files
-group: files
-shadow: files
+passwd:     files
+group:      files
+shadow:     files
 
-hosts: files dns
-networks: files
+hosts:      files dns
+networks:   files
 
-protocols: files
-services: files
-ethers: files
-rpc: files
+protocols:  files
+services:   files
+ethers:     files
+rpc:        files
 ';
+
+    # protocols, services
+    _wait4 iana-etc- || return $(_err $LINENO 4);
+    _try_patch iana-etc-;
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 4);
 
     # hostname
     printf "tiny2containerd\n" > $ROOTFS_DIR/etc/hostname;
@@ -154,6 +160,11 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
 
     # add some timezone files so we're explicit about being UTC
     printf %s 'UTC' | tee $ROOTFS_DIR/etc/timezone;
+    cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime;
+    # # time zone database
+    # _wait4 tzdata || return $(_err $LINENO 4);
+    # _try_patch tzdata;
+
 
     _mkcfg $ROOTFS_DIR/etc/acpi/events/all'
 event=button/power*
@@ -354,9 +365,6 @@ fi
 
     chmod 0750 $ROOTFS_DIR/root;
     chmod 1777 $ROOTFS_DIR/tmp;
-
-    # copy timezone
-    cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime;
 
     # initrd.img
     ln -fsv bin/busybox                     $ROOTFS_DIR/linuxrc;

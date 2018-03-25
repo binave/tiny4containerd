@@ -64,6 +64,9 @@ LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64; # https://docs.docker.com/install/linux/docker-ce/binaries/#prerequisites
 # PERL5_DOWNLOAD=http://www.cpan.org/src/5.0;
 
+IANA_ETC=http://sethwklein.net/iana-etc;
+TZ_DATA=https://data.iana.org/time-zones/releases; # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/glibc.html
+
 # debian sources
 DEBIAN_SOURCE='deb http://deb.debian.org/debian stretch main
 deb http://deb.debian.org/debian stretch-updates main

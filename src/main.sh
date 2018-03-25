@@ -17,9 +17,7 @@ _main() {
 
     # load version info (upper key)
     [ -s $ISO_DIR/version ] && . $ISO_DIR/version;
-
-    # clean the rootfs, prepare the build directory ($ISO_DIR)
-    rm -fr $ROOTFS_DIR; mkdir -pv $ISO_DIR/boot $ROOTFS_DIR;
+    mkdir -pv $ISO_DIR/boot;
 
     echo " ------------- init apt-get ------------------------";
     # install pkg
@@ -46,6 +44,8 @@ _main() {
     _last_version sudo_version      $SUDO_DOWNLOAD      "'sudo-.*tar\\.gz\"'"       '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version e2fsprogs_version $E2FSPROGS_DOWNLOAD "'v.*/'"                    '-F[v/]'        "'{print \$2}'" || return $(_err $LINENO);
     _last_version curl_version      $CURL_DOWNLOAD      "'xz\"'"                    '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
+    _last_version iana_etc_version  $IANA_ETC           "'iana-etc-.*bz2\"'"        '-F[-\"]'       "'{print \$6}'" || return $(_err $LINENO);
+    # _last_version tz_version        $TZ_DATA            "'tzdata[0-9].*.gz\"'"      '-F[\"]'        "'{print \$2}'" || return $(_err $LINENO);
     # get docker stable version
     _last_version docker_version    $DOCKER_DOWNLOAD    docker-                     '-F[-\"]'       "'{print \$3\"-\"\$4}'" || return $(_err $LINENO);
 
@@ -129,7 +129,9 @@ _main() {
         $E2FSPROGS_DOWNLOAD/v$e2fsprogs_version/e2fsprogs-$e2fsprogs_version.tar.xz \
         $CURL_DOWNLOAD/curl-$curl_version.tar.xz \
         $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
+        $IANA_ETC-$iana_etc_version.tar.bz2 \
         $DOCKER_DOWNLOAD/docker-$docker_version.tgz;
+        # $TZ_DATA/tzdata$tz_version.tar.gz \
         # $PROCPS_DOWNLOAD/procps-ng-$procps_version.tar.xz \
     do
         # get thread and run
@@ -196,9 +198,8 @@ printf "mkdir -pv$(set | grep _DIR= | awk -F= '{printf " "$2}')" | bash;
     time _main $@ || cat $WORK_DIR/.error >&2;
 
     # log path
-    printf "\nuse command 'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";
-    [ "$1" ] && printf "use command 'docker cp [container_name]:$OUT_DIR/$1 .' get iso file.\n";
-    # complete.
+    printf "\nuse command:\n    'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";
+    [ "$1" ] && printf "    'docker cp [container_name]:$OUT_DIR/$1 .' get iso file.\n";
     printf "\ncomplete.\n\n";
     exit 0
 
