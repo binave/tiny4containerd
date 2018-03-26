@@ -10,6 +10,7 @@ for i in `seq 1 $((${#IMPORT[@]} - 1))`; do . $THIS_DIR/import/${IMPORT[$i]}; do
 _main() {
     # test complete, then pack it
     [ -f $ROOTFS_DIR/usr/local/bin/docker ] && {
+        _apply_rootfs;
         _build_iso $@;
         return $?
     };
@@ -40,6 +41,7 @@ _main() {
     _install bc;                _message_queue --put "_make_kernel"; # this may use most time
     _install cpio squashfs-tools;    _message_queue --put "_undep";
     _message_queue --put "_make_libcap2";
+    _message_queue --put "_modify_config";
     _message_queue --put "_apply_rootfs";
 
     _message_queue --destroy;
@@ -70,12 +72,8 @@ _main() {
     # test queue error
     [ -s $WORK_DIR/.error ] && return 1;
 
-    echo "-------------- addgroup --------------------------";
-    # for dockerd: root map user
-    # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
-    chroot $ROOTFS_DIR sh -xc 'addgroup -S dockremap && adduser -S -G dockremap dockremap';
-    echo "dockremap:165536:65536" | tee $ROOTFS_DIR/etc/subgid > $ROOTFS_DIR/etc/subuid;
-    chroot $ROOTFS_DIR addgroup -S docker;
+    _refreshe;
+    _add_group;
 
     # drop user: tc
     # sed -i 's/staff:.*/&tc/' $ROOTFS_DIR/etc/group;
@@ -83,7 +81,9 @@ _main() {
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;
-    _untar $CELLAR_DIR/docker- $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
+    _untar \
+        $CELLAR_DIR/docker- \
+        $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
         chroot $ROOTFS_DIR docker -v || return $(_err $LINENO); # test docker command
 
     # build iso

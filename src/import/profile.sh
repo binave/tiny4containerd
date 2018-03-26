@@ -1,6 +1,8 @@
 #!/bin/bash
 
 _modify_config() {
+    [ -s $WORK_DIR/.error ] && return 1;
+
     # acpi http://wiki.tinycorelinux.net/wiki:using_acpid_to_control_your_pc_buttons
     _mkcfg $ROOTFS_DIR/usr/local/etc/acpi/events/all'
 event=button/power*
@@ -55,12 +57,6 @@ ALL     ALL=(ALL) NOPASSWD: WRITE_LOG_CMDS
 
 ";
 
-    _mkcfg -$ROOTFS_DIR/init'
-#!/bin/sh
-exec /sbin/init
-';
-    chmod +x $ROOTFS_DIR/init;
-
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -f $ROOTFS_DIR/usr/bin/passwd;
 
@@ -70,27 +66,56 @@ exec /sbin/init
 
     # add some timezone files so we're explicit about being UTC
     echo 'UTC' | tee $ROOTFS_DIR/etc/timezone;
-    cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime;
+    cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime
 
-    # setup acpi config dir
-    # tcl6's sshd is compiled without `/usr/local/sbin` in the path, need `ip`, link it elsewhere
-    # Make some handy symlinks (so these things are easier to find), visudo, Subversion link, after /opt/bin in $PATH
-    ln -svT /usr/local/etc/acpi     $ROOTFS_DIR/etc/acpi;
-    ln -svT /usr/local/sbin/ip      $ROOTFS_DIR/usr/sbin/ip;
-    ln -fs /bin/vi              $ROOTFS_DIR/usr/bin/;
-    ln -fs /opt/bin/svn         $ROOTFS_DIR/usr/bin/;
-    ln -fs /opt/bin/svnadmin    $ROOTFS_DIR/usr/bin/;
-    ln -fs /opt/bin/svnlook     $ROOTFS_DIR/usr/bin/;
+}
 
-    # crond
-    rm -fr $ROOTFS_DIR/var/spool/cron/crontabs;
-    ln -fs /opt/tiny/etc/crontabs/  $ROOTFS_DIR/var/spool/cron/;
+_apply_rootfs(){
+    [ -s $WORK_DIR/.error ] && return 1;
 
-    # move dhcp.sh out of init.d as we're triggering it manually so its ready a bit faster
-    cp -v $ROOTFS_DIR/etc/init.d/dhcp.sh $ROOTFS_DIR/usr/local/etc/init.d;
-    echo : | tee $ROOTFS_DIR/etc/init.d/dhcp.sh;
+    # Copy our custom rootfs,
+    echo "---------- copy custom rootfs --------------------";
+    cd $THIS_DIR/rootfs;
+    local sf;
+    for sf in $(find . -type f);
+    do
+        sf="${sf#*/}"; # trim './' head
+        mkdir -pv "$ROOTFS_DIR/${sf%/*}";
+        if [ "${sf##*.}" == "sh" -a "${sf##*/}" != "bootsync.sh" ]; then
+            cp -fv "./$sf" "$ROOTFS_DIR/${sf%.*}"
+        else
+            cp -fv "./$sf" "$ROOTFS_DIR/${sf%/*}"
+        fi
+    done
+    cd $STATE_DIR;
+
+
+    _mkcfg -$ROOTFS_DIR/init'
+#!/bin/sh
+exec /sbin/init
+';
 
     # Make sure init scripts are executable
-    find $ROOTFS_DIR/usr/local/{,s}bin $ROOTFS_DIR/etc/init.d -type f -exec chmod -c +x '{}' +
+    find \
+        $ROOTFS_DIR/init\
+        $ROOTFS_DIR/usr/local/{,s}bin \
+        $ROOTFS_DIR/etc/init.d \
+        -type f -exec chmod -c +x '{}' +
+
+}
+
+_add_group() {
+    [ -s $WORK_DIR/.error ] && return 1;
+    echo "-------------- addgroup --------------------------";
+    # for dockerd: root map user
+    # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
+    chroot $ROOTFS_DIR sh -xc '
+        addgroup -S dockremap && \
+        adduser -S -G dockremap dockremap
+    ';
+    echo "dockremap:165536:65536" | \
+        tee $ROOTFS_DIR/etc/subgid > $ROOTFS_DIR/etc/subuid;
+
+    chroot $ROOTFS_DIR addgroup -S docker
 
 }
