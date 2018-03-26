@@ -94,18 +94,20 @@ nobody:*:13509:0:99999:7:::
 #
 # This file MUST be edited with the 'visudo' command as root.
 #
-# See the man page for details on how to write a sudoers file.
-#
 
 # Host alias specification
 
-# User alias specification
-Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/bin/wtmp
-
 # Cmnd alias specification
+Cmnd_Alias WRITE_LOG_CMDS = /usr/local/sbin/wtmp
+
+# User alias specification
 
 # User privilege specification
+ALL     ALL=PASSWD: ALL
+
 root    ALL=(ALL) ALL
+
+ALL     ALL=(ALL) NOPASSWD: WRITE_LOG_CMDS
 
 ";
 
@@ -126,7 +128,7 @@ fi
 [ -f /etc/sysconfig/language ] && . /etc/sysconfig/language;
 [ -f /etc/sysconfig/timezone ] && . /etc/sysconfig/timezone;
 
-sudo /usr/local/bin/wtmp;
+sudo /usr/local/sbin/wtmp;
 
 for i in /etc/profile.d/*.sh; do [ -r \$i ] && . \$i; done; unset i;
 
@@ -373,6 +375,8 @@ fi
     ln -fsv /var/subversion/bin/svn         $ROOTFS_DIR/usr/bin/;
     ln -fsv /var/subversion/bin/svnadmin    $ROOTFS_DIR/usr/bin/;
     ln -fsv /var/subversion/bin/svnlook     $ROOTFS_DIR/usr/bin/;
+
+    ln -fsv init.d/rcK                      $ROOTFS_DIR/etc/rc.shutdown;
 
     # for visudo
     ln -fsv $(readlink $ROOTFS_DIR/usr/bin/readlink)    $ROOTFS_DIR/usr/bin/vi;

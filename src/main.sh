@@ -46,6 +46,10 @@ _main() {
     _last_version curl_version      $CURL_DOWNLOAD      "'xz\"'"                    '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
     _last_version iana_etc_version  $IANA_ETC           "'iana-etc-.*bz2\"'"        '-F[-\"]'       "'{print \$6}'" || return $(_err $LINENO);
     # _last_version tz_version        $TZ_DATA            "'tzdata[0-9].*.gz\"'"      '-F[\"]'        "'{print \$2}'" || return $(_err $LINENO);
+    # APR_DOWNLOAD=$(curl -L $APR_CGI_DOWNLOAD 2>/dev/null | grep 'The currently selected mirror is' | awk -F[\>\<] '{print $3}');
+    # _last_version arp_version       $APR_DOWNLOAD/apr   "'apr-[0-9].*.tar.bz2\"'"   '-F[-\"]'       "'{print \$5}'" || return $(_err $LINENO);
+    # _last_version arp_util_version  $APR_DOWNLOAD/apr   "'apr-u.*.tar.bz2\"'"       '-F[-\"]'       "'{print \$6}'" || return $(_err $LINENO);
+    # _last_version svn_version       $APR_DOWNLOAD/subversion    "'sion-.*.bz2\"'"   '-F[-\"]'       "'{print \$5}'" || return $(_err $LINENO);
     # get docker stable version
     _last_version docker_version    $DOCKER_DOWNLOAD    docker-                     '-F[-\"]'       "'{print \$3\"-\"\$4}'" || return $(_err $LINENO);
 
@@ -93,6 +97,7 @@ _main() {
     _message_queue --put "_make_sudo";
     _message_queue --put "_make_e2fsprogs";
     _message_queue --put "_make_curl";
+    # _message_queue --put "_make_subversion";
     _message_queue --put "__make_libcap2";
 
     # add file
@@ -131,6 +136,7 @@ _main() {
         $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
         $IANA_ETC-$iana_etc_version.tar.bz2 \
         $DOCKER_DOWNLOAD/docker-$docker_version.tgz;
+        # $SQLITE_DOWNLOAD/$(curl -L $SQLITE_DOWNLOAD/download.html 2>/dev/null | grep '\/sqlite-ama' | awk -F[\'] '{print $4}') \
         # $TZ_DATA/tzdata$tz_version.tar.gz \
         # $PROCPS_DOWNLOAD/procps-ng-$procps_version.tar.xz \
     do
@@ -154,10 +160,10 @@ _main() {
 
     # Generate modules.dep
     find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
-    [ "$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+    [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
         ln -sTv $kernel_version$CONFIG_LOCALVERSION $ROOTFS_DIR/lib/modules/`uname -r`;
     chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
-    [ "$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+    [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
         rm -v $ROOTFS_DIR/lib/modules/`uname -r`;
 
     # create sshd key

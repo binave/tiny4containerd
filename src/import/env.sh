@@ -61,6 +61,9 @@ SUDO_DOWNLOAD=http://www.sudo.ws/dist;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
 E2FSPROGS_DOWNLOAD=$KERNEL_PUB/linux/kernel/people/tytso/e2fsprogs;
 LIBCAP2_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
+APR_CGI_DOWNLOAD=http://apr.apache.org/download.cgi;
+SQLITE_DOWNLOAD=http://www.sqlite.org;
+
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64; # https://docs.docker.com/install/linux/docker-ce/binaries/#prerequisites
 # PERL5_DOWNLOAD=http://www.cpan.org/src/5.0;
 

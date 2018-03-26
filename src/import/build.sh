@@ -517,6 +517,35 @@ _make_curl() {
     ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libcurl.so) $ROOTFS_DIR/usr/lib/libcurl.so
 }
 
+# [need]: expat2-dev
+_make_subversion() {
+    _wait4 apr-[0-9] || return $(_err $LINENO 3);
+    _try_patch apr-[0-9];
+    sed -i 's/\$RM "\$cfgfile"/# &/' ./configure
+    ./configure \
+        --prefix=/usr || return $(_err $LINENO 3);
+    make && make DESTDIR=$OUT_DIR/extapp install;
+
+    # tce-load -wi expat2-dev
+    _wait4 apr-util- || return $(_err $LINENO 3);
+    _try_patch apr-util-;
+    ./configure \
+        --prefix=/usr \
+        --with-apr=$OUT_DIR/extapp/usr || return $(_err $LINENO 3);
+    make && make DESTDIR=$OUT_DIR/extapp install;
+
+    _wait4 subversion- || return $(_err $LINENO 3);
+    _try_patch subversion-;
+    unzip $CELLAR_DIR/subversion-*;
+    mv -fv sqlite-amalgamation-* sqlite-amalgamation;
+    ./configure \
+        --prefix=/usr \
+        --with-apr=$OUT_DIR/extapp/usr \
+        --with-apr-util=$OUT_DIR/extapp/usr || return $(_err $LINENO 3);
+    make && make $OUT_DIR/extapp/usr install
+
+}
+
 __make_libcap2() {
     [ -s $ROOTFS_DIR/usr/lib/libcap.so ] && { printf "[WARN] skip make 'libcap2'\n"; return 0; };
 
