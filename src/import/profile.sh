@@ -19,31 +19,10 @@ net.ipv4.ip_forward=1
     # reset PS1
     sed -i 's/\\w/\\W/g;s/\/apps/\/opt/' $ROOTFS_DIR/etc/profile $ROOTFS_DIR/etc/skel/.profile;
     _mkcfg +$ROOTFS_DIR/etc/profile"
-sudo /usr/local/bin/wtmp
+sudo /usr/local/sbin/wtmp
 export TERM=xterm TMOUT=300
 readonly TMOUT
 ";
-
-    # insert shutdown command
-    sed -i ':a;N;$!ba;s/# Sync.*-9 $K5_SKIP/STAMP=`date +%Y%m%d`\
-LOG_DIR=\/log\/tiny\/${STAMP:0:6}\
-mkdir -p $LOG_DIR\
-\n{\n\
-    printf "\\n\\n[`date`]\\n"\n\
-    # stop container daemon\
-    \/usr\/local\/sbin\/containerd stop\n\
-    # shutdown script\
-    find \/opt\/tiny\/etc\/init.d -type f -perm \/u+x -name "K*.sh" -exec \/bin\/sh -c {} \\\;\n\
-    \/usr\/local\/bin\/wtmp\n\
-    # PID USER COMMAND\
-    ps -ef | grep "crond\\|monitor\\|ntpd\\|sshd\\|udevd" | awk "{print \\"kill \\"\\$1}" | sh 2>\/dev\/null\
-\n} 2>\&1 \| tee -a $LOG_DIR\/shut_$STAMP.log\n\
-unset LOG_DIR STAMP\n\
-# Sync all filesystems.\
-sync; sleep 1; sync; sleep 1\n\
-# Unload disk\
-\/usr\/local\/sbin\/mdisk destroy\
-/;s/apps/opt/g' $ROOTFS_DIR/etc/init.d/rc.shutdown;
 
     # unset CMDLINE
     printf "\nunset CMDLINE\n" | tee -a $ROOTFS_DIR/etc/init.d/tc-functions >> $ROOTFS_DIR/usr/bin/filetool.sh;
@@ -56,10 +35,25 @@ sync; sleep 1; sync; sleep 1\n\
     # ln: /usr/local/etc/ssl/ca-bundle.crt: File exists
     # $ROOTFS_DIR/usr/local/tce.installed/ca-certificates
 
-    # password
-    sed -i "s/^tc.*//;/# Cmnd alias specification/i\
-Cmnd_Alias WRITE_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/bin/wtmp\n\
-\n" $ROOTFS_DIR/etc/sudoers;
+    _mkcfg -$ROOTFS_DIR/etc/sudoers"
+#
+# This file MUST be edited with the 'visudo' command as root.
+#
+
+# Host alias specification
+
+# Cmnd alias specification
+Cmnd_Alias WRITE_LOG_CMDS = /usr/bin/tee /etc/sysconfig/backup, /usr/local/sbin/wtmp
+
+# User alias specification
+
+# User privilege specification
+ALL     ALL=PASSWD: ALL
+root    ALL=(ALL) ALL
+
+ALL     ALL=(ALL) NOPASSWD: WRITE_LOG_CMDS
+
+";
 
     _mkcfg -$ROOTFS_DIR/init'
 #!/bin/sh

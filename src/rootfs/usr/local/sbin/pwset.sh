@@ -41,7 +41,7 @@ do
     /usr/bin/awk -F# '{print $1}' /etc/group | /usr/bin/awk '{print $1}' | \
         /bin/grep -q ^$group: || {
             /usr/sbin/addgroup -S $group && is_add_group=true
-    };
+        };
 
     # add user
     if /usr/bin/id $user >/dev/null 2>&1; then
@@ -53,17 +53,25 @@ do
     # update password
     printf "$user:$passwd" | /usr/sbin/chpasswd -e 2>&1 | \
         /bin/grep -q 'password.*changed' || {
-        $is_add_user && /usr/sbin/deluser $user;
-        $is_add_group && /usr/sbin/delgroup $group;
+        $is_add_user && [ \
+            "$user" != "root" -a \
+            "$user" != "dockremap" -a \
+            "$user" != "nobody" \
+            "$user" != "lp" -a \
+        ] && /usr/sbin/deluser $user;
+        $is_add_group && [ \
+            "$user" != "root" -a \
+            "$user" != "dockremap" -a \
+            "$user" != "nogroup" -a \
+            "$user" != "lp" -a \
+            "$user" != "staff" -a \
+            "$user" != "docker" \
+        ] && /usr/sbin/delgroup $group;
         printf "Failed to change the password for '$user:$group'.\n" >&2;
         continue
     };
 
     printf "Successfully changed '$user:$group' password.\n";
-
-    # chang sudo
-    /bin/sed -i 's/NOPASSWD/PASSWD/g' /etc/sudoers && \
-        printf '\n%%staff ALL=(ALL) NOPASSWD: WRITE_CMDS\n' >> /etc/sudoers;
 
     # sudo -i, -s mast use root password
     [ "$user" == "root" ] && printf '\nDefaults rootpw\n\n' >> /etc/sudoers;

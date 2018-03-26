@@ -116,10 +116,10 @@ _apply_rootfs(){
     echo "----------- refresh modules ----------------------";
     # Generate modules.dep
     find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
-    [ "$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+    [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
         ln -sTv $kernel_version$CONFIG_LOCALVERSION $ROOTFS_DIR/lib/modules/`uname -r`;
     chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
-    [ "$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+    [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
         rm -v $ROOTFS_DIR/lib/modules/`uname -r`
 
 
