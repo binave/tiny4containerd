@@ -77,6 +77,7 @@ A:
 ### Q: 如果磁盘空间不足怎么办？
 A:
 > 使用 `mdisk` 命令的 `expand` 子命令进行分区扩容。需要在执行前安装好新的存储设备。
+> 不同场景：
 > <br/>在 `isolinux.cfg` 文件的 `APPEND` 字符后插入 `noraid` 字符，会忽略所有的磁盘阵列，仅将一个新硬盘加入现有的 LVM 中。
 > <br/>不使用 `noraid` 的情况下：为了保证分区对齐，`expand` 命令要求空闲硬盘能够组成的新阵列，必须与原有磁盘 RAID 等级相同，否则会失败。
 > <br/>`noraid` 是为了支持 `硬件 RAID 卡` 而设计的。通常情况下建议使用磁盘阵列以降低数据丢失的风险。
@@ -128,9 +129,9 @@ A:
 > |环境变量名称|默认值|说明|所属命令|备注
 > |---|---|---|---|---
 > |CROND_LOGLEVEL|8|crond 日志等级，0 为最详细|crond|
-> |PW_CONFIG|/var/tiny/etc/passwd|密码配置|pw
-> |IF_CONFIG|/var/tiny/etc/if.cfg|静态 ip 配置|ifinit|
-> |IF_PREFIX|eth|网卡前缀名称|ifinit, containerd|需要根据硬件进行调整
+> |PW_CONFIG|/var/tiny/etc/pw.cfg|密码配置|pwset
+> |IF_CONFIG|/var/tiny/etc/if.cfg|静态 ip 配置|ifset|
+> |IF_PREFIX|eth|网卡前缀名称|ifset, containerd|需要根据硬件进行调整
 > |CONTAINERD_ULIMITS|1048576|进程数上限|containerd|
 > |CONTAINERD_HOST|`-H tcp://0.0.0.0:2375`|监听 hosts|containerd|
 > |CONTAINERD_USER|tc|默认用户名|containerd|如果修改需要自己建立用户

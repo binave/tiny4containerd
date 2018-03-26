@@ -9,8 +9,10 @@ for i in `seq 1 $((${#IMPORT[@]} - 1))`; do . $THIS_DIR/import/${IMPORT[$i]}; do
 _main() {
     # test complete, then pack it
     [ -f $ROOTFS_DIR/usr/local/bin/docker ] && {
+        _create_dev;
         _create_etc;
         _apply_rootfs;
+        rm -fv $ROOTFS_DIR/etc/{*-,sysconfig/autologin};
         _build_iso $@;
         return $?
     };
@@ -154,39 +156,17 @@ _main() {
     # test queue error
     [ -s $WORK_DIR/.error ] && return 1;
 
-    echo " -------------- run chroot ------------------------";
-    # refresh libc cache
-    chroot $ROOTFS_DIR ldconfig || return $(_err $LINENO);
-
-    # Generate modules.dep
-    find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
-    [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
-        ln -sTv $kernel_version$CONFIG_LOCALVERSION $ROOTFS_DIR/lib/modules/`uname -r`;
-    chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
-    [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
-        rm -v $ROOTFS_DIR/lib/modules/`uname -r`;
-
-    # create sshd key
-    chroot $ROOTFS_DIR ssh-keygen -A || return $(_err $LINENO);
-
-    echo "-------------- addgroup --------------------------";
-    # for dockerd: root map user
-    # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
-    chroot $ROOTFS_DIR sh -xc 'addgroup -S dockremap && adduser -S -G dockremap dockremap';
-    echo "dockremap:165536:65536" | tee $ROOTFS_DIR/etc/subgid > $ROOTFS_DIR/etc/subuid;
-    chroot $ROOTFS_DIR addgroup -S docker;
-
-    echo "--------------- adduser --------------------------";
-    # add user: tc
-    local add_user=tc;
-    chroot $ROOTFS_DIR sh -xc "adduser -s /bin/sh -G staff -D $add_user && \
-        addgroup $add_user docker && \
-        printf $add_user:tcuser | /usr/sbin/chpasswd -m";
-	printf "$add_user\tALL=NOPASSWD: ALL\n" >> $ROOTFS_DIR/etc/sudoers.d/${add_user}_sudo;
+    _create_dev;
+    _refreshe;
+    _add_group;
+    _add_user tc;
+    _trim_rootfs;
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;
-    _untar $CELLAR_DIR/docker- $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
+    _untar \
+        $CELLAR_DIR/docker- \
+        $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
         chroot $ROOTFS_DIR docker -v || return $(_err $LINENO); # test docker command
 
     # build iso

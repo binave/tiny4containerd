@@ -88,7 +88,11 @@ _make_busybox() {
     make mrproper;
     cp -v $THIS_DIR/config/busybox_nosuid.cfg ./.config;
     make && make CONFIG_PREFIX=$ROOTFS_DIR install || \
-        return $(_err $LINENO 3)
+        return $(_err $LINENO 3);
+
+    # initrd.img
+    ln -fsv bin/busybox     $ROOTFS_DIR/linuxrc
+
 }
 
 # for 'openssl' build, 'openssh' runtime
@@ -416,7 +420,7 @@ _make_sshfs() {
 
 # for docker, [need]: ncurses-dev
 _make_procps() {
-    [ -s $ROOTFS_DIR/bin/./ps ] && { printf "Skip 'sudo'\n"; return 0; };
+    [ -s $ROOTFS_DIR/bin/./ps ] && { printf "Skip 'procps'\n"; return 0; };
 
     _wait4 procps-ng- || return $(_err $LINENO 3);
     _try_patch procps-ng-;
@@ -473,7 +477,11 @@ _make_sudo() {
         --with-env-editor \
         --with-passprompt="[sudo] password for %p: " || return $(_err $LINENO 3);
 
-    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3)
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
+
+    # after build busybox
+    ln -fsv $(readlink $ROOTFS_DIR/usr/bin/readlink)    $ROOTFS_DIR/usr/bin/vi
+
 }
 
 _make_e2fsprogs() {
@@ -542,7 +550,11 @@ _make_subversion() {
         --prefix=/usr \
         --with-apr=$OUT_DIR/extapp/usr \
         --with-apr-util=$OUT_DIR/extapp/usr || return $(_err $LINENO 3);
-    make && make $OUT_DIR/extapp/usr install
+    make && make $OUT_DIR/extapp/usr install;
+
+    ln -fsv /var/subversion/bin/svn         $ROOTFS_DIR/usr/bin/;
+    ln -fsv /var/subversion/bin/svnadmin    $ROOTFS_DIR/usr/bin/;
+    ln -fsv /var/subversion/bin/svnlook     $ROOTFS_DIR/usr/bin/
 
 }
 
@@ -567,6 +579,24 @@ __make_libcap2() {
     ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libcap.so) $ROOTFS_DIR/usr/lib/libcap.so
 }
 
+_refreshe() {
+    echo " --------------- refreshe -------------------------";
+    # refresh libc cache
+    chroot $ROOTFS_DIR ldconfig || return $(_err $LINENO);
+
+    # Generate modules.dep
+    find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
+    [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+        ln -sTv $kernel_version$CONFIG_LOCALVERSION $ROOTFS_DIR/lib/modules/`uname -r`;
+    chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
+    [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+        rm -v $ROOTFS_DIR/lib/modules/`uname -r`;
+
+    # create sshd key
+    chroot $ROOTFS_DIR ssh-keygen -A || return $(_err $LINENO);
+
+}
+
 # It builds an image that can be used as an ISO *and* a disk image.
 # but read only...
 _build_iso() {
@@ -574,27 +604,6 @@ _build_iso() {
         printf "\n[WARN] skip create iso.\n";
         return 0
     };
-
-    echo " --------------- trim file ------------------------";
-    # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
-    # clear var, drop passwd: /usr/bin/passwd -> /bin/busybox.suid, static library
-    rm -frv \
-        $ROOTFS_DIR/var/* \
-        $ROOTFS_DIR/usr/bin/passwd \
-        $ROOTFS_DIR/etc/{ssl/man,*-,sysconfig/autologin} \
-        $ROOTFS_DIR/usr/{,local/}include \
-        $ROOTFS_DIR/usr/{,local/}share/{info,man,doc} \
-        $ROOTFS_DIR/{,usr/}lib/lib*.{,l}a;
-
-    # '/*' is necessary !
-    find $ROOTFS_DIR/usr/share/locale/* \
-        $ROOTFS_DIR/usr/share/i18n/locales/* \
-        $ROOTFS_DIR/usr/share/i18n/charmaps/* \
-        -maxdepth 1 \
-        ! -name "en*"   ! -name "eu*"   ! -name "ja*"   ! -name "ko*"   ! -name "uk*"   ! -name "zh_*" \
-        ! -name "ANSI_X3.*"     ! -name "BIG5*"     ! -name "GB*"   ! -name "ISO-8859-*" \
-        ! -name "JIS_*" ! -name "KOI*"  ! -name "UTF*"  ! -name "*.alias" \
-        -exec rm -frv {} +
 
     set ${1##*/}; # trim path
 
