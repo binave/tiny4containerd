@@ -31,9 +31,9 @@ _make_kernel() {
 
 _undep() {
     local dep;
-    for dep in $CELLAR_DIR/*.tcz;
+    for dep in $TCZ_DEPS;
     do
-        _wait4 ${dep##*/} $ROOTFS_DIR || return $(_err $LINENO 3);
+        _wait4 $CELLAR_DIR/$dep.tcz $ROOTFS_DIR || return $(_err $LINENO 3);
     done
 
     _hash $CELLAR_DIR/rootfs64.gz;
