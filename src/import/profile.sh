@@ -74,7 +74,7 @@ _apply_rootfs(){
     [ -s $WORK_DIR/.error ] && return 1;
 
     # Copy our custom rootfs,
-    echo "---------- copy custom rootfs --------------------";
+    echo " ---------- copy custom rootfs --------------------";
     cd $THIS_DIR/rootfs;
     local sf;
     for sf in $(find . -type f);
@@ -106,7 +106,7 @@ exec /sbin/init
 
 _add_group() {
     [ -s $WORK_DIR/.error ] && return 1;
-    echo "-------------- addgroup --------------------------";
+    echo " -------------- addgroup --------------------------";
     # for dockerd: root map user
     # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
     chroot $ROOTFS_DIR sh -xc '

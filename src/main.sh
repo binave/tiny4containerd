@@ -35,7 +35,7 @@ _main() {
     # Fetch the kernel sources
     _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz || return $(_err $LINENO);
 
-    echo "------------- put in queue -----------------------";
+    echo " ------------- put in queue -----------------------";
     _message_queue --init;
 
     _install bc;                _message_queue --put "_make_kernel"; # this may use most time

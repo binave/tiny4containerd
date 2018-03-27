@@ -39,7 +39,7 @@ TCZ_DEPS="
     iproute2 iptables
     sshfs-fuse glib2 fuse libffi
     lvm2 liblvm2 udev-lib readline
-    rsync libdb
+    rsync libdb popt
     tar acl attr
     xz liblzma
     pcre bzip2-lib

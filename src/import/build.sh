@@ -109,7 +109,7 @@ _make_libcap2(){
 _refreshe() {
     [ -s $WORK_DIR/.error ] && return 1;
 
-    echo "--------------- refreshe -------------------------";
+    echo " --------------- refreshe -------------------------";
     # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
     chroot $ROOTFS_DIR sh -xc 'ldconfig && \
     /usr/local/tce.installed/openssl && \
