@@ -36,9 +36,10 @@ TCL_REPO_DOWNLOAD=http://www.tinycorelinux.net/$TCL_MAJOR_VERSION.x/x86_64; # ti
 TCZ_DEPS="
     openssh openssl ncurses ncursesw
     git curl ca-certificates expat2
-    iproute2 iptables
+    iproute2 iptables db
     sshfs-fuse glib2 fuse libffi
     lvm2 liblvm2 udev-lib readline
+    cryptsetup libgcrypt libgpg-error
     rsync libdb popt
     tar acl attr
     xz liblzma
