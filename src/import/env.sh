@@ -2,6 +2,7 @@
 
 : ${TIMEOUT_SEC:=600};
 : ${TIMELAG_SEC:=5};
+: ${THREAD_COUNT:=2};
 
 : ${STATE_DIR:=$HOME};
 : ${ISO_DIR:=$STATE_DIR/iso};
@@ -11,8 +12,6 @@
 : ${KERNEL_MAJOR_VERSION:=4.9};
 : ${UTIL_LINUX_MAJOR_VERSION:=2.31};
 : ${GLIB_MAJOR_VERSION:=2.55};
-
-: ${THREAD_COUNT:=2};
 
 LOCK_DIR=$STATE_DIR/lock;
 ROOTFS_DIR=$STATE_DIR/rootfs;
@@ -54,9 +53,12 @@ GLIB_DOWNLOAD=http://ftp.gnome.org/pub/gnome/sources/glib;
 SSHFS_DOWNLOAD=https://github.com/libfuse/sshfs;
 LIBFUSE_DOWNLOAD=https://github.com/libfuse/libfuse;
 
-# tools
+# for docker
 GIT_DOWNLOAD=$KERNEL_PUB/software/scm/git;
+XZ_DOWNLOAD=https://tukaani.org/xz;
 # PROCPS_DOWNLOAD=https://jaist.dl.sourceforge.net/project/procps-ng/Production; # PROCPS_REPOSITORY=https://gitlab.com/procps-ng/procps.git; #
+
+# tools
 SUDO_DOWNLOAD=http://www.sudo.ws/dist;
 CURL_DOWNLOAD=https://curl.haxx.se/download;
 E2FSPROGS_DOWNLOAD=$KERNEL_PUB/linux/kernel/people/tytso/e2fsprogs;

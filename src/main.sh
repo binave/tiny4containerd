@@ -42,6 +42,7 @@ _main() {
     _last_version sshfs_version     $SSHFS_DOWNLOAD/tags    tag-name                '-F[-_\>\<]'    "'{print \$5}'" || return $(_err $LINENO);
     _last_version libcap2_version   $LIBCAP2_DOWNLOAD   "'xz\"'"                    '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     # _last_version procps_version    $PROCPS_DOWNLOAD    "'\-ng-.*.tar.xz\"'"        '-F[-\"]'       "'{print \$10}'"|| return $(_err $LINENO);
+    _last_version xz_version        $XZ_DOWNLOAD        "'bz2\"'"                   '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version git_version       $GIT_DOWNLOAD       "'git-[0-9].*tar.xz'"       '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version sudo_version      $SUDO_DOWNLOAD      "'sudo-.*tar\\.gz\"'"       '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version e2fsprogs_version $E2FSPROGS_DOWNLOAD "'v.*/'"                    '-F[v/]'        "'{print \$2}'" || return $(_err $LINENO);
@@ -94,6 +95,7 @@ _main() {
     _install python-docutils;   _message_queue --put "_make_sshfs";
 
     # tools
+    _message_queue --put "_make_xz";
     _message_queue --put "_make_git";
     # _install ncurses-dev;       _message_queue --put "_make_procps";
     _message_queue --put "_make_sudo";
@@ -131,6 +133,7 @@ _main() {
         $NINJA_REPOSITORY.release \
         $LIBFUSE_DOWNLOAD/archive/fuse-$libfuse_version.tar.gz \
         $SSHFS_DOWNLOAD/archive/sshfs-$sshfs_version.tar.gz \
+        $XZ_DOWNLOAD/xz-$xz_version.tar.bz2 \
         $GIT_DOWNLOAD/git-$git_version.tar.xz \
         $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz \
         $E2FSPROGS_DOWNLOAD/v$e2fsprogs_version/e2fsprogs-$e2fsprogs_version.tar.xz \

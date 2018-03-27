@@ -443,6 +443,24 @@ _make_procps() {
 
 }
 
+# for docker
+_make_xz() {
+    [ -s $ROOTFS_DIR/bin/xz ] && { printf "Skip 'xz'\n"; return 0; };
+
+    _wait4 xz- || return $(_err $LINENO 3);
+    _try_patch xz-;
+
+    ./configure \
+        --prefix=/usr \
+        --disable-static || return $(_err $LINENO 3);
+
+    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
+
+    mv -v $ROOTFS_DIR/usr/bin/{lzma,unlzma,lzcat,xz,unxz,xzcat} $ROOTFS_DIR/bin;
+    mv -v $ROOTFS_DIR/usr/lib/liblzma.so.* $ROOTFS_DIR/lib;
+    ln -svf ../../lib/$(readlink $ROOTFS_DIR/usr/lib/liblzma.so) $ROOTFS_DIR/usr/lib/liblzma.so
+}
+
 # for docker, http://linuxfromscratch.org/blfs/view/stable/general/git.html
 _make_git() {
     [ -s $ROOTFS_DIR/usr/bin/git ] && { printf "[WARN] skip make 'git'\n"; return 0; };

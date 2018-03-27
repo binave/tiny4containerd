@@ -4,6 +4,7 @@ FROM debian:stretch-slim
 
 # ENV TIMEOUT_SEC 600
 # ENV TIMELAG_SEC 5
+# ENV THREAD_COUNT 2
 
 ENV STATE_DIR /tmp
 # ENV ISO_DIR $STATE_DIR/iso
@@ -20,7 +21,7 @@ COPY src $STATE_DIR/src
 
 # command run in container, can not access local path.
 RUN bash $STATE_DIR/src/main.sh tiny4containerd.iso; \
-    cat $STATE_DIR/iso/version >/dev/null 2>&1 || exit 1
+    test -f $OUT_DIR/tiny4containerd.iso || exit 1
 
 # print tiny4containerd.is to stdout
 CMD ["sh", "-c", "[ -t 1 ] && exec bash || exec cat /out/tiny4containerd.iso"]
