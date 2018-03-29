@@ -77,14 +77,14 @@ _main() {
 
     # drop user: tc
     # sed -i 's/staff:.*/&tc/' $ROOTFS_DIR/etc/group;
-    _ chroot $ROOTFS_DIR deluser tc 2>/dev/null;
+    chroot $ROOTFS_DIR deluser tc 2>/dev/null;
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;
     _untar \
         $CELLAR_DIR/docker- \
         $ROOTFS_DIR/usr/local/bin --strip-components=1 && \
-        _ chroot $ROOTFS_DIR docker -v || return $(_err $LINENO); # test docker command
+        chroot $ROOTFS_DIR docker -v || return $(_err $LINENO); # test docker command
 
     # build iso
     _build_iso $@;

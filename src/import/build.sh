@@ -40,8 +40,8 @@ _undep() {
     cd $ROOTFS_DIR;
 
     # Install Tiny Core Linux rootfs
-    _ zcat $CELLAR_DIR/rootfs64.gz | \
-        _ cpio \
+    zcat $CELLAR_DIR/rootfs64.gz | \
+        cpio \
             --nonmatching \
             --verbose \
             --extract \
@@ -53,7 +53,7 @@ _undep() {
 
     # move dhcp.sh out of init.d as we're triggering it manually so its ready a bit faster
     cp -v $ROOTFS_DIR/etc/init.d/dhcp.sh $ROOTFS_DIR/usr/local/etc/init.d;
-    echo : | _ tee $ROOTFS_DIR/etc/init.d/dhcp.sh;
+    echo : | tee $ROOTFS_DIR/etc/init.d/dhcp.sh;
 
     # crond
     rm -fr $ROOTFS_DIR/var/spool/cron/crontabs;
@@ -111,16 +111,16 @@ _refreshe() {
 
     echo " --------------- refreshe -------------------------";
     # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
-    _ chroot $ROOTFS_DIR sh -xc 'ldconfig && \
+    chroot $ROOTFS_DIR sh -xc 'ldconfig && \
     /usr/local/tce.installed/openssl && \
     /usr/local/tce.installed/ca-certificates \
     ' || return $(_err $LINENO 3);
 
     # Generate modules.dep
-    _ find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
+    find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
     [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
         ln -sTv $kernel_version$CONFIG_LOCALVERSION $ROOTFS_DIR/lib/modules/`uname -r`;
-    _ chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
+    chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
     [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
         rm -v $ROOTFS_DIR/lib/modules/`uname -r`
 
@@ -143,8 +143,8 @@ _build_iso() {
     cd $ROOTFS_DIR || return $(_err $LINENO 3);
 
     # create initrd.img
-    find | _ cpio -o -H newc | \
-        _ xz -9 --format=lzma --verbose --verbose --threads=0 --extreme > \
+    find | cpio -o -H newc | \
+        xz -9 --format=lzma --verbose --verbose --threads=0 --extreme > \
         $ISO_DIR/boot/initrd.img || return $(_err $LINENO 3);
 
     _hash $ISO_DIR/boot/initrd.img;
@@ -157,7 +157,7 @@ _build_iso() {
         $ISO_DIR/boot/isolinux/;
 
     # Note: only "-isohybrid-mbr /..." is specific to xorriso.
-    _ xorriso \
+    xorriso \
         -publisher "Docker Inc." \
         -as mkisofs -l -J -R -V $LABEL \
         -no-emul-boot -boot-load-size 4 -boot-info-table \

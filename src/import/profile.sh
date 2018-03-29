@@ -62,10 +62,10 @@ ALL     ALL=(ALL) NOPASSWD: WRITE_LOG_CMDS
 
     # fix "su -"
     mkdir -p $ROOTFS_DIR/etc/sysconfig;
-    echo root | _ tee $ROOTFS_DIR/etc/sysconfig/superuser;
+    echo root | tee $ROOTFS_DIR/etc/sysconfig/superuser;
 
     # add some timezone files so we're explicit about being UTC
-    echo 'UTC' | _ tee $ROOTFS_DIR/etc/timezone;
+    echo 'UTC' | tee $ROOTFS_DIR/etc/timezone;
     cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime
 
 }
@@ -105,7 +105,7 @@ exec /sbin/init; # /etc/initta
 ';
 
     # Make sure init scripts are executable
-    _ find \
+    find \
         $ROOTFS_DIR/init\
         $ROOTFS_DIR/usr/local/{,s}bin \
         $ROOTFS_DIR/etc/init.d \
@@ -118,13 +118,13 @@ _add_group() {
     echo " -------------- addgroup --------------------------";
     # for dockerd: root map user
     # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
-    _ chroot $ROOTFS_DIR sh -xc '
+    chroot $ROOTFS_DIR sh -xc '
         addgroup -S dockremap && \
         adduser -S -G dockremap dockremap
     ';
     echo "dockremap:165536:65536" | \
-        _ tee $ROOTFS_DIR/etc/subgid > $ROOTFS_DIR/etc/subuid;
+        tee $ROOTFS_DIR/etc/subgid > $ROOTFS_DIR/etc/subuid;
 
-    _ chroot $ROOTFS_DIR addgroup -S docker
+    chroot $ROOTFS_DIR addgroup -S docker
 
 }
