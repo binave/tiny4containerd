@@ -88,8 +88,8 @@ _make_libcap2(){
     _wait4 libcap- || return $(_err $LINENO 3);
     _try_patch libcap-;
 
-    _ sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
-    _ sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
+    sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
+    sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
     mkdir -pv _install $ROOTFS_DIR/usr/local/lib;
 
     _ make && _ make \
