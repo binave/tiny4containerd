@@ -53,6 +53,8 @@ TCZ_DEPS="
     acpid
 ";
 
+[ $TCL_MAJOR_VERSION == 9 ] && TCZ_DEPS="$TCZ_DEPS ncursesw";
+
 # debian sources
 DEBIAN_SOURCE='deb http://deb.debian.org/debian stretch main
 deb http://deb.debian.org/debian stretch-updates main
