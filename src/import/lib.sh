@@ -29,6 +29,15 @@ _prefix() {
     fi
 }
 
+# set -x
+_() {
+    [ "$#" == 0 ] && return 0;
+    printf "Will execute: '\n";
+    echo "$@" | awk '{print "    " $0};fflush(stdout)';
+    printf "';\n";
+    "$@"
+}
+
 # Message Queue
 _message_queue() {
     case $1 in

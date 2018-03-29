@@ -14,10 +14,10 @@ _make_kernel() {
     cp -v $THIS_DIR/config/kernel.cfg ./.config;
 
     # put in queue
-    make -j $CORES_COUNT bzImage && make -j $CORES_COUNT modules || return $(_err $LINENO 3)
+    _ make -j $CORES_COUNT bzImage && _ make -j $CORES_COUNT modules || return $(_err $LINENO 3)
 
     # Install the kernel modules in $ROOTFS_DIR
-    make INSTALL_MOD_PATH=$ROOTFS_DIR modules_install firmware_install || return $(_err $LINENO 3);
+    _ make INSTALL_MOD_PATH=$ROOTFS_DIR modules_install firmware_install || return $(_err $LINENO 3);
 
     # remove empty link
     rm -fv $ROOTFS_DIR/lib/modules/[0-9]*/{build,source};
@@ -40,8 +40,8 @@ _undep() {
     cd $ROOTFS_DIR;
 
     # Install Tiny Core Linux rootfs
-    zcat $CELLAR_DIR/rootfs64.gz | \
-        cpio \
+    _ zcat $CELLAR_DIR/rootfs64.gz | \
+        _ cpio \
             --nonmatching \
             --verbose \
             --extract \
@@ -53,7 +53,7 @@ _undep() {
 
     # move dhcp.sh out of init.d as we're triggering it manually so its ready a bit faster
     cp -v $ROOTFS_DIR/etc/init.d/dhcp.sh $ROOTFS_DIR/usr/local/etc/init.d;
-    echo : | tee $ROOTFS_DIR/etc/init.d/dhcp.sh;
+    echo : | _ tee $ROOTFS_DIR/etc/init.d/dhcp.sh;
 
     # crond
     rm -fr $ROOTFS_DIR/var/spool/cron/crontabs;
@@ -88,11 +88,11 @@ _make_libcap2(){
     _wait4 libcap- || return $(_err $LINENO 3);
     _try_patch libcap-;
 
-    sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
-    sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
+    _ sed -i '/install.*STALIBNAME/d' Makefile; # Prevent a static library from being installed
+    _ sed -i 's/LIBATTR := yes/LIBATTR := no/' Make.Rules;
     mkdir -pv _install $ROOTFS_DIR/usr/local/lib;
 
-    make && make \
+    _ make && _ make \
         RAISE_SETFCAP=no \
         lib=lib \
         prefix=$PWD/_install \
@@ -111,16 +111,16 @@ _refreshe() {
 
     echo " --------------- refreshe -------------------------";
     # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
-    chroot $ROOTFS_DIR sh -xc 'ldconfig && \
+    _ chroot $ROOTFS_DIR sh -xc 'ldconfig && \
     /usr/local/tce.installed/openssl && \
     /usr/local/tce.installed/ca-certificates \
     ' || return $(_err $LINENO 3);
 
     # Generate modules.dep
-    find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
+    _ find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
     [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
         ln -sTv $kernel_version$CONFIG_LOCALVERSION $ROOTFS_DIR/lib/modules/`uname -r`;
-    chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
+    _ chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
     [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
         rm -v $ROOTFS_DIR/lib/modules/`uname -r`
 
@@ -143,8 +143,8 @@ _build_iso() {
     cd $ROOTFS_DIR || return $(_err $LINENO 3);
 
     # create initrd.img
-    find | cpio -o -H newc | \
-        xz -9 --format=lzma --verbose --verbose --threads=0 --extreme > \
+    find | _ cpio -o -H newc | \
+        _ xz -9 --format=lzma --verbose --verbose --threads=0 --extreme > \
         $ISO_DIR/boot/initrd.img || return $(_err $LINENO 3);
 
     _hash $ISO_DIR/boot/initrd.img;
@@ -157,7 +157,7 @@ _build_iso() {
         $ISO_DIR/boot/isolinux/;
 
     # Note: only "-isohybrid-mbr /..." is specific to xorriso.
-    xorriso \
+    _ xorriso \
         -publisher "Docker Inc." \
         -as mkisofs -l -J -R -V $LABEL \
         -no-emul-boot -boot-load-size 4 -boot-info-table \
