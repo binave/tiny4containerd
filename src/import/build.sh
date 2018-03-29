@@ -112,7 +112,7 @@ __make_zlib() {
     ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libz.so) $ROOTFS_DIR/usr/lib/libz.so
 }
 
-# [need]: 'zlib'
+# [need]: 'zlib', https://wiki.openssl.org/index.php/Compilation_and_Installation
 _make_openssl() {
     [ -s $ROOTFS_DIR/usr/bin/openssl ] && { printf "[WARN] skip make 'openssl'\n"; return 0; };
 
@@ -122,11 +122,10 @@ _make_openssl() {
     ./config \
         --prefix=/usr \
         --openssldir=/etc/ssl \
-        --install_prefix=$ROOTFS_DIR \
         shared zlib-dynamic || return $(_err $LINENO 3);
 
     sed -i 's/-O3//g' ./Makefile;
-    _ make && _ make install || return $(_err $LINENO 3);
+    _ make && _ make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
 
     # for 'openssh' build
     cp -adv $ROOTFS_DIR/usr/include/openssl /usr/include;
