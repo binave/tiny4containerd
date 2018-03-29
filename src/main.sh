@@ -188,7 +188,7 @@ printf "mkdir -pv$(set | grep _DIR= | awk -F= '{printf " "$2}')" | bash;
 
     # log path
     printf "\nuse command:\n    'docker cp [container_name]:$OUT_DIR/build.log .' get log file.\n";
-    [ "$1" ] && printf "    'docker cp [container_name]:$OUT_DIR/$1 .' get iso file.\n";
+    [ -f "$OUT_DIR/$1" ] && printf "    'docker cp [container_name]:$OUT_DIR/$1 .' get iso file.\n";
     printf "\ncomplete.\n\n";
     exit 0
 
