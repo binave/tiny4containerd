@@ -34,7 +34,7 @@ TCL_REPO_DOWNLOAD=http://www.tinycorelinux.net/$TCL_MAJOR_VERSION.x/x86_64; # ti
 
 # fork: https://github.com/boot2docker/boot2docker/blob/master/Dockerfile
 TCZ_DEPS="
-    openssh openssl ncurses ncursesw
+    openssh openssl ncurses
     git curl ca-certificates expat2
     iproute2 iptables
     sshfs-fuse glib2 fuse libffi
