@@ -11,7 +11,7 @@
 
 : ${KERNEL_MAJOR_VERSION:=4.9};
 : ${GLIB_MAJOR_VERSION:=2.55};
-: ${OPENSSL_VERSION:=1.1.0h};
+: ${OPENSSL_VERSION:=1.0.2o}; # openssh: configure: error: OpenSSL >= 1.1.0 is not yet supported
 : ${UTIL_LINUX_MAJOR_VERSION:=2.31};
 
 LOCK_DIR=$STATE_DIR/lock;
