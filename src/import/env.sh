@@ -11,7 +11,7 @@
 
 : ${KERNEL_MAJOR_VERSION:=4.9};
 # : ${LIBCAP2_VERSION:=2.22};
-: ${TCL_MAJOR_VERSION:=9};
+: ${TCL_MAJOR_VERSION:=8};
 
 LOCK_DIR=$STATE_DIR/lock;
 ROOTFS_DIR=$STATE_DIR/rootfs;
@@ -36,10 +36,9 @@ TCL_REPO_DOWNLOAD=http://www.tinycorelinux.net/$TCL_MAJOR_VERSION.x/x86_64; # ti
 TCZ_DEPS="
     openssh openssl ncurses ncursesw
     git curl ca-certificates expat2
-    iproute2 iptables db
+    iproute2 iptables
     sshfs-fuse glib2 fuse libffi
     lvm2 liblvm2 udev-lib readline
-    cryptsetup libgcrypt libgpg-error
     rsync libdb popt
     tar acl attr
     xz liblzma
@@ -67,16 +66,5 @@ deb-src http://ftp.cn.debian.org/debian stretch-updates main contrib non-free
 deb http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-free
 deb-src http://ftp.cn.debian.org/debian-security stretch/updates main contrib non-free
 ';
-
-# APT_GET_LIST_MAKE="
-#     automake
-#     bc bsdtar build-essential
-#     curl
-#     kmod
-#     libc6 libc6-dev
-#     pkg-config
-#     squashfs-tools
-#     unzip
-# ";
 
 eval $(grep 'CONFIG_LOCALVERSION=' $THIS_DIR/config/kernel.cfg) || return $(_err $LINENO 1)
