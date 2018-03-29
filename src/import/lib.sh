@@ -157,6 +157,7 @@ _mkcfg() {
         return 1
     else
         mkdir -p ${file_path%/*};
+        printf "\n";
         if [ "$args" ]; then
             printf "[INFO] will appand"
         elif $force; then

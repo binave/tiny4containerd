@@ -81,11 +81,7 @@ _start() {
     ulimit -n $CONTAINERD_ULIMITS;
     ulimit -p $CONTAINERD_ULIMITS;
 
-    printf %s "------------------------------
-/usr/local/bin/dockerd --data-root \"$CONTAINERD_DIR\" -H unix:// $CONTAINERD_HOST $EXTRA_ARGS >> \"$CONTAINERD_LOG\"
-" >> "$CONTAINERD_LOG";
-
-    /usr/local/bin/dockerd --data-root "$CONTAINERD_DIR" -H unix:// $CONTAINERD_HOST $EXTRA_ARGS >> "$CONTAINERD_LOG" 2>&1 &
+    _containerd --data-root "$CONTAINERD_DIR" -H unix:// $CONTAINERD_HOST $EXTRA_ARGS;
 
     [ $? == 0 ] || return 1
 
@@ -104,6 +100,14 @@ _srv_ext_var() {
         done
     done
     printf "\nextendedKeyUsage = serverAuth\n"
+}
+
+_containerd() {
+    {
+        printf "time=\"$(date -u +%FT%TZ)\" level=info msg=\"startup parameters\" /usr/local/bin/dockerd ";
+        echo "$@";
+        /usr/local/bin/dockerd "$@" &
+    } >> "$CONTAINERD_LOG" 2>&1
 }
 
 # config: /home/*/.container_start
