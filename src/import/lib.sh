@@ -29,6 +29,15 @@ _prefix() {
     fi
 }
 
+# set -x
+_() {
+    [ "$#" == 0 ] && return 0;
+    printf "\nWill execute: '\n";
+    echo "$@" | awk '{print "    " $0};fflush(stdout)';
+    printf "' -> '$PWD'.\n\n";
+    "$@"
+}
+
 # Message Queue
 _message_queue() {
     case $1 in
@@ -157,15 +166,17 @@ _mkcfg() {
         return 1
     else
         mkdir -p ${file_path%/*};
+        printf "\nwill ";
         if [ "$args" ]; then
-            printf "[INFO] will appand"
+            printf "appand"
         elif $force; then
-            printf "[WARN] will override"
+            printf "OVERRIDE"
         else
-            printf "[INFO] will create"
+            printf "create"
         fi
-        printf " '$file_path'.\n";
-        printf %s "${@#*$LF}" | tee $args ${file_path}
+        printf " '$file_path' by: '\n";
+        echo "${@#*$LF}" | tee $args ${file_path} | awk '{print "    " $0};fflush(stdout)';
+        printf "';\n\n"
     fi
     return 0
 }

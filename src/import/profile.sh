@@ -132,10 +132,10 @@ rpc:        files
     # protocols, services
     _wait4 iana-etc- || return $(_err $LINENO 4);
     _try_patch iana-etc-;
-    make && make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 4);
+    _ make && _ make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 4);
 
     # hostname
-    printf "tiny2containerd\n" > $ROOTFS_DIR/etc/hostname;
+    printf "tiny2containerd\n" | tee $ROOTFS_DIR/etc/hostname;
 
     # host.conf
     _mkcfg $ROOTFS_DIR/etc/host.conf'
@@ -265,7 +265,7 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
 
     # fix "su -"
     mkdir -pv $ROOTFS_DIR/etc/sysconfig;
-    printf %s 'root' > $ROOTFS_DIR/etc/sysconfig/superuser;
+    printf %s 'root' | tee $ROOTFS_DIR/etc/sysconfig/superuser;
 
     # add some timezone files so we're explicit about being UTC
     printf %s 'UTC' | tee $ROOTFS_DIR/etc/timezone;
