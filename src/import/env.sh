@@ -10,8 +10,9 @@
 : ${CELLAR_DIR:=$STATE_DIR/cellar};
 
 : ${KERNEL_MAJOR_VERSION:=4.9};
-: ${UTIL_LINUX_MAJOR_VERSION:=2.31};
 : ${GLIB_MAJOR_VERSION:=2.55};
+: ${OPENSSL_VERSION:=1.1.0h};
+: ${UTIL_LINUX_MAJOR_VERSION:=2.31};
 
 LOCK_DIR=$STATE_DIR/lock;
 ROOTFS_DIR=$STATE_DIR/rootfs;
@@ -32,7 +33,6 @@ MAKE_CA=https://raw.githubusercontent.com/djlucas/make-ca/master/make-ca; # text
 CERTDATA_DOWNLOAD=http://anduin.linuxfromscratch.org/BLFS/other/certdata.txt;
 CA_CERTIFICATES_REPOSITORY=https://salsa.debian.org/debian/ca-certificates.git;
 ZLIB_DOWNLOAD=http://www.zlib.net;
-OPENSSL_VERSION=1.1.0h;
 OPENSSL_DOWNLOAD=https://www.openssl.org/source;
 OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable; # DROPBEAR_DOWNLOAD=https://matt.ucc.asn.au/dropbear;
 
