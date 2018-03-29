@@ -34,7 +34,7 @@ _() {
     [ "$#" == 0 ] && return 0;
     printf "Will execute: '\n";
     echo "$@" | awk '{print "    " $0};fflush(stdout)';
-    printf "';\n";
+    printf "' -> '$PWD'.\n";
     "$@"
 }
 
