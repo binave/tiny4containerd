@@ -10,6 +10,7 @@ for i in `seq 1 $((${#IMPORT[@]} - 1))`; do . $THIS_DIR/import/${IMPORT[$i]}; do
 _main() {
     # test complete, then pack it
     [ -f $ROOTFS_DIR/usr/local/bin/docker ] && {
+        _modify_config;
         _apply_rootfs;
         _build_iso $@;
         return $?

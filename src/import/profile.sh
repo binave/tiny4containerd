@@ -3,6 +3,14 @@
 _modify_config() {
     [ -s $WORK_DIR/.error ] && return 1;
 
+    _mkcfg -$ROOTFS_DIR/etc/fstab'
+# /etc/fstab
+proc            /proc        proc    defaults          0       0
+sysfs           /sys         sysfs   defaults          0       0
+devpts          /dev/pts     devpts  defaults          0       0
+tmpfs           /dev/shm     tmpfs   defaults          0       0
+';
+
     # acpi http://wiki.tinycorelinux.net/wiki:using_acpid_to_control_your_pc_buttons
     _mkcfg $ROOTFS_DIR/usr/local/etc/acpi/events/all'
 event=button/power*
@@ -57,16 +65,59 @@ ALL     ALL=(ALL) NOPASSWD: WRITE_LOG_CMDS
 
 ";
 
+    # profile
+    _mkcfg $ROOTFS_DIR/etc/profile"
+# /etc/profile: system-wide .profile file for the Bourne shells
+
+umask 022;
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
+if [ $(id -u) -eq 0 ]; then
+    PS1='\u@\h:\W\# '
+else
+    # Light green and blue colored prompt.
+    PS1='\e[1;32m\u@\h\e[0m:\e[1;34m\W\e[0m\$ '
+fi
+
+[ -f /etc/sysconfig/language ] && . /etc/sysconfig/language;
+[ -f /etc/sysconfig/timezone ] && . /etc/sysconfig/timezone;
+
+sudo /usr/local/sbin/wtmp;
+
+for i in /etc/profile.d/*.sh; do [ -r \$i ] && . \$i; done; unset i;
+
+export LANG LC_ALL PATH PS1 TERM=xterm TMOUT=300 TZ;
+
+readonly TMOUT
+
+";
+
+    # .profile
+    _mkcfg $ROOTFS_DIR/etc/skel/.profile"
+# ~/.profile: Executed by Bourne-compatible login SHells.
+
+PS1='\u@\h:\W\$ '
+PAGER='less -EM'
+MANPAGER='less -isR'
+EDITOR=vi
+FLWM_TITLEBAR_COLOR='58:7D:AA'
+
+export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
+
+[ -f \$HOME/.ashrc ] && . \$HOME/.ashrc
+
+";
+
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
-    rm -f $ROOTFS_DIR/usr/bin/passwd;
+    rm -fv $ROOTFS_DIR/usr/bin/passwd;
 
     # fix "su -"
-    mkdir -p $ROOTFS_DIR/etc/sysconfig;
+    mkdir -pv $ROOTFS_DIR/etc/sysconfig;
     echo root | tee $ROOTFS_DIR/etc/sysconfig/superuser;
 
     # add some timezone files so we're explicit about being UTC
     echo 'UTC' | tee $ROOTFS_DIR/etc/timezone;
-    cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime
+    cp -Lv /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime
 
 }
 

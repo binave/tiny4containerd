@@ -1,7 +1,7 @@
 # /etc/inittab: init configuration for busybox init.
 # Boot-time system configuration/initialization script.
 #
-::sysinit:/etc/init.d/rcS
+::sysinit:/etc/init.d/rc S
 
 # /sbin/getty respawn shell invocations for selected ttys.
 tty1::respawn:/sbin/getty -nl /sbin/autologin 38400 tty1
@@ -13,7 +13,7 @@ tty1::respawn:/sbin/getty -nl /sbin/autologin 38400 tty1
 
 # Stuff to do when restarting the init
 # process, or before rebooting.
-::restart:/etc/init.d/rcK
+::restart:/etc/init.d/rc K
 ::restart:/sbin/init
 ::ctrlaltdel:/sbin/reboot
-::shutdown:/etc/init.d/rcK
+::shutdown:/etc/init.d/rc K

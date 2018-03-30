@@ -19,14 +19,12 @@
 # import settings from env (e.g. HTTP_PROXY, HTTPS_PROXY)
 [ -s /etc/env ] && . /etc/env;
 
-. /etc/init.d/tc-functions;
-
 : ${IF_PREFIX:=eth};
 : ${CONTAINERD_ULIMITS:="1048576"};
 : ${CONTAINERD_HOST:='-H tcp://0.0.0.0:2375'};
 : ${CONTAINERD_USER:=tc};
 
-: ${ORG:="tinycorelinux"};
+: ${ORG:="binave"};
 : ${SERVER_ORG:="$ORG"};
 : ${CA_ORG:="${ORG}CA"};
 : ${CERT_DAYS:=365};
@@ -59,7 +57,7 @@ export PATH=$PATH:/usr/local/sbin;
 
 _start() {
     _check && {
-        printf "${GREEN}container already running.$NORMAL\n";
+        printf "\033[1;32mcontainer already running.\033[0;39m\n";
         return 0
     };
 
@@ -85,7 +83,7 @@ _start() {
 
     [ $? == 0 ] || return 1
 
-    printf "${GREEN}container daemon is running.$NORMAL\n";
+    printf "\033[1;32mcontainer daemon is running.\033[0;39m\n";
     _start_container
 }
 
@@ -120,7 +118,7 @@ _start_container(){
     done
 
     [ $count == $WAIT_LIMIT ] && {
-        printf "[${RED}ERROR$NORMAL] Cannot connect to the Docker daemon at unix:///var/run/docker.sock.\n" >&2;
+        printf "[\033[1;31mERROR\033[0;39m] Cannot connect to the Docker daemon at unix:///var/run/docker.sock.\n" >&2;
         return 1
     };
 
@@ -168,7 +166,7 @@ _stop() {
     do
         sleep 0.1
     done
-    printf "${GREEN}container daemon is stop.$NORMAL\n"
+    printf "\033[1;32mcontainer daemon is stop.\033[0;39m\n"
 }
 
 # stop all container by config
@@ -186,7 +184,7 @@ _restart() {
             _check || break;
             sleep 1
         done
-        [ $sum == $WAIT_LIMIT ] && { echo "[${RED}ERROR$NORMAL] Failed to stop container dameon. '$sum'"; return 1; }
+        [ $sum == $WAIT_LIMIT ] && { echo "[\033[1;31mERROR\033[0;39m] Failed to stop container dameon. '$sum'"; return 1; }
     fi
     _start
 }
