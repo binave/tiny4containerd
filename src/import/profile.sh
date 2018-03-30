@@ -111,6 +111,11 @@ _create_etc() {
     [ -s $WORK_DIR/.error ] && return 1;
 
     echo " ------------- create etc -------------------------";
+
+    # for dockerd
+    echo "dockremap:165536:65536" | \
+        tee $ROOTFS_DIR/etc/subgid > $ROOTFS_DIR/etc/subuid;
+
     # glibc
     _mkcfg $ROOTFS_DIR/etc/nsswitch.conf'
 # GNU Name Service Switch config.
@@ -206,15 +211,18 @@ nobody:*:13509:0:99999:7:::
 
 # Cmnd alias specification
 Cmnd_Alias WRITE_LOG_CMDS = /usr/local/sbin/wtmp
+Cmnd_Alias SHUTDOWN_CMD = /sbin/poweroff
 
 # User alias specification
 
 # User privilege specification
-ALL     ALL=PASSWD: ALL
+ALL         ALL=PASSWD: ALL
 
-root    ALL=(ALL) ALL
+root        ALL=(ALL) ALL
 
-ALL     ALL=(ALL) NOPASSWD: WRITE_LOG_CMDS
+%shutdown   ALL=NOPASSWD: SHUTDOWN_CMD
+
+ALL         ALL=(root) NOPASSWD: WRITE_LOG_CMDS
 
 ";
 
@@ -337,6 +345,14 @@ else
 fi
 ';
 
+    # for user: shutdown
+    _mkcfg $ROOTFS_DIR/usr/local/bin/shutdown'
+#!/bin/sh
+
+sudo /sbin/poweroff
+
+';
+
     cd $ROOTFS_DIR;
     mkdir -pv \
         etc/{acpi/events,init.d,modprobe.d,skel,ssl/certs,profile.d,sysconfig} \
@@ -356,31 +372,30 @@ fi
 
 }
 
-_add_group() {
-    [ -s $WORK_DIR/.error ] && return 1;
-    echo "-------------- addgroup --------------------------";
-    # for dockerd: root map user
-    # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box (see also src/rootfs/etc/sub{uid,gid})
-    chroot $ROOTFS_DIR sh -xc '
-        addgroup -S dockremap && \
-        adduser -S -G dockremap dockremap
-    ';
-    echo "dockremap:165536:65536" | \
-        tee $ROOTFS_DIR/etc/subgid > $ROOTFS_DIR/etc/subuid;
-
-    chroot $ROOTFS_DIR addgroup -S docker
-}
-
 _add_user() {
     [ -s $WORK_DIR/.error ] && return 1;
     [ "$1" ] || return $(_err $LINENO 3);
     echo "--------------- adduser --------------------------";
-    # add user: tc
-    chroot $ROOTFS_DIR sh -xc "
-        adduser -s /bin/sh -G staff -D $1 && \
-        addgroup $1 docker && \
-        printf $1:tcuser | /usr/sbin/chpasswd -m
-    "
+
+    local group=${2:=$1};
+
+    # group
+    grep -q "^$group:" $ROOTFS_DIR/etc/group || \
+        chroot $ROOTFS_DIR addgroup -S $group;
+
+    # user
+    if grep -q "^$1:" $ROOTFS_DIR/etc/passwd; then
+        chroot $ROOTFS_DIR addgroup $1 $group
+    else
+        if [ "$4" ]; then
+            chroot $ROOTFS_DIR adduser -s $4 -G $group -D $1;
+        else
+            chroot $ROOTFS_DIR adduser -S -G $group $1
+        fi
+    fi
+
+    # password
+    chroot $ROOTFS_DIR sh -xc "printf $1:$3 | /usr/sbin/chpasswd -m"
 }
 
 _trim_rootfs() {

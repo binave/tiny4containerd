@@ -161,8 +161,11 @@ _main() {
 
     _create_dev;
     _refreshe;
-    _add_group;
-    _add_user tc;
+    # usage: _add_user [user] [[group]] [[password]] [[shell]]
+    _add_user dockremap dockremap;
+    _add_user tc staff tcuser /bin/sh;
+    _add_user tc docker;
+    _add_user shutdown shutdown "" /usr/local/bin/shutdown;
     _trim_rootfs;
 
     echo " ------------ install docker ----------------------";
