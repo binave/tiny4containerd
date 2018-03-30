@@ -116,7 +116,7 @@ _apply_rootfs(){
     do
         sf="${sf#*/}"; # trim './' head
         mkdir -pv "$ROOTFS_DIR/${sf%/*}";
-        if [ "${sf##*.}" == "sh" -a "${sf##*/}" != "bootsync.sh" ]; then
+        if [ "${sf##*.}" == "sh" ]; then
             cp -fv "./$sf" "$ROOTFS_DIR/${sf%.*}"
         else
             cp -fv "./$sf" "$ROOTFS_DIR/${sf%/*}"
