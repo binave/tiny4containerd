@@ -214,8 +214,8 @@ Ymd=`date +%Y%m%d`;
     [ ! -f /usr/local/etc/ca-certificates.conf ] && cp -p /usr/local/share/ca-certificates/files/ca-certificates.conf /usr/local/etc;
 
     update-ca-certificates;
-    ln -s /usr/local/etc/ssl/certs/ca-certificates.crt /usr/local/etc/ssl/cacert.pem;
-    ln -s /usr/local/etc/ssl/certs/ca-certificates.crt /usr/local/etc/ssl/ca-bundle.crt;
+    # ln -s /usr/local/etc/ssl/certs/ca-certificates.crt /usr/local/etc/ssl/cacert.pem;
+    # ln -s /usr/local/etc/ssl/certs/ca-certificates.crt /usr/local/etc/ssl/ca-bundle.crt;
 
     if [ ! -f /etc/udev/rules.d/99-fuse.rules ]; then
         cp -p /usr/local/share/fuse/files/99-fuse.rules /etc/udev/rules.d;
@@ -228,7 +228,7 @@ Ymd=`date +%Y%m%d`;
     [ ! -f /etc/udev/rules.d/10-dm.rules ] &&           cp -p /usr/local/share/lvm2/files/10-dm.rules           /etc/udev/rules.d;
     [ ! -f /etc/udev/rules.d/11-dm-lvm.rules ] &&       cp -p /usr/local/share/lvm2/files/11-dm-lvm.rules       /etc/udev/rules.d;
     [ ! -f /etc/udev/rules.d/13-dm-disk.rules ] &&      cp -p /usr/local/share/lvm2/files/13-dm-disk.rules      /etc/udev/rules.d;
-    [ ! -f /etc/udev/rules.d/69-dm-lvm-metad.rules ] && cp -p /usr/local/share/lvm2/files/69-dm-lvm-metad.rules /etc/udev/rules.d;
+    # [ ! -f /etc/udev/rules.d/69-dm-lvm-metad.rules ] && cp -p /usr/local/share/lvm2/files/69-dm-lvm-metad.rules /etc/udev/rules.d;
     [ ! -f /etc/udev/rules.d/95-dm-notify.rules ] &&    cp -p /usr/local/share/lvm2/files/95-dm-notify.rules    /etc/udev/rules.d;
 
     udevadm control --reload-rules;
