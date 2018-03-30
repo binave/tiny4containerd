@@ -8,98 +8,74 @@
 # Mount system devices from /etc/fstab.
 /bin/mount -a;
 
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
-Ymd=`date +%Y%m%d`;
+_rebuild_fstab(){
 
-# This log is started before the persistence partition is mounted
-{
+    # Exit if script is already running
+    [ -e /proc/partitions ] || return;
 
-    set -x;
-
-    /sbin/udevd --daemon >/dev/null 2>&1;
-    /sbin/udevadm trigger --action=add >/dev/null 2>&1 &
-
-    # rotdash $!;
-
-    sleep 5; # WAITUSB
-
-    modprobe loop 2>/dev/null;
-
-    modprobe -q zram;
-    modprobe -q zcache;
-
-    while [ ! -e /dev/zram0 ]; do usleep 50000; done
-
-    grep MemFree /proc/meminfo | awk '{print $2/4 "K"}' > /sys/block/zram0/disksize;
-
-    mkswap /dev/zram0 >/dev/null 2>&1;
-    swapon /dev/zram0;
-
-    echo "/dev/zram0      swap         swap    defaults,noauto   0       0" | \
-        tee -a /etc/fstab;
-
-    {
-        umask 022;
-
-        # Exit if script is already running
-        [ -e /proc/partitions ] || exit;
-
-        if [ -e /var/run/rebuildfstab.pid ]; then
-            if [ -e "/proc/$(cat /var/run/rebuildfstab.pid)" ]; then
-                touch /var/run/rebuildfstab.rescan 2>/dev/null;
-                exit
-            fi
-            rm -fv /var/run/rebuildfstab.pid
+    if [ -e /var/run/rebuildfstab.pid ]; then
+        if [ -e "/proc/$(cat /var/run/rebuildfstab.pid)" ]; then
+            touch /var/run/rebuildfstab.rescan;
+            return
         fi
-        echo "$$" >/var/run/rebuildfstab.pid;
+        rm -fv /var/run/rebuildfstab.pid
+    fi
 
-        TMP="/tmp/fstab.$$.tmp";
-        ADDEDBY="# Added by TC";
-        DEVROOT="/dev";
+    echo "$$" | tee /var/run/rebuildfstab.pid;
 
-        # Create a list of fdisk -l
-        FDISKL=`fdisk -l | awk '$1 ~ /dev/{printf " %s ",$1}'`;
+    local ADDEDBY CDROMS CDROMSF DEVMAJOR DEVNAME DEVROOT FDISKL FSTYPE MOUNTPOINT OPTIONS TMP i;
 
-        # Read a list of CDROM/DVD Drives
-        CDROMS="";
-        CDROMSF=/etc/sysconfig/cdroms;
+    TMP="/tmp/fstab.$$.tmp";
+    ADDEDBY="# Added by TC";
+    DEVROOT="/dev";
 
-        [ -s "$CDROMSF" ] && CDROMS=`cat "$CDROMSF"`;
+    # Create a list of fdisk -l
+    FDISKL=`fdisk -l | awk '$1 ~ /dev/{printf " %s ",$1}'`;
 
-        grep -v "$ADDEDBY" /etc/fstab | tee "$TMP";
+    # Read a list of CDROM/DVD Drives
+    CDROMS="";
+    CDROMSF=/etc/sysconfig/cdroms;
 
-        # Loop through block devices
-        for i in `find /sys/block/*/ -name dev`;
-        do
-            case "$i" in *loop*|*ram*) continue ;; esac
+    [ -s "$CDROMSF" ] && CDROMS=`cat "$CDROMSF"`;
 
-            DEVNAME=`echo "$i" | tr [!] [/] | awk 'BEGIN{FS="/"}{print $(NF-1)}'`;
-            DEVMAJOR="$(cat $i | cut -f1 -d:)";
+    grep -v "$ADDEDBY" /etc/fstab | tee "$TMP";
 
-            FSTYPE="";
-            case "$CDROMS" in *"$DEVROOT/$DEVNAME"*) FSTYPE="auto" ;; esac
+    # Loop through block devices
+    for i in `find /sys/block/*/ -name dev`;
+    do
+        case "$i" in *loop*|*ram*) continue ;; esac
 
-            # First try blkid approach for FSTYPE for non floppy drives.
-            [ "$DEVMAJOR" != 2 -a -z "$FSTYPE" ] && FSTYPE="$(fstype "/dev/$DEVNAME")";
-            [ "$FSTYPE" == "linux_raid_member" ] && continue;
-            [ "$FSTYPE" == "LVM2_member" ] && continue;
+        DEVNAME=`echo "$i" | tr [!] [/] | awk 'BEGIN{FS="/"}{print $(NF-1)}'`;
+        DEVMAJOR="$(cat $i | cut -f1 -d:)";
 
-            if [ -z "$FSTYPE" ]; then
-                case "$DEVMAJOR" in
-                    2|98)
-                        FSTYPE="auto"
-                    ;;
-                    3|8|11|22|33|34)
-                        case "$FDISKL" in *"$DEVROOT/$DEVNAME "*) FSTYPE="$(fstype $DEVROOT/$DEVNAME)" ;; esac
-                        case "$CDROMS" in *"$DEVROOT/$DEVNAME"*) FSTYPE="auto" ;; esac
-                    ;;
-                    179|9|259) # MMC or MD (software raid)
-                        FSTYPE="$(fstype $DEVROOT/$DEVNAME)"
-                    ;;
-                esac
-            fi
+        FSTYPE="";
+        case "$CDROMS" in *"$DEVROOT/$DEVNAME"*) FSTYPE="auto" ;; esac
 
-            checkntfs() {
+        # First try blkid approach for FSTYPE for non floppy drives.
+        [ "$DEVMAJOR" != 2 -a -z "$FSTYPE" ] && FSTYPE="$(fstype "/dev/$DEVNAME")";
+        [ "$FSTYPE" == "linux_raid_member" ] && continue;
+        [ "$FSTYPE" == "LVM2_member" ] && continue;
+
+        if [ -z "$FSTYPE" ]; then
+            case "$DEVMAJOR" in
+                2|98)
+                    FSTYPE="auto"
+                ;;
+                3|8|11|22|33|34)
+                    case "$FDISKL" in *"$DEVROOT/$DEVNAME "*) FSTYPE="$(fstype $DEVROOT/$DEVNAME)" ;; esac
+                    case "$CDROMS" in *"$DEVROOT/$DEVNAME"*) FSTYPE="auto" ;; esac
+                ;;
+                179|9|259) # MMC or MD (software raid)
+                    FSTYPE="$(fstype $DEVROOT/$DEVNAME)"
+                ;;
+            esac
+        fi
+
+        [ -z "$FSTYPE" ] && continue;
+        MOUNTPOINT="/mnt/$DEVNAME";
+        OPTIONS="noauto,users,exec";
+        case "$FSTYPE" in
+            ntfs)
                 if [ -f /usr/local/bin/ntfs-3g ]; then
                     FSTYPE="ntfs-3g";
                     OPTIONS="$OPTIONS"
@@ -107,45 +83,66 @@ Ymd=`date +%Y%m%d`;
                     FSTYPE="ntfs";
                     OPTIONS="$OPTIONS,ro,umask=000"
                 fi
-            }
+            ;;
+            vfat|msdos) OPTIONS="${OPTIONS},umask=000" ;;
+            ext2|ext3) OPTIONS="${OPTIONS},relatime" ;;
+            swap) OPTIONS="defaults"; MOUNTPOINT="none" ;;
+        esac
+        [ "$MOUNTPOINT" != "none" ] && mkdir -pv "/mnt/$DEVNAME";
+        grep -q "^$DEVROOT/$DEVNAME " $TMP || \
+            printf "%-15s %-15s %-8s %-20s %-s\n" \
+            "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" | \
+            tee -a "$TMP"
+    done
 
-            [ -z "$FSTYPE" ] && continue;
-            MOUNTPOINT="/mnt/$DEVNAME";
-            OPTIONS="noauto,users,exec";
-            case "$FSTYPE" in
-                ntfs) checkntfs ;;
-                vfat|msdos) OPTIONS="${OPTIONS},umask=000" ;;
-                ext2|ext3) OPTIONS="${OPTIONS},relatime" ;;
-                swap) OPTIONS="defaults"; MOUNTPOINT="none" ;;
-            esac
-            [ "$MOUNTPOINT" != "none" ] && mkdir -pv "/mnt/$DEVNAME";
-            grep -q "^$DEVROOT/$DEVNAME " $TMP || \
-                printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" | tee -a "$TMP"
-        done
+    # Clean up
+    mv -v "$TMP" /etc/fstab;
+    rm -fv /var/run/rebuildfstab.pid;
+    sync;
 
-        # Clean up
-        mv -v "$TMP" /etc/fstab;
-        rm -fv /var/run/rebuildfstab.pid;
-        sync;
+    # If another copy tried to run while we were running, rescan.
+    if [ -e /var/run/rebuildfstab.rescan ]; then
+        rm -fv /var/run/rebuildfstab.rescan;
+        _rebuild_fstab "$@"
+    fi
 
-        # If another copy tried to run while we were running, rescan.
-        if [ -e /var/run/rebuildfstab.rescan ]; then
-            rm -fv /var/run/rebuildfstab.rescan;
-            exec $0 "$@"
-        fi
+}
 
-    } & fstab_pid=$!
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+Ymd=`date +%Y%m%d`;
+
+# This log is started before the persistence partition is mounted
+{
+    umask 022;
+
+    /sbin/udevd --daemon;
+    /sbin/udevadm trigger --action=add &
+
+    sleep 5; # wait usb
+
+    modprobe loop;
+    modprobe -q zram;
+    modprobe -q zcache;
+
+    while [ ! -e /dev/zram0 ]; do usleep 50000; done
+
+    grep MemFree /proc/meminfo | awk '{print $2/4 "K"}' | \
+        tee /sys/block/zram0/disksize;
+
+    mkswap /dev/zram0;
+    swapon /dev/zram0;
+    printf "%-15s %-12s %-7s %-17s %-7s %-s\n"\
+        /dev/zram0 swap swap defaults,noauto 0 0 | \
+        tee -a /etc/fstab;
+
+    _rebuild_fstab & fstab_pid=$!
 
     mv -v /tmp/98-tc.rules /etc/udev/rules.d/.;
-
     /sbin/udevadm control --reload-rules &
 
-    LANGUAGE="C";
-    echo "LANG=$LANGUAGE" > /etc/sysconfig/language;
-
-    export LANG=$LANGUAGE;
-
-    export TZ && echo "TZ=$TZ" > /etc/sysconfig/timezone;
+    export LANG=C TZ=CST-8;
+    echo "LANG=$LANG" | tee /etc/sysconfig/language;
+    echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
 
     while [ ! -e /dev/rtc0 ]; do usleep 50000; done
 
@@ -156,106 +153,70 @@ Ymd=`date +%Y%m%d`;
     /sbin/route add 127.0.0.1 lo &
 
     USER="tc";
-
     if ! grep "$USER" /etc/passwd >/dev/null; then
         /usr/sbin/adduser -s /bin/sh -G staff -D "$USER";
-        echo "$USER":tcuser | /usr/sbin/chpasswd -m;
-        echo -e "$USER\tALL=NOPASSWD: ALL" >> /etc/sudoers
+        echo "$USER":tcuser | /usr/sbin/chpasswd -m
     fi
 
-    echo "$USER" > /etc/sysconfig/tcuser;
     mkdir -pv /home/"$USER";
 
     chmod u+s /bin/busybox.suid /usr/bin/sudo;
 
-    modprobe -q squashfs 2>/dev/null;
-
-    # touch /var/tmp/k5_skip;
-
-    /sbin/ldconfig 2>/dev/null;
-
-    unset OPT_SETUP
+    modprobe -q squashfs;
+    /sbin/ldconfig;
 
     if [ -n "$LAPTOP" ]; then
-        modprobe ac && modprobe battery 2>/dev/null;
-        modprobe yenta_socket >/dev/null 2>&1 || modprobe i82365 >/dev/null 2>&1;
-        /sbin/udevadm trigger 2>/dev/null >/dev/null &
+        modprobe ac && modprobe battery;
+        modprobe yenta_socket || modprobe i82365;
+        /sbin/udevadm trigger &
     fi
 
-    [ -s /etc/sysconfig/icons ] && ICONS=`cat /etc/sysconfig/icons`;
-
     sync;
-
     wait $fstab_pid;
 
-    # rotdash $!;
-    # rotdash $!;
-
-    KEYMAP="us";
-
     # busybox, keyboard
+    KEYMAP="us";
     /sbin/loadkmap < /usr/share/kmap/$KEYMAP.kmap;
-    echo "KEYMAP=$KEYMAP" > /etc/sysconfig/keymap;
-
-    # [ -s /etc/sysconfig/desktop ] && DESKTOP=`cat /etc/sysconfig/desktop`;
-
-    # [ -s /etc/sysconfig/ntpserver ] && NTPSERVER=`cat /etc/sysconfig/ntpserver`;
-
-    # echo "mydata" > /etc/sysconfig/mydata;
-
-    # [ -z "$DHCP_RAN" ] && /etc/init.d/dhcp.sh &
+    echo "KEYMAP=$KEYMAP" | tee /etc/sysconfig/keymap;
 
     # Configure sysctl, Read sysctl.conf
     sysctl -p /etc/sysctl.conf;
 
-    mkdir -pv /usr/local/etc/acpi/events;
     [ ! -f /usr/local/etc/ca-certificates.conf ] && \
-        cp -pv /usr/local/share/ca-certificates/files/ca-certificates.conf /usr/local/etc;
+        cp -pv /usr/local/share/ca-certificates/files/ca-certificates.conf \
+        /usr/local/etc;
 
     update-ca-certificates;
-    # ln -s /usr/local/etc/ssl/certs/ca-certificates.crt /usr/local/etc/ssl/cacert.pem;
-    # ln -s /usr/local/etc/ssl/certs/ca-certificates.crt /usr/local/etc/ssl/ca-bundle.crt;
+    # ln -sv /usr/local/etc/ssl/certs/ca-certificates.crt /usr/local/etc/ssl/cacert.pem;
+    # ln -sv /usr/local/etc/ssl/certs/ca-certificates.crt /usr/local/etc/ssl/ca-bundle.crt;
 
-    if [ ! -f /etc/udev/rules.d/99-fuse.rules ]; then
-        cp -pv /usr/local/share/fuse/files/99-fuse.rules /etc/udev/rules.d;
-        udevadm control --reload-rules;
-        udevadm trigger
-    fi
+    # fuse
+    [ ! -f /sbin/mount.fuse ] && \
+        ln -sv  /usr/local/sbin/mount.fuse /sbin/mount.fuse;
 
-    [ ! -f /sbin/mount.fuse ] &&                        ln -s  /usr/local/sbin/mount.fuse /sbin/mount.fuse;
-
-    [ ! -f /etc/udev/rules.d/10-dm.rules ] &&           cp -pv /usr/local/share/lvm2/files/10-dm.rules           /etc/udev/rules.d;
-    [ ! -f /etc/udev/rules.d/11-dm-lvm.rules ] &&       cp -pv /usr/local/share/lvm2/files/11-dm-lvm.rules       /etc/udev/rules.d;
-    [ ! -f /etc/udev/rules.d/13-dm-disk.rules ] &&      cp -pv /usr/local/share/lvm2/files/13-dm-disk.rules      /etc/udev/rules.d;
-    # [ ! -f /etc/udev/rules.d/69-dm-lvm-metad.rules ] && cp -pv /usr/local/share/lvm2/files/69-dm-lvm-metad.rules /etc/udev/rules.d;
-    [ ! -f /etc/udev/rules.d/95-dm-notify.rules ] &&    cp -pv /usr/local/share/lvm2/files/95-dm-notify.rules    /etc/udev/rules.d;
+    # rules, not found: /etc/udev/rules.d/69-dm-lvm-metad.rules
+    cp -pv \
+        /usr/local/share/fuse/files/*.rules \
+        /usr/local/share/lvm2/files/*.rules \
+        /usr/local/share/mdadm/files*.rules \
+        /etc/udev/rules.d;
 
     udevadm control --reload-rules;
     udevadm trigger;
 
-    [ ! -f /etc/udev/rules.d/63-md-raid-arrays.rules ] &&   cp -pv /usr/local/share/mdadm/files/63-md-raid-arrays.rules      /etc/udev/rules.d;
-    [ ! -f /etc/udev/rules.d/64-md-raid-assembly.rules ] && cp -pv /usr/local/share/mdadm/files/64-md-raid-assembly.rules    /etc/udev/rules.d;
+    mkdir -pv /var/lib/sshd \
+        /usr/local/etc/ssl/certs \
+        /usr/local/etc/ssl/crl \
+        /usr/local/etc/ssl/newcerts \
+        /usr/local/etc/ssl/private;
 
-    udevadm control --reload-rules;
-    udevadm trigger;
+    touch /usr/local/etc/ssl/index.txt;
+    echo "01" | tee /usr/local/etc/ssl/crlnumber > /usr/local/etc/ssl/serial;
 
-    mkdir -pv /var/lib/sshd;
-
-    mkdir -pv   /usr/local/etc/ssl/certs;
-    mkdir -pv   /usr/local/etc/ssl/private;
-    mkdir -pv   /usr/local/etc/ssl/crl;
-    mkdir -pv   /usr/local/etc/ssl/newcerts;
-    [ -f /usr/local/etc/ssl/index.txt ] ||  touch       /usr/local/etc/ssl/index.txt;
-    [ -f /usr/local/etc/ssl/serial ] ||    echo "01" | tee  /usr/local/etc/ssl/serial;
-    [ -f /usr/local/etc/ssl/crlnumber ] || echo "01" | tee  /usr/local/etc/ssl/crlnumber;
-
-    [ -e /etc/hosts.allow ] ||  cp -pv /usr/local/etc/hosts.allow /etc/;
-    [ -e /etc/hosts.deny ] ||   cp -pv /usr/local/etc/hosts.deny  /etc/;
+    cp -pv /usr/local/etc/hosts.* /etc/;
 
     # filter env
     sed 's/[\|\;\& ]/\n/g' /proc/cmdline | grep '^[_A-Z]\+=' > /etc/env;
-
-    set +x;
 
     # mount and monitor hard drive array
     /usr/local/sbin/mdisk init;
