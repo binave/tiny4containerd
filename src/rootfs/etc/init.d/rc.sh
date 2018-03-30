@@ -20,6 +20,8 @@ case $1 in
 
         /bin/sleep 1.5;
 
+        /bin/mkdir -p $PERSISTENT_PATH/log/tiny/${Ymd:0:6};
+
         /bin/cat /run/rcS-$$.log >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/boot_$Ymd.log && \
             /bin/rm -f /run/rcS-$$.log
     ;;
