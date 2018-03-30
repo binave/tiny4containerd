@@ -26,24 +26,8 @@ net.ipv4.ip_forward=1
     # clean motd
     > $ROOTFS_DIR/etc/motd;
 
-    # reset PS1
-    sed -i 's/\\w/\\W/g;s/\/apps/\/opt/' $ROOTFS_DIR/etc/profile $ROOTFS_DIR/etc/skel/.profile;
-    _mkcfg +$ROOTFS_DIR/etc/profile"
-sudo /usr/local/sbin/wtmp
-export TERM=xterm TMOUT=300
-readonly TMOUT
-";
-
     # unset CMDLINE
     printf "\nunset CMDLINE\n" | tee -a $ROOTFS_DIR/etc/init.d/tc-functions >> $ROOTFS_DIR/usr/bin/filetool.sh;
-
-    # hide std, fix stderr
-    sed -i 's/2>\&1 >\/dev\/null/>\/dev\/null 2>\&1/g;s/chpasswd -m/& 2\>\/dev\/null/g;s/home\*\|noautologin\*\|opt\*\|user\*/# &/' \
-        $ROOTFS_DIR/etc/init.d/tc-config;
-
-    # ln: /usr/local/etc/ssl/cacert.pem: File exists
-    # ln: /usr/local/etc/ssl/ca-bundle.crt: File exists
-    # $ROOTFS_DIR/usr/local/tce.installed/ca-certificates
 
     _mkcfg -$ROOTFS_DIR/etc/sudoers"
 #
@@ -66,7 +50,7 @@ ALL     ALL=(ALL) NOPASSWD: WRITE_LOG_CMDS
 ";
 
     # profile
-    _mkcfg $ROOTFS_DIR/etc/profile"
+    _mkcfg -$ROOTFS_DIR/etc/profile"
 # /etc/profile: system-wide .profile file for the Bourne shells
 
 umask 022;
@@ -93,7 +77,7 @@ readonly TMOUT
 ";
 
     # .profile
-    _mkcfg $ROOTFS_DIR/etc/skel/.profile"
+    _mkcfg -$ROOTFS_DIR/etc/skel/.profile"
 # ~/.profile: Executed by Bourne-compatible login SHells.
 
 PS1='\u@\h:\W\$ '
