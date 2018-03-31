@@ -185,7 +185,7 @@ sed 's/[\|\;\& ]/\n/g' /proc/cmdline | \
 mkdir -pv \
     /opt/tiny/etc/crontabs \
     /opt/tiny/etc/init.d \
-    /log/tiny/${Ymd:0:6};
+    $PERSISTENT_PATH/log/tiny/${Ymd:0:6};
 
 # mdiskd
 /usr/local/sbin/mdisk monitor;
@@ -225,10 +225,10 @@ sleep 2;
 find /opt/tiny/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
 
 # sync the clock
-ntpd -d -n -p pool.ntp.org >> /log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
+ntpd -d -n -p pool.ntp.org >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
 
 # start cron
-crond -f -d "${CROND_LOGLEVEL:-8}" >> /log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
+crond -f -d "${CROND_LOGLEVEL:-8}" >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
 
 # if we have the tc user, let's add it do the docker group
 grep -q '^tc:' /etc/passwd && addgroup tc docker;

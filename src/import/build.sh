@@ -58,7 +58,8 @@ _undep() {
         $ROOTFS_DIR/usr/bin/tc* \
         $ROOTFS_DIR/etc/init.d/{tc-,rc.}* \
         $ROOTFS_DIR/usr/local/tce.installed \
-        $ROOTFS_DIR/usr/sbin/rebuildfstab;
+        $ROOTFS_DIR/usr/sbin/rebuildfstab \
+        $ROOTFS_DIR/opt;
 
     # clear functions
     printf "useBusybox(){ :; }\n" | tee $ROOTFS_DIR/etc/init.d/tc-functions;
@@ -76,7 +77,8 @@ _undep() {
     cp -pv $ROOTFS_DIR/usr/local/share/{fuse,lvm2,mdadm}/files/*.rules \
         $ROOTFS_DIR/etc/udev/rules.d;
 
-    mkdir -pv $ROOTFS_DIR/var/lib/sshd \
+    mkdir -pv $ROOTFS_DIR/opt \
+        $ROOTFS_DIR/var/lib/sshd \
         $ROOTFS_DIR/usr/local/etc/ssl/{certs,crl,newcerts,private};
 
     touch $ROOTFS_DIR/usr/local/etc/ssl/index.txt;
