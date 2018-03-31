@@ -72,28 +72,15 @@ _init() {
     # Log everything else. What's Windows' latest exploitable vulnerability?
     # iptables -A INPUT -j LOG --log-prefix "FIREWALL:INPUT "
 
-    # if [ "$1" != "noprompt" ]; then
-
-    # 	# ANSI COLORS
-    # 	NORMAL="$(echo -e '\033[0;39m')"
-    # 	BLUE="$(echo -e '\033[1;34m')"
-    # 	WHITE="$(echo -e '\033[1;37m')"
-
-    # 	echo "${BLUE}Your basic firewall is now ${WHITE}[operational]${NORMAL}"
-    # 	echo "Press enter to continue"
-    # 	read bogus
-    # fi
-
     # End of basic-firewall
     _status
 }
 
 _status() {
-    . /etc/init.d/tc-functions
-    printf "$BLUE\n"
+    printf "\033[1;34m\n"
     # To display numeric values, type
     iptables -vnL
-    printf "$NORMAL\n"
+    printf "\033[0;39m\n"
 }
 
 case $1 in

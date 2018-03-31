@@ -92,6 +92,22 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
 
 ";
 
+    _mkcfg -$ROOTFS_DIR/etc/skel/.ashrc"
+# Alias definitions.
+#
+alias df='df -h'
+alias du='du -h'
+
+alias ls='ls -p'
+alias ll='ls -l'
+alias la='ls -la'
+
+# Avoid errors... use -f to skip confirmation.
+alias cp='cp -i'
+alias mv='mv -i'
+alias rm='rm -i'
+";
+
     # drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -fv $ROOTFS_DIR/usr/bin/passwd;
 

@@ -51,6 +51,14 @@ _undep() {
     # http://www.gnu.org/software/cpio/manual/cpio.html
     # 'newc': The new (SVR4) portable format, which supports file systems having more than 65536 i-nodes.
 
+    # clear tc
+    rm -frv \
+        $CELLAR_DIR/usr/bin/tc* \
+        $CELLAR_DIR/etc/init.d/{tc-,rc.}* \
+        $CELLAR_DIR/usr/local/tce.installed \
+        $CELLAR_DIR/usr/sbin/rebuildfstab;
+    printf "useBusybox(){ :; }" | tee $CELLAR_DIR/etc/init.d/tc-functions;
+
     # move dhcp.sh out of init.d as we're triggering it manually so its ready a bit faster
     cp -v $ROOTFS_DIR/etc/init.d/dhcp.sh $ROOTFS_DIR/usr/local/etc/init.d;
     echo : | tee $ROOTFS_DIR/etc/init.d/dhcp.sh;
