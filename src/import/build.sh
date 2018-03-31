@@ -61,9 +61,35 @@ _undep() {
     # clear functions
     printf "useBusybox(){ :; }" | tee $CELLAR_DIR/etc/init.d/tc-functions;
 
+    cp -pv $CELLAR_DIR/usr/local/share/ca-certificates/files/ca-certificates.conf \
+        $CELLAR_DIR/usr/local/etc;
+
+    # ln -sv /usr/local/etc/ssl/certs/ca-certificates.crt $CELLAR_DIR/usr/local/etc/ssl/cacert.pem;
+    # ln -sv /usr/local/etc/ssl/certs/ca-certificates.crt $CELLAR_DIR/usr/local/etc/ssl/ca-bundle.crt;
+
+    # fuse
+    ln -sv  /usr/local/sbin/mount.fuse $ROOTFS_DIR/sbin;
+
+    # rules, not found: $ROOTFS_DIR/etc/udev/rules.d/69-dm-lvm-metad.rules
+    cp -pv \
+        $ROOTFS_DIR/usr/local/share/fuse/files/*.rules \
+        $ROOTFS_DIR/usr/local/share/lvm2/files/*.rules \
+        $ROOTFS_DIR/usr/local/share/mdadm/files*.rules \
+        $ROOTFS_DIR/etc/udev/rules.d;
+
+    mkdir -pv $ROOTFS_DIR/var/lib/sshd \
+        $ROOTFS_DIR/usr/local/etc/ssl/certs \
+        $ROOTFS_DIR/usr/local/etc/ssl/crl \
+        $ROOTFS_DIR/usr/local/etc/ssl/newcerts \
+        $ROOTFS_DIR/usr/local/etc/ssl/private;
+
+    touch $ROOTFS_DIR/usr/local/etc/ssl/index.txt;
+    echo "01" | tee $ROOTFS_DIR/usr/local/etc/ssl/crlnumber > $ROOTFS_DIR/usr/local/etc/ssl/serial;
+
+    cp -pv $ROOTFS_DIR/usr/local/etc/hosts.* $ROOTFS_DIR/etc/;
+
     # move dhcp.sh out of init.d as we're triggering it manually so its ready a bit faster
-    cp -v $ROOTFS_DIR/etc/init.d/dhcp.sh $ROOTFS_DIR/usr/local/etc/init.d;
-    echo : | tee $ROOTFS_DIR/etc/init.d/dhcp.sh;
+    mv -v $ROOTFS_DIR/etc/init.d/dhcp.sh $ROOTFS_DIR/usr/local/etc/init.d;
 
     # crond
     rm -fr $ROOTFS_DIR/var/spool/cron/crontabs;

@@ -173,41 +173,14 @@ echo "KEYMAP=$KEYMAP" | tee /etc/sysconfig/keymap;
 # Configure sysctl, Read sysctl.conf
 sysctl -p /etc/sysctl.conf;
 
-[ ! -f /usr/local/etc/ca-certificates.conf ] && \
-    cp -pv /usr/local/share/ca-certificates/files/ca-certificates.conf \
-    /usr/local/etc;
-
 update-ca-certificates;
-# ln -sv /usr/local/etc/ssl/certs/ca-certificates.crt /usr/local/etc/ssl/cacert.pem;
-# ln -sv /usr/local/etc/ssl/certs/ca-certificates.crt /usr/local/etc/ssl/ca-bundle.crt;
-
-# fuse
-[ ! -f /sbin/mount.fuse ] && \
-    ln -sv  /usr/local/sbin/mount.fuse /sbin/mount.fuse;
-
-# rules, not found: /etc/udev/rules.d/69-dm-lvm-metad.rules
-cp -pv \
-    /usr/local/share/fuse/files/*.rules \
-    /usr/local/share/lvm2/files/*.rules \
-    /usr/local/share/mdadm/files*.rules \
-    /etc/udev/rules.d;
 
 udevadm control --reload-rules;
 udevadm trigger;
 
-mkdir -pv /var/lib/sshd \
-    /usr/local/etc/ssl/certs \
-    /usr/local/etc/ssl/crl \
-    /usr/local/etc/ssl/newcerts \
-    /usr/local/etc/ssl/private;
-
-touch /usr/local/etc/ssl/index.txt;
-echo "01" | tee /usr/local/etc/ssl/crlnumber > /usr/local/etc/ssl/serial;
-
-cp -pv /usr/local/etc/hosts.* /etc/;
-
 # filter env
-sed 's/[\|\;\& ]/\n/g' /proc/cmdline | grep '^[_A-Z]\+=' > /etc/env;
+sed 's/[\|\;\& ]/\n/g' /proc/cmdline | \
+    grep '^[_A-Z]\+=' > /etc/env;
 
 # mount and monitor hard drive array
 /usr/local/sbin/mdisk init;
