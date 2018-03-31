@@ -51,12 +51,14 @@ _undep() {
     # http://www.gnu.org/software/cpio/manual/cpio.html
     # 'newc': The new (SVR4) portable format, which supports file systems having more than 65536 i-nodes.
 
-    # clear tc
+    # clear tc tools
     rm -frv \
         $CELLAR_DIR/usr/bin/tc* \
         $CELLAR_DIR/etc/init.d/{tc-,rc.}* \
         $CELLAR_DIR/usr/local/tce.installed \
         $CELLAR_DIR/usr/sbin/rebuildfstab;
+
+    # clear functions
     printf "useBusybox(){ :; }" | tee $CELLAR_DIR/etc/init.d/tc-functions;
 
     # move dhcp.sh out of init.d as we're triggering it manually so its ready a bit faster
@@ -119,10 +121,7 @@ _refreshe() {
 
     echo " --------------- refreshe -------------------------";
     # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
-    chroot $ROOTFS_DIR sh -xc 'ldconfig && \
-    /usr/local/tce.installed/openssl && \
-    /usr/local/tce.installed/ca-certificates \
-    ' || return $(_err $LINENO 3);
+    chroot $ROOTFS_DIR sh -xc 'ldconfig' || return $(_err $LINENO 3);
 
     # Generate modules.dep
     find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
