@@ -1,7 +1,7 @@
 #!/bin/busybox ash
 
 # globle env
-: ${PERSISTENT_PATH:='/var'};
+: ${PERSISTENT_PATH:='/opt'};
 export PERSISTENT_PATH Ymd=`/bin/date +%Y%m%d`;
 
 case $1 in

@@ -61,7 +61,7 @@ _undep() {
         $ROOTFS_DIR/usr/sbin/rebuildfstab;
 
     # clear functions
-    printf "useBusybox(){ :; }" | tee $ROOTFS_DIR/etc/init.d/tc-functions;
+    printf "useBusybox(){ :; }\n" | tee $ROOTFS_DIR/etc/init.d/tc-functions;
 
     cp -pv $ROOTFS_DIR/usr/local/share/ca-certificates/files/ca-certificates.conf \
         $ROOTFS_DIR/usr/local/etc;
