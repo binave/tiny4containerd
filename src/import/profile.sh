@@ -114,6 +114,7 @@ alias rm='rm -i'
     # fix "su -"
     mkdir -pv $ROOTFS_DIR/etc/sysconfig;
     echo root | tee $ROOTFS_DIR/etc/sysconfig/superuser;
+    echo "KEYMAP=us" | tee $ROOTFS_DIR/etc/sysconfig/keymap;
 
     # add some timezone files so we're explicit about being UTC
     echo 'UTC' | tee $ROOTFS_DIR/etc/timezone;

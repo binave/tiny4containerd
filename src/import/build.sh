@@ -51,37 +51,33 @@ _undep() {
     # http://www.gnu.org/software/cpio/manual/cpio.html
     # 'newc': The new (SVR4) portable format, which supports file systems having more than 65536 i-nodes.
 
+    chmod u+s $ROOTFS_DIR/bin/busybox.suid $ROOTFS_DIR/usr/bin/sudo;
+
     # clear tc tools
     rm -frv \
-        $CELLAR_DIR/usr/bin/tc* \
-        $CELLAR_DIR/etc/init.d/{tc-,rc.}* \
-        $CELLAR_DIR/usr/local/tce.installed \
-        $CELLAR_DIR/usr/sbin/rebuildfstab;
+        $ROOTFS_DIR/usr/bin/tc* \
+        $ROOTFS_DIR/etc/init.d/{tc-,rc.}* \
+        $ROOTFS_DIR/usr/local/tce.installed \
+        $ROOTFS_DIR/usr/sbin/rebuildfstab;
 
     # clear functions
-    printf "useBusybox(){ :; }" | tee $CELLAR_DIR/etc/init.d/tc-functions;
+    printf "useBusybox(){ :; }" | tee $ROOTFS_DIR/etc/init.d/tc-functions;
 
-    cp -pv $CELLAR_DIR/usr/local/share/ca-certificates/files/ca-certificates.conf \
-        $CELLAR_DIR/usr/local/etc;
+    cp -pv $ROOTFS_DIR/usr/local/share/ca-certificates/files/ca-certificates.conf \
+        $ROOTFS_DIR/usr/local/etc;
 
-    # ln -sv /usr/local/etc/ssl/certs/ca-certificates.crt $CELLAR_DIR/usr/local/etc/ssl/cacert.pem;
-    # ln -sv /usr/local/etc/ssl/certs/ca-certificates.crt $CELLAR_DIR/usr/local/etc/ssl/ca-bundle.crt;
+    # ln -sv /usr/local/etc/ssl/certs/ca-certificates.crt $ROOTFS_DIR/usr/local/etc/ssl/cacert.pem;
+    # ln -sv /usr/local/etc/ssl/certs/ca-certificates.crt $ROOTFS_DIR/usr/local/etc/ssl/ca-bundle.crt;
 
     # fuse
     ln -sv  /usr/local/sbin/mount.fuse $ROOTFS_DIR/sbin;
 
     # rules, not found: $ROOTFS_DIR/etc/udev/rules.d/69-dm-lvm-metad.rules
-    cp -pv \
-        $ROOTFS_DIR/usr/local/share/fuse/files/*.rules \
-        $ROOTFS_DIR/usr/local/share/lvm2/files/*.rules \
-        $ROOTFS_DIR/usr/local/share/mdadm/files*.rules \
+    cp -pv $ROOTFS_DIR/usr/local/share/{fuse,lvm2,mdadm}/files/*.rules \
         $ROOTFS_DIR/etc/udev/rules.d;
 
     mkdir -pv $ROOTFS_DIR/var/lib/sshd \
-        $ROOTFS_DIR/usr/local/etc/ssl/certs \
-        $ROOTFS_DIR/usr/local/etc/ssl/crl \
-        $ROOTFS_DIR/usr/local/etc/ssl/newcerts \
-        $ROOTFS_DIR/usr/local/etc/ssl/private;
+        $ROOTFS_DIR/usr/local/etc/ssl/{certs,crl,newcerts,private};
 
     touch $ROOTFS_DIR/usr/local/etc/ssl/index.txt;
     echo "01" | tee $ROOTFS_DIR/usr/local/etc/ssl/crlnumber > $ROOTFS_DIR/usr/local/etc/ssl/serial;

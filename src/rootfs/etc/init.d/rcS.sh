@@ -151,10 +151,8 @@ fi
 
 mkdir -pv /home/"$USER";
 
-chmod u+s /bin/busybox.suid /usr/bin/sudo;
-
 modprobe -q squashfs;
-/sbin/ldconfig;
+# /sbin/ldconfig;
 
 if [ -n "$LAPTOP" ]; then
     modprobe ac && modprobe battery;
@@ -166,9 +164,7 @@ sync;
 wait $fstab_pid;
 
 # busybox, keyboard
-KEYMAP="us";
-/sbin/loadkmap < /usr/share/kmap/$KEYMAP.kmap;
-echo "KEYMAP=$KEYMAP" | tee /etc/sysconfig/keymap;
+/sbin/loadkmap < /usr/share/kmap/${KEYMAP:-us}.kmap;
 
 # Configure sysctl, Read sysctl.conf
 sysctl -p /etc/sysctl.conf;
@@ -241,10 +237,6 @@ chmod 1777 /tmp /volume1;
 
 # hide directory
 chmod 700 /opt/tiny/etc;
-
-# mkdir /tmp/tce
-# tce-setup
-# printf "http://repo.tinycorelinux.net/\n" | tee /opt/tcemirror
 
 #maybe the links will be up by now - trouble is, on some setups, they may never happen, so we can't just wait until they are
 sleep 3;
