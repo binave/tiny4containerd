@@ -123,10 +123,11 @@ _make_openssl() {
     _wait4 openssl- || return $(_err $LINENO 3);
     _try_patch openssl-;
 
-    local args;
+    local args OLDIFS="$IFS" ver;
+    IFS="."; ver=($OPENSSL_VERSION); IFS="$OLDIFS";
 
     # version > 1.0 ||
-    [ ${OPENSSL_VERSION:2:1} -gt 0 ] || args="--install_prefix=$ROOTFS";
+    [ $(($ver * 10 + ${ver[1]})) -gt 10 ] || args="--install_prefix=$ROOTFS_DIR";
 
     ./config \
         --prefix=/usr \
