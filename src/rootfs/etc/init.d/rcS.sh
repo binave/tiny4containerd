@@ -169,8 +169,6 @@ wait $fstab_pid;
 # Configure sysctl, Read sysctl.conf
 sysctl -p /etc/sysctl.conf;
 
-update-ca-certificates;
-
 udevadm control --reload-rules;
 udevadm trigger;
 

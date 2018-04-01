@@ -53,15 +53,15 @@ _undep() {
 
     chmod u+s $ROOTFS_DIR/bin/busybox.suid $ROOTFS_DIR/usr/bin/sudo;
 
-    # clear tc tools
+    # delete tc tools
     rm -frv \
         $ROOTFS_DIR/usr/bin/tc* \
-        $ROOTFS_DIR/etc/init.d/{tc-,rc.}* \
+        $ROOTFS_DIR/etc/init.d/{tc-,rc.,busybox-}* \
         $ROOTFS_DIR/usr/local/tce.installed \
         $ROOTFS_DIR/usr/sbin/rebuildfstab \
         $ROOTFS_DIR/opt;
 
-    # clear functions
+    # delete functions
     printf "useBusybox(){ :; }\n" | tee $ROOTFS_DIR/etc/init.d/tc-functions;
 
     cp -pv $ROOTFS_DIR/usr/local/share/ca-certificates/files/ca-certificates.conf \
@@ -144,8 +144,8 @@ _refreshe() {
     [ -s $WORK_DIR/.error ] && return 1;
 
     echo " --------------- refreshe -------------------------";
-    # Extract ca-certificates, TCL changed something such that these need to be extracted post-install
-    chroot $ROOTFS_DIR sh -xc 'ldconfig' || return $(_err $LINENO 3);
+    # Extract ldconfig ca-certificates
+    chroot $ROOTFS_DIR sh -xc 'ldconfig && update-ca-certificates' || return $(_err $LINENO 3);
 
     # Generate modules.dep
     find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
