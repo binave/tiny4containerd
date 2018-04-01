@@ -131,12 +131,12 @@ _apply_rootfs(){
     local sf;
     for sf in $(find . -type f);
     do
-        sf="${sf#*/}"; # trim './' head
-        mkdir -pv "$ROOTFS_DIR/${sf%/*}";
+        sf="${sf#*.}"; # trim './' -> '/' head
+        mkdir -pv "$ROOTFS_DIR${sf%/*}";
         if [ "${sf##*.}" == "sh" ]; then
-            cp -fv "./$sf" "$ROOTFS_DIR/${sf%.*}"
+            cp -fv ".$sf" "$ROOTFS_DIR${sf%.*}"
         else
-            cp -fv "./$sf" "$ROOTFS_DIR/${sf%/*}"
+            cp -fv ".$sf" "$ROOTFS_DIR${sf%/*}"
         fi
     done
     cd $STATE_DIR;

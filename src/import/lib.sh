@@ -128,14 +128,20 @@ _case() {
 
 # autocomplete and get the last match arguments
 _la() {
-    set $1*;
-    [ -e "$1" ] || {
-        printf "[ERROR] '$1' not found." >&2;
-        return 1;
-    };
-    while [ "$2" ]; do shift; done;
-    printf "$1";
-    return 0
+    if [ "$1" ]; then
+        local path=(
+            $1*$(set | grep _VERSION= | grep -i $1 | awk -F= '{print $2}')*
+        );
+        if [ ${#path[@]} == 1 -a -e $path ]; then
+            printf "$path";
+            return 0
+        else
+            printf "[ERROR] '$1' not found." >&2
+        fi
+    else
+        printf "[ERROR] args is empty." >&2
+    fi
+    return 1
 }
 
 _err() {
