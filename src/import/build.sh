@@ -230,8 +230,6 @@ _make_iptables() {
 _make_mdadm() {
     [ -s $ROOTFS_DIR/sbin/mdadm ] && { printf "[WARN] skip make 'mdadm'\n"; return 0; };
 
-    # *.rules -> $ROOTFS_DIR/etc/udev/rules.d
-
     _wait4 mdadm- || return $(_err $LINENO 3);
     _try_patch mdadm-;
 
@@ -297,8 +295,6 @@ BLKID_CFLAGS=\"-I/usr/include\"
 _make_lvm2() {
     [ -s $ROOTFS_DIR/usr/sbin/lvm ] && { printf "[WARN] skip make 'lvm2'\n"; return 0; };
 
-    # *.rules -> $ROOTFS_DIR/etc/udev/rules.d
-
     _wait4 LVM2 || return $(_err $LINENO 3);
     _try_patch LVM2;
 
@@ -336,8 +332,6 @@ _build_meson() {
 # for '_make_sshfs' build, [need]: 'ninja', 'meson', 'udev'
 _make_fuse() {
     [ -s $ROOTFS_DIR/usr/bin/fusermount3 ] && { printf "[WARN] skip make 'fuse'\n"; return 0; };
-
-    # *.rules -> $ROOTFS_DIR/etc/udev/rules.d
 
     _wait4 fuse- || return $(_err $LINENO 3);
     _try_patch libfuse-;

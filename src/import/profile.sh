@@ -202,20 +202,42 @@ nobody:*:13509:0:99999:7:::
 ';
 
     # sudoers
-    _mkcfg $ROOTFS_DIR/etc/sudoers"
+    _mkcfg -$ROOTFS_DIR/etc/sudoers"
+# sudoers file.
 #
 # This file MUST be edited with the 'visudo' command as root.
+# Failure to use 'visudo' may result in syntax or file permission errors
+# that prevent sudo from running.
+#
+# See the sudoers man page for the details on how to write a sudoers file.
 #
 
+#
 # Host alias specification
+#
+# Groups of machines. These may include host names (optionally with wildcards),
+# IP addresses, network numbers or netgroups.
 
+#
+# User alias specification
+#
+# Groups of users.  These may consist of user names, uids, Unix groups,
+# or netgroups.
+
+#
 # Cmnd alias specification
+#
+# Groups of commands.  Often used to group related commands together.
 Cmnd_Alias WRITE_LOG_CMDS = /usr/local/sbin/wtmp
 Cmnd_Alias SHUTDOWN_CMD = /sbin/poweroff
 
-# User alias specification
+#
+# Runas alias specification
+#
 
+#
 # User privilege specification
+#
 ALL         ALL=PASSWD: ALL
 
 root        ALL=(ALL) ALL
@@ -292,6 +314,7 @@ alias rm='rm -i';
     # add some timezone files so we're explicit about being UTC
     printf %s 'UTC' | tee $ROOTFS_DIR/etc/timezone;
     cp -vL /usr/share/zoneinfo/UTC $ROOTFS_DIR/etc/localtime;
+
     # # time zone database
     # _wait4 tzdata || return $(_err $LINENO 4);
     # _try_patch tzdata;
@@ -339,12 +362,12 @@ _apply_rootfs() {
     local sf;
     for sf in $(find . -type f);
     do
-        sf="${sf#*/}"; # trim './' head
-        mkdir -pv "$ROOTFS_DIR/${sf%/*}";
+        sf="${sf#*.}"; # trim './' -> '/' head
+        mkdir -pv "$ROOTFS_DIR${sf%/*}";
         if [ "${sf##*.}" == "sh" ]; then
-            cp -fv "./$sf" "$ROOTFS_DIR/${sf%.*}"
+            cp -fv ".$sf" "$ROOTFS_DIR${sf%.*}"
         else
-            cp -fv "./$sf" "$ROOTFS_DIR/${sf%/*}"
+            cp -fv ".$sf" "$ROOTFS_DIR${sf%/*}"
         fi
     done
 
