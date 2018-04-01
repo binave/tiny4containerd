@@ -15,4 +15,5 @@ printf "\n\n[`date`]\n";
 /usr/local/bin/wtmp;
 
 # PID USER COMMAND
-/bin/ps -ef | /bin/grep "crond\|monitor\|ntpd\|sshd\|udevd" | /usr/bin/awk "{print \"kill \"\$1}" | /bin/sh 2>/dev/null
+/bin/ps -ef | /bin/grep "crond\|monitor\|ntpd\|sshd\|udevd" | \
+    /usr/bin/awk "{print \"kill \"\$1}" | /bin/sh 2>/dev/null

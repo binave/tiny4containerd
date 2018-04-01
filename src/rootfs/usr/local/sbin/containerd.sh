@@ -26,7 +26,7 @@ for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 : ${CONTAINERD_HOST:='-H tcp://0.0.0.0:2375'};
 : ${CONTAINERD_USER:=tc};
 
-: ${ORG:="tinycorelinux"};
+: ${ORG:="binave"};
 : ${SERVER_ORG:="$ORG"};
 : ${CA_ORG:="${ORG}CA"};
 : ${CERT_DAYS:=365};
@@ -56,7 +56,7 @@ CLIENT_EXTFILE="$CLIENT_TLS_DIR/cliextfile.txt";
 
 _start() {
     _check && {
-        printf "container already running.\n";
+        printf "\033[1;32mcontainer already running.\033[0;39m\n";
         return 0
     };
 
@@ -82,7 +82,7 @@ _start() {
 
     [ $? == 0 ] || return 1
 
-    printf "container daemon is running.\n";
+    printf "\033[1;32mcontainer daemon is running.\033[0;39m\n";
     _start_container
 }
 
@@ -117,7 +117,7 @@ _start_container(){
     done
 
     [ $count == $WAIT_LIMIT ] && {
-        printf "[ERROR] Cannot connect to the Docker daemon at unix:///var/run/docker.sock.\n" >&2;
+        printf "[\033[1;31mERROR\033[0;39m] Cannot connect to the Docker daemon at unix:///var/run/docker.sock.\n" >&2;
         return 1
     };
 
@@ -165,7 +165,7 @@ _stop() {
     do
         sleep 0.1
     done
-    printf "container daemon is stop.\n"
+    printf "\033[1;32mcontainer daemon is stop.\033[0;39m\n"
 }
 
 # stop all container by config

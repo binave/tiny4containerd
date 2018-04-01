@@ -84,6 +84,7 @@ _make_busybox() {
         rm -f $symbolic && ln -fs $target.suid $symbolic
     done <<< $(make CONFIG_PREFIX=$ROOTFS_DIR install | grep '\->' | awk '{print $1" "$3}');
     mv -v $ROOTFS_DIR/bin/busybox $ROOTFS_DIR/bin/busybox.suid;
+    chmod u+s $ROOTFS_DIR/bin/busybox.suid;
 
     _ make mrproper;
     cp -v $THIS_DIR/config/busybox_nosuid.cfg ./.config;
@@ -109,7 +110,10 @@ __make_zlib() {
 
     cp -adv /usr/lib/libz.so* $ROOTFS_DIR/usr/lib;
     mv -v $ROOTFS_DIR/usr/lib/libz.so.* $ROOTFS_DIR/lib;
-    ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libz.so) $ROOTFS_DIR/usr/lib/libz.so
+    ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libz.so) $ROOTFS_DIR/usr/lib/libz.so;
+
+    # for openssl
+    cp -v z{lib,conf}.h /usr/include;
 }
 
 # [need]: 'zlib', https://wiki.openssl.org/index.php/Compilation_and_Installation
@@ -119,16 +123,21 @@ _make_openssl() {
     _wait4 openssl- || return $(_err $LINENO 3);
     _try_patch openssl-;
 
+    local args;
+
+    # version > 1.0 ||
+    [ ${OPENSSL_VERSION:2:1} -gt 0 ] || args="--install_prefix=$ROOTFS";
+
     ./config \
         --prefix=/usr \
         --openssldir=/etc/ssl \
-        shared zlib-dynamic || return $(_err $LINENO 3);
+        $args shared zlib-dynamic || return $(_err $LINENO 3);
 
     sed -i 's/-O3//g' ./Makefile;
     _ make && _ make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
 
     # for 'openssh' build
-    cp -adv $ROOTFS_DIR/usr/include/openssl /usr/include;
+    cp -adv $ROOTFS_DIR/usr/include/openssl /usr/include || return $(_err $LINENO 3)
 }
 
 # http://www.linuxfromscratch.org/blfs/view/8.1/postlfs/cacerts.html
@@ -220,6 +229,8 @@ _make_iptables() {
 _make_mdadm() {
     [ -s $ROOTFS_DIR/sbin/mdadm ] && { printf "[WARN] skip make 'mdadm'\n"; return 0; };
 
+    # *.rules -> $ROOTFS_DIR/etc/udev/rules.d
+
     _wait4 mdadm- || return $(_err $LINENO 3);
     _try_patch mdadm-;
 
@@ -285,6 +296,8 @@ BLKID_CFLAGS=\"-I/usr/include\"
 _make_lvm2() {
     [ -s $ROOTFS_DIR/usr/sbin/lvm ] && { printf "[WARN] skip make 'lvm2'\n"; return 0; };
 
+    # *.rules -> $ROOTFS_DIR/etc/udev/rules.d
+
     _wait4 LVM2 || return $(_err $LINENO 3);
     _try_patch LVM2;
 
@@ -322,6 +335,8 @@ _build_meson() {
 # for '_make_sshfs' build, [need]: 'ninja', 'meson', 'udev'
 _make_fuse() {
     [ -s $ROOTFS_DIR/usr/bin/fusermount3 ] && { printf "[WARN] skip make 'fuse'\n"; return 0; };
+
+    # *.rules -> $ROOTFS_DIR/etc/udev/rules.d
 
     _wait4 fuse- || return $(_err $LINENO 3);
     _try_patch libfuse-;
@@ -495,6 +510,8 @@ _make_sudo() {
         --with-passprompt="[sudo] password for %p: " || return $(_err $LINENO 3);
 
     _ make && _ make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
+
+    chmod u+s /usr/bin/sudo;
 
     # after build busybox
     ln -fsv $(readlink $ROOTFS_DIR/usr/bin/readlink)    $ROOTFS_DIR/usr/bin/vi

@@ -65,6 +65,9 @@ do
             "$user" != "staff" -a \
             "$user" != "docker" \
         ] && /usr/sbin/delgroup $group;
+
+        # TODO $shell
+
         printf "Failed to change the password for '$user:$group'.\n" >&2;
         continue
     };

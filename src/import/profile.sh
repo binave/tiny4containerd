@@ -257,15 +257,26 @@ readonly TMOUT
     _mkcfg $ROOTFS_DIR/etc/skel/.profile"
 # ~/.profile: Executed by Bourne-compatible login SHells.
 
-PS1='\u@\h:\W\$ '
-PAGER='less -EM'
-MANPAGER='less -isR'
-EDITOR=vi
-FLWM_TITLEBAR_COLOR='58:7D:AA'
+PS1='\u@\h:\W\$ ';
+PAGER='less -EM';
+MANPAGER='less -isR';
+EDITOR=vi;
+FLWM_TITLEBAR_COLOR='58:7D:AA';
 
-export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
+export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1;
 
-[ -f \$HOME/.ashrc ] && . \$HOME/.ashrc
+alias df='df -h';
+alias du='du -h';
+
+alias ls='ls -p';
+alias ll='ls -l';
+alias la='ls -la';
+
+alias cp='cp -i';
+alias mv='mv -i';
+alias rm='rm -i';
+
+[ -f \$HOME/.ashrc ] && . \$HOME/.ashrc;
 
 ";
 
@@ -274,6 +285,9 @@ export EDITOR FILEMGR FLWM_TITLEBAR_COLOR MANPAGER PAGER PS1
     # fix "su -"
     mkdir -pv $ROOTFS_DIR/etc/sysconfig;
     printf %s 'root' | tee $ROOTFS_DIR/etc/sysconfig/superuser;
+
+    # key map
+    printf %s 'KEYMAP=us' | tee $ROOTFS_DIR/etc/sysconfig/keymap;
 
     # add some timezone files so we're explicit about being UTC
     printf %s 'UTC' | tee $ROOTFS_DIR/etc/timezone;
