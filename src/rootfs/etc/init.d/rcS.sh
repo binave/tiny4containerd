@@ -101,13 +101,11 @@ _rebuild_fstab(){
 
 date;
 
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
-
 # This log is started before the persistence partition is mounted
 umask 022;
 
-/sbin/udevd --daemon;
-/sbin/udevadm trigger --action=add &
+udevd --daemon;
+udevadm trigger --action=add &
 
 sleep 5; # wait usb
 
@@ -129,7 +127,7 @@ printf "%-15s %-12s %-7s %-17s %-7s %-s\n"\
 _rebuild_fstab & fstab_pid=$!
 
 mv -v /tmp/98-tc.rules /etc/udev/rules.d/.;
-/sbin/udevadm control --reload-rules &
+udevadm control --reload-rules &
 
 export LANG=C TZ=CST-8;
 echo "LANG=$LANG" | tee /etc/sysconfig/language;
@@ -137,34 +135,33 @@ echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
 
 while [ ! -e /dev/rtc0 ]; do usleep 50000; done
 
-/sbin/hwclock -u -s &
+hwclock -u -s &
 
-/bin/hostname -F /etc/hostname;
-/sbin/ifconfig lo 127.0.0.1 up;
-/sbin/route add 127.0.0.1 lo &
+hostname -F /etc/hostname;
+ifconfig lo 127.0.0.1 up;
+route add 127.0.0.1 lo &
 
 USER="tc";
 if ! grep "$USER" /etc/passwd >/dev/null; then
-    /usr/sbin/adduser -s /bin/sh -G staff -D "$USER";
-    echo "$USER":tcuser | /usr/sbin/chpasswd -m
+    adduser -s /bin/sh -G staff -D "$USER";
+    echo "$USER":tcuser | chpasswd -m
 fi
 
 mkdir -pv /home/"$USER";
 
 modprobe -q squashfs;
-# /sbin/ldconfig;
 
 if [ -n "$LAPTOP" ]; then
     modprobe ac && modprobe battery;
     modprobe yenta_socket || modprobe i82365;
-    /sbin/udevadm trigger &
+    udevadm trigger &
 fi
 
 sync;
 wait $fstab_pid;
 
 # busybox, keyboard
-/sbin/loadkmap < /usr/share/kmap/${KEYMAP:-us}.kmap;
+loadkmap < /usr/share/kmap/${KEYMAP:-us}.kmap;
 
 # Configure sysctl, Read sysctl.conf
 sysctl -p /etc/sysctl.conf;
@@ -177,7 +174,7 @@ sed 's/[\|\;\& ]/\n/g' /proc/cmdline | \
     grep '^[_A-Z]\+=' > /etc/env;
 
 # mount and monitor hard drive array
-/usr/local/sbin/mdisk init;
+mdisk init;
 
 # for find/crond/log
 mkdir -pv \
@@ -186,7 +183,7 @@ mkdir -pv \
     $PERSISTENT_PATH/log/tiny/${Ymd:0:6};
 
 # mdiskd
-/usr/local/sbin/mdisk monitor;
+mdisk monitor;
 
 # create empty config
 [ -s /opt/tiny/etc/env ] || printf \
@@ -204,7 +201,7 @@ mkdir -pv \
 . /etc/env;
 
 # change password
-/usr/local/sbin/pwset;
+pwset;
 
 echo "------ firewall --------------";
 # http://wiki.tinycorelinux.net/wiki:firewall
@@ -212,7 +209,7 @@ echo "------ firewall --------------";
 sh /usr/local/etc/init.d/firewall init;
 
 # set static ip or start dhcp
-/usr/local/sbin/ifset;
+ifset;
 
 # mount cgroups hierarchy. https://github.com/tianon/cgroupfs-mount
 sh /usr/local/etc/init.d/cgroupfs mount;
@@ -243,7 +240,7 @@ sleep 3;
 echo tiny$(ip addr | grep -A 2 'eth[0-9]*:' | grep inet | awk -F'[.]|/' '{print "-"$4}' | awk '{printf $_}') | \
     tee /opt/tiny/etc/hostname;
 HOSTNAME=`cat /opt/tiny/etc/hostname`;
-/usr/bin/sethostname $HOSTNAME;
+sethostname $HOSTNAME;
 
 # ssh dameon start
 sh /usr/local/etc/init.d/sshd;
@@ -258,7 +255,7 @@ ifconfig | grep -A 2 '^[a-z]' | sed 's/Link .*//;s/--//g;s/UP.*//g;s/\s\s/ /g' |
 echo "----- containerd -------------";
 
 # Launch Containerd
-/usr/local/sbin/containerd start;
+containerd start;
 
 # Allow rc.local customisation
 touch /opt/tiny/etc/rc.local;
