@@ -135,9 +135,11 @@ rpc:        files
 ';
 
     # protocols, services
-    _wait4 iana-etc- || return $(_err $LINENO 4);
-    _try_patch iana-etc-;
-    _ make && _ make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 4);
+    if [ ! -s $ROOTFS_DIR/etc/protocols ]; then
+        _wait4 iana-etc- || return $(_err $LINENO 4);
+        _try_patch iana-etc-;
+        _ make && _ make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 4)
+    fi
 
     # hostname
     printf "tiny2containerd\n" | tee $ROOTFS_DIR/etc/hostname;
