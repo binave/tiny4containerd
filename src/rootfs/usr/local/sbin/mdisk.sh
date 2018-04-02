@@ -493,13 +493,13 @@ _lv_offline() {
 }
 
 _logger() {
-    local mdisk_log="$PERSISTENT_PATH/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
+    local mdisk_log="$PERSISTENT_PATH/log/sys/${Ymd:0:6}/${0##*/}_$Ymd.log";
     mkdir -p "${mdisk_log%/*}";
     awk '{print strftime("%F %T, '"$@"'") $0}' >> $mdisk_log
 }
 
 _log_out() {
-    local mdisk_log="$PERSISTENT_PATH/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
+    local mdisk_log="$PERSISTENT_PATH/log/sys/${Ymd:0:6}/${0##*/}_$Ymd.log";
     mkdir -p "${mdisk_log%/*}";
     tee -a $mdisk_log
 }

@@ -32,9 +32,9 @@ _latnemercni() {
 }
 
 YmdH=`date +%Y%m%d%H`;
-mkdir -p $PERSISTENT_PATH/log/tiny/${YmdH:0:6};
+mkdir -p $PERSISTENT_PATH/log/sys/${YmdH:0:6};
 
-cat /home/*/.ash_history /root/.ash_history 2>/dev/null | _incremental $PERSISTENT_PATH/log/tiny/${YmdH:0:6}/history_$YmdH.log;
+cat /home/*/.ash_history /root/.ash_history 2>/dev/null | _incremental $PERSISTENT_PATH/log/sys/${YmdH:0:6}/history_$YmdH.log;
 
 # > $PERSISTENT_PATH/log/wtmp
-last | _latnemercni $PERSISTENT_PATH/log/tiny/${YmdH:0:6}/last_${YmdH:0:8}.log
+last | _latnemercni $PERSISTENT_PATH/log/sys/${YmdH:0:6}/last_${YmdH:0:8}.log

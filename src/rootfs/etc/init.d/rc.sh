@@ -22,16 +22,16 @@ case $1 in
 
         sleep 1.5;
 
-        mkdir -p $PERSISTENT_PATH/log/tiny/${Ymd:0:6};
+        mkdir -p $PERSISTENT_PATH/log/sys/${Ymd:0:6};
 
-        cat /usr/rcS.log >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/boot_$Ymd.log && \
+        cat /usr/rcS.log >> $PERSISTENT_PATH/log/sys/${Ymd:0:6}/boot_$Ymd.log && \
             rm -f /usr/rcS.log
     ;;
     K)
-        mkdir -p $PERSISTENT_PATH/log/tiny/${Ymd:0:6};
+        mkdir -p $PERSISTENT_PATH/log/sys/${Ymd:0:6};
 
         sh /etc/init.d/rcK 2>&1 | \
-            tee -a $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/shut_$Ymd.log;
+            tee -a $PERSISTENT_PATH/log/sys/${Ymd:0:6}/shut_$Ymd.log;
 
         # Unload disk
         mdisk destroy;

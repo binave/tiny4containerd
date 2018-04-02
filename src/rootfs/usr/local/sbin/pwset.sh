@@ -21,7 +21,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 # import settings from profile
 for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
-: ${PW_CONFIG:="$PERSISTENT_PATH/tiny/etc/pw.cfg"};
+: ${PW_CONFIG:="$PERSISTENT_PATH/etc/pw.cfg"};
 
 [ -s $PW_CONFIG ] || printf "# [username]:[[group]]:[MD5-based password]\n\
 # 'MD5-based password':    openssl passwd -1 [password]\n\n" > $PW_CONFIG;

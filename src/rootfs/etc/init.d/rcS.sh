@@ -197,8 +197,8 @@ klogd;
 # for crond, find, log
 mkdir -pv \
     /var/spool/cron/crontabs \
-    $PERSISTENT_PATH/tiny/etc/init.d \
-    $PERSISTENT_PATH/log/tiny/${Ymd:0:6};
+    $PERSISTENT_PATH/etc/init.d \
+    $PERSISTENT_PATH/log/sys/${Ymd:0:6};
 
 # mdiskd
 mdisk monitor;
@@ -223,24 +223,24 @@ sh /usr/local/etc/init.d/cgroupfs mount;
 sleep 2;
 
 # init
-find $PERSISTENT_PATH/tiny/etc/init.d -type f -perm /u+x -name "S*.sh" -exec sh -c {} \;
+find $PERSISTENT_PATH/etc/init.d -type f -perm /u+x -name "S*.sh" -exec sh -c {} \;
 
 # sync the clock
-ntpd -d -n -p pool.ntp.org >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
+ntpd -d -n -p pool.ntp.org >> $PERSISTENT_PATH/log/sys/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
 
 # start cron
-crond -f -d "${CROND_LOGLEVEL:-8}" >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
+crond -f -d "${CROND_LOGLEVEL:-8}" >> $PERSISTENT_PATH/log/sys/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
 
 # hide directory
-chmod 700 $PERSISTENT_PATH/tiny/etc;
+chmod 700 $PERSISTENT_PATH/etc;
 
 #maybe the links will be up by now - trouble is, on some setups, they may never happen, so we can't just wait until they are
 sleep 3;
 
 # set the hostname
 echo tc$(ifconfig | grep -A 1 'eth[0-9]' | grep addr: | awk '{print $2}' | awk -F\. '{printf "-"$4}') | \
-    tee $PERSISTENT_PATH/tiny/etc/hostname;
-HOSTNAME=`cat $PERSISTENT_PATH/tiny/etc/hostname` && hostname $HOSTNAME;
+    tee $PERSISTENT_PATH/etc/hostname;
+HOSTNAME=`cat $PERSISTENT_PATH/etc/hostname` && hostname $HOSTNAME;
 
 # ssh dameon start
 sh /usr/local/etc/init.d/sshd;
@@ -258,10 +258,10 @@ echo "----- containerd -------------";
 containerd start;
 
 # Allow rc.local customisation
-touch $PERSISTENT_PATH/tiny/etc/rc.local;
-if [ -x $PERSISTENT_PATH/tiny/etc/rc.local ]; then
+touch $PERSISTENT_PATH/etc/rc.local;
+if [ -x $PERSISTENT_PATH/etc/rc.local ]; then
     echo "------ rc.local --------------";
-    . $PERSISTENT_PATH/tiny/etc/rc.local
+    . $PERSISTENT_PATH/etc/rc.local
 fi
 
 printf "\033[1;32mFinished init script...\033[0;39m\n";

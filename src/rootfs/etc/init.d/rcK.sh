@@ -10,7 +10,7 @@ printf "\n\n[`date`]\n";
 containerd stop;
 
 # shutdown script
-find $PERSISTENT_PATH/tiny/etc/init.d -type f -perm /u+x -name "K*.sh" -exec sh -c {} \;
+find $PERSISTENT_PATH/etc/init.d -type f -perm /u+x -name "K*.sh" -exec sh -c {} \;
 
 wtmp;
 
