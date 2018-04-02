@@ -1,4 +1,4 @@
-#!busybox ash
+#!/bin/busybox ash
 # Copyright 2011 Canonical, Inc
 #           2014 Tianon Gravi
 # Author: Serge Hallyn <serge.hallyn@canonical.com>
