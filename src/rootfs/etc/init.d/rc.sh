@@ -16,14 +16,14 @@ case $1 in
         mount -a;
 
         # This log is started before the persistence partition is mounted
-        sh /etc/init.d/rcS 2>&1 | tee -a /run/rcS-$$.log;
+        sh /etc/init.d/rcS 2>&1 | tee -a /usr/rcS.log;
 
         sleep 1.5;
 
         mkdir -p $PERSISTENT_PATH/log/tiny/${Ymd:0:6};
 
-        cat /run/rcS-$$.log >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/boot_$Ymd.log && \
-            rm -f /run/rcS-$$.log
+        cat /usr/rcS.log >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/boot_$Ymd.log && \
+            rm -f /usr/rcS.log
     ;;
     K)
         mkdir -p $PERSISTENT_PATH/log/tiny/${Ymd:0:6};
