@@ -89,10 +89,6 @@ _undep() {
     # move dhcp.sh out of init.d as we're triggering it manually so its ready a bit faster
     mv -v $ROOTFS_DIR/etc/init.d/dhcp.sh $ROOTFS_DIR/usr/local/etc/init.d;
 
-    # crond
-    rm -fr $ROOTFS_DIR/var/spool/cron/crontabs;
-    ln -fs /opt/tiny/etc/crontabs/  $ROOTFS_DIR/var/spool/cron/;
-
     # link 'lib64'
     mkdir -pv $ROOTFS_DIR/lib64;
     ln -sv ../lib/$(readlink $ROOTFS_DIR/lib/ld-linux-x86-64.so.*) $ROOTFS_DIR/lib64/$(cd $ROOTFS_DIR/lib; ls ld-linux-x86-64.so.*);

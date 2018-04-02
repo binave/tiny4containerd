@@ -178,7 +178,7 @@ udevadm trigger;
 # mount and monitor hard drive array
 mdisk init;
 
-# for find/crond/log
+# for crond, find, log
 mkdir -pv \
     /var/spool/cron/crontabs \
     $PERSISTENT_PATH/tiny/etc/init.d \
