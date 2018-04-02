@@ -5,6 +5,8 @@
 # It blocks all incoming traffic, allows all outgoing,
 # and only allows incoming stuff when you started it (ie browsing)
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 _init() {

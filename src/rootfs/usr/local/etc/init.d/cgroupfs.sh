@@ -4,6 +4,8 @@
 # Author: Serge Hallyn <serge.hallyn@canonical.com>
 #         Tianon Gravi <admwiggin@gmail.com>
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # doh, TCL doesn't have "mountpoint"

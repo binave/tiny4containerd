@@ -13,6 +13,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
 # load MD5-based password, create user and/or group
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 

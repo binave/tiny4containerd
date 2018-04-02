@@ -2,6 +2,8 @@
 
 # set static ip, dns, route. e.g. eth0 192.168.1.123 192.168.1.255 255.255.255.0
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from profile
