@@ -2,6 +2,9 @@
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 
+# import settings from profile
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
+
 # create empty config
 [ -s $PERSISTENT_PATH/tiny/etc/env.cfg ] || printf \
     "# set environment variable\n\n" > \
