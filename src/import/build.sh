@@ -594,8 +594,8 @@ _make_subversion() {
 
 }
 
-__make_libcap2() {
-    [ -s $ROOTFS_DIR/usr/lib/libcap.so ] && { printf "[WARN] skip make 'libcap2'\n"; return 0; };
+__make_libcap() {
+    [ -s $ROOTFS_DIR/usr/lib/libcap.so ] && { printf "[WARN] skip make 'libcap'\n"; return 0; };
 
     _wait4 libcap- || return $(_err $LINENO 3);
     _try_patch libcap-;

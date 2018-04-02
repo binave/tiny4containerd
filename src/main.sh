@@ -40,7 +40,7 @@ _main() {
     _last_version glib_version      $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION  "'xz\"'"    '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
     _last_version pcre_version      $PCRE_DOWNLOAD      "'pcre-.*bz2\"'"            '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version sshfs_version     $SSHFS_DOWNLOAD/tags    tag-name                '-F[-_\>\<]'    "'{print \$5}'" || return $(_err $LINENO);
-    _last_version libcap2_version   $LIBCAP2_DOWNLOAD   "'xz\"'"                    '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
+    _last_version libcap_version    $LIBCAP_DOWNLOAD    "'xz\"'"                    '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     # _last_version procps_version    $PROCPS_DOWNLOAD    "'\-ng-.*.tar.xz\"'"        '-F[-\"]'       "'{print \$10}'"|| return $(_err $LINENO);
     _last_version xz_version        $XZ_DOWNLOAD        "'bz2\"'"                   '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version git_version       $GIT_DOWNLOAD       "'git-[0-9].*tar.xz'"       '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
@@ -102,7 +102,7 @@ _main() {
     _message_queue --put "_make_e2fsprogs";
     _message_queue --put "_make_curl";
     # _message_queue --put "_make_subversion";
-    _message_queue --put "__make_libcap2";
+    _message_queue --put "__make_libcap";
 
     # add file
     _message_queue --put "_create_etc";
@@ -138,7 +138,7 @@ _main() {
         $SUDO_DOWNLOAD/sudo-$sudo_version.tar.gz \
         $E2FSPROGS_DOWNLOAD/v$e2fsprogs_version/e2fsprogs-$e2fsprogs_version.tar.xz \
         $CURL_DOWNLOAD/curl-$curl_version.tar.xz \
-        $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
+        $LIBCAP_DOWNLOAD/libcap-$libcap_version.tar.xz \
         $IANA_ETC-$iana_etc_version.tar.bz2 \
         $DOCKER_DOWNLOAD/docker-$docker_version.tgz;
         # $SQLITE_DOWNLOAD/$(curl -L $SQLITE_DOWNLOAD/download.html 2>/dev/null | grep '\/sqlite-ama' | awk -F[\'] '{print $4}') \
