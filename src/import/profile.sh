@@ -394,7 +394,7 @@ sudo /sbin/poweroff
 
     cd $ROOTFS_DIR;
     mkdir -pv \
-        etc/{acpi/events,init.d,modprobe.d,skel,ssl/certs,profile.d,sysconfig} \
+        etc/{acpi/events,init.d,skel,ssl/certs,profile.d,sysconfig} \
         home lib mnt proc root run sys tmp var \
         usr/{sbin,share};
 

@@ -194,7 +194,7 @@ syslogd;
 # Starting kernel log daemon: klogd...
 klogd;
 
-# for find/crond/log
+# for crond, find, log
 mkdir -pv \
     /var/spool/cron/crontabs \
     $PERSISTENT_PATH/tiny/etc/init.d \

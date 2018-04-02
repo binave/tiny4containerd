@@ -427,7 +427,7 @@ _lv_online() {
     mount $lv_data $PERSISTENT_PATH;
 
     # log
-    mkdir -p $PERSISTENT_PATH/log;
+    mkdir -pv $PERSISTENT_PATH/log;
     mount $lv_log $PERSISTENT_PATH/log;
 
     _dir_online $PERSISTENT_PATH;
@@ -436,10 +436,10 @@ _lv_online() {
 
 _dir_online() {
     # clean $PERSISTENT_PATH/*
-    mkdir -p \
-        $1/run \
-        $1/home \
-        $1/tmp;
+    mkdir -pv \
+       /run     $1/run \
+       /home    $1/home \
+       /tmp     $1/tmp;
 
     # create work, opt path
     printf "\nmount:";
@@ -452,6 +452,7 @@ _dir_online() {
         mv -f /home/* $1/home
     fi
     mount --bind $1/home /home && printf ", '/home'";
+    # mount --bind $1/log /log && printf ", '/log'";
 
     # Make sure /tmp is on the disk too too
     rm -fr /tmp/*;
@@ -464,8 +465,8 @@ _dir_online() {
 
 # unload device
 _lv_offline() {
-    umount -f /log;
-    umount -f /mnt/data;
+    umount -f $PERSISTENT_PATH/log;
+    umount -f $PERSISTENT_PATH;
 
     # umount -afr >/dev/null 2>&1;
 
@@ -533,7 +534,7 @@ _init() {
 
 _destroy() {
     umount -f /home;
-    umount -f $PERSISTENT_PATH;
+    # umount -f /log;
     umount -f /run;
     umount -f /tmp;
     _lv_offline;
