@@ -17,11 +17,9 @@
 [ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from profile
-[ -s /etc/env ] && . /etc/env;
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
-: ${PW_CONFIG:="$PERSISTENT_DATA/tiny/etc/pw.cfg"};
-
-mkdir -p ${PW_CONFIG%/*};
+: ${PW_CONFIG:="$PERSISTENT_PATH/tiny/etc/pw.cfg"};
 
 [ -s $PW_CONFIG ] || printf "# [username]:[[group]]:[MD5-based password]\n\
 # 'MD5-based password':    /usr/bin/openssl passwd -1 [password]\n\n" > $PW_CONFIG;
@@ -67,6 +65,9 @@ do
             "$user" != "staff" -a \
             "$user" != "docker" \
         ] && /usr/sbin/delgroup $group;
+
+        # TODO $shell
+
         printf "Failed to change the password for '$user:$group'.\n" >&2;
         continue
     };

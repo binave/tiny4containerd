@@ -1,48 +1,58 @@
-#!/bin/sh
-#   Copyright 2018 bin jin
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+#!/bin/busybox ash
 
 # set static ip, dns, route. e.g. eth0 192.168.1.123 192.168.1.255 255.255.255.0
 
-[ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
+[ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
-# import settings from env
-[ -s /etc/env ] && . /etc/env;
+# import settings from profile
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 : ${IF_PREFIX:=eth};
-: ${IF_CONFIG:='/opt/tiny/etc/if.cfg'};
+: ${IF_CONFIG:="$PERSISTENT_PATH/tiny/etc/if.cfg"};
 
 # init
 [ -s $IF_CONFIG ] || printf "# [interface] [ip] [broadcast] [netmask]\n\n" > $IF_CONFIG;
 
+# The DHCP portion is now separated out, in order to not slow the boot down
+_dhcp() {
+    mkdir -p /var/run;
+
+    # This waits until all devices have registered
+    /sbin/udevadm settle --timeout=5;
+
+    echo "-------- dhcp ----------------"
+    local n_dev net_devices="$(/usr/bin/awk -F: '/'$IF_PREFIX'.:|tr.:/{print $1}' /proc/net/dev 2>/dev/null)";
+
+    for n_dev in $net_devices;
+    do
+        /sbin/ifconfig $n_dev | /bin/grep -q "inet addr" || {
+            trap 2 3 11;
+            /sbin/udhcpc \
+                -b -i $n_dev -x hostname:$(/bin/hostname) \
+                -p /var/run/udhcpc.$n_dev.pid >/dev/null 2>&1 &
+
+            trap "" 2 3 11;
+            /bin/sleep 1
+        }
+    done
+}
+
 # close dhcp
-cat /var/run/udhcpc.eth*.pid 2>/dev/null | xargs kill 2>/dev/null;
+/bin/cat /var/run/udhcpc.$IF_PREFIX*.pid 2>/dev/null | /usr/bin/xargs kill 2>/dev/null;
 
 # set static ip, dns, route. e.g. eth0 192.168.1.123 192.168.1.255 255.255.255.0
-awk -F# '{print $1}' $IF_CONFIG | grep -q $IF_PREFIX'[0-9].*[0-9\.]' && {
+/usr/bin/awk -F# '{print $1}' $IF_CONFIG | /bin/grep -q $IF_PREFIX'[0-9].*[0-9\.]' && {
     # set ipv4
     echo "----- static ip --------------"
-    awk -F# '{print $1}' $IF_CONFIG | grep $IF_PREFIX'[0-9].*[0-9\.]' | awk '{print "ifconfig "$1" "$2" broadcast "$3" netmask "$4" up"}' | sh
+    /usr/bin/awk -F# '{print $1}' $IF_CONFIG | /bin/grep $IF_PREFIX'[0-9].*[0-9\.]' | /usr/bin/awk '{print "ifconfig "$1" "$2" broadcast "$3" netmask "$4" up"}' | /bin/sh
     [ $? == 0 ] && {
         # dns and route
-        awk -F# '{print $1}' $IF_CONFIG | grep $IF_PREFIX'[0-9].*[0-9\.]' | \
-            head -1 | awk '{print $3}' | awk -F\. '{print "nameserver "$1"."$2"."$3"."1}' >> /etc/resolv.conf && \
-            route add default gw $(grep '[0-9].*[0-9\.]' /etc/resolv.conf | head -1 | awk '{print $2}') || false
+        /usr/bin/awk -F# '{print $1}' $IF_CONFIG | /bin/grep $IF_PREFIX'[0-9].*[0-9\.]' | \
+            /usr/bin/head -1 | /usr/bin/awk '{print $3}' | /usr/bin/awk -F\. '{print "nameserver "$1"."$2"."$3"."1}' >> /etc/resolv.conf && \
+            /sbin/route add default gw $(/bin/grep '[0-9].*[0-9\.]' /etc/resolv.conf | /usr/bin/head -1 | /usr/bin/awk '{print $2}') || false
         # :
     } || false
-} || {
-    # Trigger the DHCP request sooner (the x64 bit userspace appears to be a second slower)
-    /usr/local/etc/init.d/dhcp.sh
-    echo "-------- dhcp ----------------"
-}
+
+# TODO wait for slow network cards
+# Trigger the DHCP request sooner (the x64 bit userspace appears to be a second slower)
+} || _dhcp

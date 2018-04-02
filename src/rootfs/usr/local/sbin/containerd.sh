@@ -13,11 +13,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
 # dockerd start script
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
-# import settings from env (e.g. HTTP_PROXY, HTTPS_PROXY)
-[ -s /etc/env ] && . /etc/env;
+# import settings from profile (e.g. HTTP_PROXY, HTTPS_PROXY)
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 : ${IF_PREFIX:=eth};
 : ${CONTAINERD_ULIMITS:="1048576"};
@@ -34,10 +36,10 @@
 Ymd=`date +%Y%m%d`;
 CERT_INTERFACES="switch0 ${IF_PREFIX}0 ${IF_PREFIX}1 ${IF_PREFIX}2 ${IF_PREFIX}3 ${IF_PREFIX}4";
 
-CONTAINERD_LOG="/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
-CONTAINERD_DIR="/opt/${0##*/}ata";
+CONTAINERD_LOG="$PERSISTENT_PATH/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
+CONTAINERD_DIR="$PERSISTENT_PATH/${0##*/}ata";
 
-SERVER_TLS_DIR="/opt/tiny/tls";
+SERVER_TLS_DIR="$PERSISTENT_PATH/tiny/tls";
 SERVER_KEY="$SERVER_TLS_DIR/serverkey.pem";
 SERVER_CSR="$SERVER_TLS_DIR/servercsr.pem";
 SERVER_CERT="$SERVER_TLS_DIR/server.pem";
@@ -52,9 +54,6 @@ CLIENT_CSR="$CLIENT_TLS_DIR/csr.pem";
 CLIENT_CERT="$CLIENT_TLS_DIR/cert.pem";
 CLIENT_EXTFILE="$CLIENT_TLS_DIR/cliextfile.txt";
 
-# Add /usr/local/sbin to the path.
-export PATH=$PATH:/usr/local/sbin;
-
 _start() {
     _check && {
         printf "\033[1;32mcontainer already running.\033[0;39m\n";
@@ -62,8 +61,8 @@ _start() {
     };
 
     [ -e "/etc/docker" ] || {
-        mkdir -p "/opt/tiny/etc/docker";
-        ln -sf "/opt/tiny/etc/docker" "/etc/docker"
+        mkdir -p "$PERSISTENT_PATH/tiny/etc/docker";
+        ln -sf "$PERSISTENT_PATH/tiny/etc/docker" "/etc/docker"
     };
 
     _install_tls;
@@ -92,7 +91,7 @@ _srv_ext_var() {
     local ip interface;
     for interface in ${CERT_INTERFACES};
     do
-        for ip in $(ip addr show $interface 2>/dev/null | sed -nEe 's/^[ \t]*inet[ \t]*([0-9.]+)\/.*$/\1/p');
+        for ip in $(ifconfig $interface 2>/dev/null | sed -nEe 's/^[ \t].*addr:([0-9.]+)[ \t].*$/\1/p');
         do
             printf %s ",IP:$ip";
         done
@@ -102,9 +101,9 @@ _srv_ext_var() {
 
 _containerd() {
     {
-        printf "time=\"$(date -u +%FT%TZ)\" level=info msg=\"startup parameters\" /usr/local/bin/dockerd ";
+        printf "time=\"$(date -u +%FT%TZ)\" level=info msg=\"startup parameters\" dockerd ";
         echo "$@";
-        /usr/local/bin/dockerd "$@" &
+        dockerd "$@" &
     } >> "$CONTAINERD_LOG" 2>&1
 }
 
@@ -184,7 +183,7 @@ _restart() {
             _check || break;
             sleep 1
         done
-        [ $sum == $WAIT_LIMIT ] && { echo "[\033[1;31mERROR\033[0;39m] Failed to stop container dameon. '$sum'"; return 1; }
+        [ $sum == $WAIT_LIMIT ] && { echo "[ERROR] Failed to stop container dameon. '$sum'"; return 1; }
     fi
     _start
 }
@@ -262,6 +261,8 @@ _install_tls() {
     return 0
 
 }
+
+mkdir -p /var/run;
 
 case $1 in
     start) _start;;

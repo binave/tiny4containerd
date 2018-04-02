@@ -13,6 +13,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # skip this script. edit: isolinux.cfg -> append
@@ -21,8 +23,8 @@ grep -q 'nodisk' /proc/cmdline 2>/dev/null && {
     exit 0
 };
 
-# import settings from env
-[ -s /etc/env ] && . /etc/env;
+# import settings from profile
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 # stop rebuild when assemble
 grep -q 'noautorebuild' /proc/cmdline 2>/dev/null && NOAUTOREBUILD=1 || unset NOAUTOREBUILD;
@@ -37,9 +39,6 @@ grep -q 'noautorebuild' /proc/cmdline 2>/dev/null && NOAUTOREBUILD=1 || unset NO
 : ${CHUNK:=128};
 
 Ymd=`date +%Y%m%d`;
-MDISK_LOG="/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
-
-export PATH=$PATH:/usr/local/sbin;
 
 # test disk
 ls /dev/$DISK_PREFIX? >/dev/null 2>&1 || {
@@ -386,7 +385,7 @@ __vg_list() {
 }
 
 _lv_online() {
-    local lv vg;
+    local lv vg lv_swap lv_data lv_log;
 
     for vg in $(__vg_list);
     do
@@ -396,49 +395,55 @@ _lv_online() {
         for lv in $(lvdisplay | grep Path | grep "$vg" | awk '{print $3}');
         do
             if [ "${lv##*/}" == "lv_swap" ]; then
-                swapoff -a 2>/dev/null; # off old swap
-                swapon $lv
-            elif [ "${lv##*/}" == "lv_log" ]; then
-                mkdir -p /log;
-                mount $lv /log;
-                [ -d /mnt/data ] && return 0
+                lv_swap="$lv"
             elif [ "${lv##*/}" == "lv_data" ]; then
-                mkdir -p /mnt/data;
-                mount $lv /mnt/data;
-                _dir_online /mnt/data;
-                [ -d /log ] && return 0
+                lv_data="$lv"
+            elif [ "${lv##*/}" == "lv_log" ]; then
+                lv_log="$lv"
             fi
         done
-
-        {
-            printf "[ERROR] ";
-            [ -d /log ] || printf "'lv_log'";
-            [ -d /log -o -d /mnt/data ] || printf " ";
-            [ -d /mnt/data ] || printf "'lv_data'";
-            printf " load failed.\n";
-        } >&2;
-
-        return 1
-
     done
 
-    printf "[ERROR] no LVM found.\n" >&2;
-    return 1
+    if [ ! "$vg" ]; then
+        printf "[ERROR] no LVM found.\n" >&2;
+        return 1
+    fi
+
+    [ -e "$lv_swap" -a -e "$lv_data" -a -e "$lv_log" ] || {
+        printf "[ERROR]";
+        [ -e "$lv_swap" ] || printf " 'lv_swap'";
+        [ -e "$lv_data" ] || printf " 'lv_data'";
+        [ -e "$lv_log" ] || printf " 'lv_log'";
+        printf " load failed.\n";
+        return 1
+    } >&2;
+
+    # off old swap
+    swapoff -a 2>/dev/null;
+    swapon $lv_swap;
+
+    # data
+    mkdir -p $PERSISTENT_PATH;
+    mount $lv_data $PERSISTENT_PATH;
+
+    # log
+    mkdir -p $PERSISTENT_PATH/log;
+    mount $lv_log $PERSISTENT_PATH/log;
+
+    _dir_online $PERSISTENT_PATH;
+    return 0
 }
 
 _dir_online() {
-    # clean /opt/*
-    rm -fr /opt;
-    mkdir -p /opt /volume1 \
-        $1/opt \
-        $1/volume1 \
+    # clean $PERSISTENT_PATH/*
+    mkdir -p \
+        $1/run \
         $1/home \
         $1/tmp;
 
     # create work, opt path
     printf "\nmount:";
-    mount --bind $1/opt /opt && printf " '/opt'";
-    mount --bind $1/volume1 /volume1 && printf ", '/volume1'";
+    mount --bind $1/run /run && printf ", '/run'";
 
     # change home path
     if [ -d $1/home/*map ]; then
@@ -487,19 +492,21 @@ _lv_offline() {
 }
 
 _logger() {
-    mkdir -p "${MDISK_LOG%/*}";
-    awk '{print strftime("%F %T, '"$@"'") $0}' >> $MDISK_LOG
+    local mdisk_log="$PERSISTENT_PATH/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
+    mkdir -p "${mdisk_log%/*}";
+    awk '{print strftime("%F %T, '"$@"'") $0}' >> $mdisk_log
 }
 
 _log_out() {
-    mkdir -p "${MDISK_LOG%/*}";
-    tee -a $MDISK_LOG
+    local mdisk_log="$PERSISTENT_PATH/log/tiny/${Ymd:0:6}/${0##*/}_$Ymd.log";
+    mkdir -p "${mdisk_log%/*}";
+    tee -a $mdisk_log
 }
 
 # main
 _init() {
-    [ -d /volume1 ] && {
-        printf "[WARN]disk is already initialized.\n" >&2;
+    [ -d $PERSISTENT_PATH/log ] && {
+        printf "[WARN] disk is already initialized.\n" >&2;
         return 0
     };
 
@@ -526,8 +533,8 @@ _init() {
 
 _destroy() {
     umount -f /home;
-    umount -f /opt;
-    umount -f /volume1;
+    umount -f $PERSISTENT_PATH;
+    umount -f /run;
     umount -f /tmp;
     _lv_offline;
     printf "disk offline complete.\n"
@@ -627,11 +634,31 @@ _fail() {
 
     mdadm --manage $1 --fail $2 --remove $2;
 
+    local md_info;
+    md_info=$(mdadm --examine $2 2>/dev/null | grep 'Array UUID\|Level\|Devices\|Role');
+
+    # cut info
+    [ ${#md_info} -gt 446 ] && md_info=${md_info:0:446};
+
+    #
+    printf "$md_info" | dd of=$2 seek=$(expr 446 - ${#md_info}); sync;
+
+    # https://en.wikipedia.org/wiki/Master_boot_record
+
+    # # clear disk info
+    # dd if=/dev/zero of=$2 bs=1 count=512; sync;
+
+    # # clear mbr
+    # dd if=/dev/zero of=$2 bs=1 count=446; sync;
+
+    # # clear partition info
+    # dd if=/dev/zero of=$2 bs=1 seek=446 count=66; sync;
+
+    # # backup partition info
+    # dd if=$2 of=/tmp/pbr.bak bs=1 skip=446 count=66; sync;
+
     # erase the MD superblock
     mdadm --misc --zero-superblock $2;
-
-    # # clear mbr and pbr
-    # dd if=/dev/zero of=$2 bs=1 count=512; sync;
 
     # create a new empty DOS partition table, skip 'doesn't contain a valid partition table'
     printf "o\nw\n" | fdisk $2
@@ -681,10 +708,13 @@ case $1 in
     Fail) _fail $2 $3 2>&1 | _logger;;
     monitor)
         ls /dev/md* >/dev/null 2>&1 || exit 1;
-        ps -ef | grep 'mdadm.*--monitor' | awk '{print "kill "$2}' | sh 2>/dev/null;
+
+        # kill monitor
+        cat $PERSISTENT_PATH/run/md.pid 2>/dev/null | xargs kill 2>/dev/null;
+
         # mdadm --monitor --oneshot /dev/md*
-        mdadm --monitor --program=$0 --daemonise --pid-file=/etc/md.pid /dev/md*
-        # mdadm --monitor --mail=root@localhost --program=$0 --daemonise --pid-file=/etc/md.pid /dev/md*
+        mdadm --monitor --program=$0 --daemonise --pid-file=$PERSISTENT_PATH/run/md.pid /dev/md*
+        # mdadm --monitor --mail=root@localhost --program=$0 --daemonise --pid-file=$PERSISTENT_PATH/run/md.pid /dev/md*
     ;;
     add) _add $2 $3 2>&1 | _log_out;;
     rebuild) _rebuild 2>&1 | _log_out;;

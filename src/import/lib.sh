@@ -130,7 +130,7 @@ _case() {
 _la() {
     if [ "$1" ]; then
         local path=(
-            $1*$(set | grep _VERSION= | grep -i $1 | awk -F= '{print $2}')*
+            $1*$(set | grep _VERSION= | grep -i ${1//-/_} | awk -F= '{print $2}')*
         );
         if [ ${#path[@]} == 1 -a -e $path ]; then
             printf "$path";
@@ -191,8 +191,8 @@ _mkcfg() {
 _wait4(){
     [ -s $WORK_DIR/.error ] && return 1;
     [ "$1" ] || return 1;
-    set $(_la $CELLAR_DIR/${1##*/}) $2;
-    set ${1##*/} $2;
+    set $(_la $CELLAR_DIR/${1##*/}) $2 >/dev/null;
+    set ${1##*/} $2 >/dev/null;
     local count=0 times=$((TIMEOUT_SEC / TIMELAG_SEC));
     until [ -f "$LOCK_DIR/$1.lock" ];
     do
@@ -213,7 +213,7 @@ _wait4(){
 _untar() {
     local _1=$(_la $1) _2=${2:-$WORK_DIR};
     shift; shift;
-    set $_1 $_2 $@;
+    set $_1 $_2 $@ >/dev/null;
     _hash $1 || return 1;
     case $1 in
         *.tar.gz) tar -C $2 $3 -xzf $1 || return 1;;

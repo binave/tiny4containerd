@@ -169,36 +169,26 @@ sysctl -p /etc/sysctl.conf;
 udevadm control --reload-rules;
 udevadm trigger;
 
-# filter env
-sed 's/[\|\;\& ]/\n/g' /proc/cmdline | \
-    grep '^[_A-Z]\+=' > /etc/env;
+# filter environment variable
+{
+    sed 's/[\|\;\& ]/\n/g' /proc/cmdline | grep '^[_A-Z]\+=';
+    printf "export PERSISTENT_PATH=$PERSISTENT_PATH\n"
+} > /etc/profile.d/boot_envar.sh;
 
 # mount and monitor hard drive array
 mdisk init;
 
 # for find/crond/log
 mkdir -pv \
-    /opt/tiny/etc/crontabs \
-    /opt/tiny/etc/init.d \
+    /var/spool/cron/crontabs \
+    $PERSISTENT_PATH/tiny/etc/init.d \
     $PERSISTENT_PATH/log/tiny/${Ymd:0:6};
 
 # mdiskd
 mdisk monitor;
 
-# create empty config
-[ -s /opt/tiny/etc/env ] || printf \
-    "# set environment variable\n\n" > \
-    /opt/tiny/etc/env;
-
-# filter env
-{
-    awk -F# '{print $1}' /opt/tiny/etc/env 2>/dev/null | \
-        sed 's/[\|\;\&]/\n/g;s/export//g;s/^[ ]\+//g' | grep '^[_A-Z]\+='
-    printf "PERSISTENT_DATA=/opt\n\n"
-} >> /etc/env;
-
-# init env
-. /etc/env;
+# init environment from disk
+envset;
 
 # change password
 pwset;
@@ -217,7 +207,7 @@ sh /usr/local/etc/init.d/cgroupfs mount;
 sleep 2;
 
 # init
-find /opt/tiny/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
+find $PERSISTENT_PATH/tiny/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
 
 # sync the clock
 ntpd -d -n -p pool.ntp.org >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
@@ -228,18 +218,18 @@ crond -f -d "${CROND_LOGLEVEL:-8}" >> $PERSISTENT_PATH/log/tiny/${Ymd:0:6}/crond
 # if we have the tc user, let's add it do the docker group
 grep -q '^tc:' /etc/passwd && addgroup tc docker;
 
-chmod 1777 /tmp /volume1;
+chmod 1777 /tmp;
 
 # hide directory
-chmod 700 /opt/tiny/etc;
+chmod 700 $PERSISTENT_PATH/tiny/etc;
 
 #maybe the links will be up by now - trouble is, on some setups, they may never happen, so we can't just wait until they are
 sleep 3;
 
 # set the hostname
 echo tiny$(ip addr | grep -A 2 'eth[0-9]*:' | grep inet | awk -F'[.]|/' '{print "-"$4}' | awk '{printf $_}') | \
-    tee /opt/tiny/etc/hostname;
-HOSTNAME=`cat /opt/tiny/etc/hostname`;
+    tee $PERSISTENT_PATH/tiny/etc/hostname;
+HOSTNAME=`cat $PERSISTENT_PATH/tiny/etc/hostname`;
 sethostname $HOSTNAME;
 
 # ssh dameon start
@@ -258,10 +248,10 @@ echo "----- containerd -------------";
 containerd start;
 
 # Allow rc.local customisation
-touch /opt/tiny/etc/rc.local;
-if [ -x /opt/tiny/etc/rc.local ]; then
+touch $PERSISTENT_PATH/tiny/etc/rc.local;
+if [ -x $PERSISTENT_PATH/tiny/etc/rc.local ]; then
     echo "------ rc.local --------------";
-    . /opt/tiny/etc/rc.local
+    . $PERSISTENT_PATH/tiny/etc/rc.local
 fi
 
 # echo "booting" > /etc/sysconfig/noautologin
