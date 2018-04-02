@@ -26,7 +26,7 @@ _main() {
 
     echo;
     _last_version kernel_version    $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x  "\"linux-$KERNEL_MAJOR_VERSION.*xz\""   '-F[-\"]'   "'{print \$3}'" || return $(_err $LINENO);
-    _last_version libcap2_version   $LIBCAP2_DOWNLOAD   "'xz\"'"    '-F[-\"]'   "'{print \$3}'"         || return $(_err $LINENO);
+    _last_version libcap_version    $LIBCAP_DOWNLOAD    "'xz\"'"    '-F[-\"]'   "'{print \$3}'"         || return $(_err $LINENO);
     _last_version docker_version    $DOCKER_DOWNLOAD    docker-     '-F[-\"]'   "'{print \$3\"-\"\$4}'" || return $(_err $LINENO);
 
     # for iso label
@@ -41,7 +41,7 @@ _main() {
 
     _install bc;                _message_queue --put "_make_kernel"; # this may use most time
     _install cpio squashfs-tools;    _message_queue --put "_undep";
-    _message_queue --put "_make_libcap2";
+    _message_queue --put "_make_libcap";
     _message_queue --put "_modify_config";
     _message_queue --put "_apply_rootfs";
 
@@ -56,7 +56,7 @@ _main() {
         _thread_valve --run _downlock $TCL_REPO_DOWNLOAD/tcz/$dep.tcz
     done
     for url in \
-        $LIBCAP2_DOWNLOAD/libcap-$libcap2_version.tar.xz \
+        $LIBCAP_DOWNLOAD/libcap-$libcap_version.tar.xz \
         $TCL_REPO_DOWNLOAD/release/distribution_files/rootfs64.gz \
         $DOCKER_DOWNLOAD/docker-$docker_version.tgz;
     do
