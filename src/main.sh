@@ -91,12 +91,12 @@ _main() {
     _install re2c python3;      _message_queue --put "_build_meson";
     _message_queue --put "_make_fuse";
     _install libbz2-dev libreadline-dev;    _message_queue --put "__make_pcre";
+    _message_queue --put "_make_git";
     _install libffi-dev gettext;            _message_queue --put "__make_glib";
     _install python-docutils;   _message_queue --put "_make_sshfs";
 
     # tools
     _message_queue --put "_make_xz";
-    _message_queue --put "_make_git";
     # _install ncurses-dev;       _message_queue --put "_make_procps";
     _message_queue --put "_make_sudo";
     _message_queue --put "_make_e2fsprogs";

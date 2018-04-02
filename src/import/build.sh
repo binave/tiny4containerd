@@ -57,7 +57,7 @@ _make_glibc() {
         libc_cv_slibdir=/lib || return $(_err $LINENO 3);
 
     sed -i 's/-O2//g' ./config.make ./config.status;
-    _ make && _ make install_root=$ROOTFS_DIR install;
+    _ make && _ make install_root=$ROOTFS_DIR install || return $(_err $LINENO 3);
 
     mkdir -pv $ROOTFS_DIR/lib64;
     ln -sv ../lib/$(readlink $ROOTFS_DIR/lib/ld-linux-x86-64.so.*) $ROOTFS_DIR/lib64/$(cd $ROOTFS_DIR/lib; ls ld-linux-x86-64.so.*);
@@ -309,7 +309,14 @@ _make_lvm2() {
         --enable-udev_sync || return $(_err $LINENO 3);
 
     sed -i 's/-O2/ /g' ./make.tmpl;
-    _ make && _ make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3)
+    _ make && _ make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
+
+    # for eudev
+    ln -sv ../../../usr/lib/udev/rules.d/10-dm.rules          $ROOTFS_DIR/lib/udev/rules.d;
+    ln -sv ../../../usr/lib/udev/rules.d/11-dm-lvm.rules      $ROOTFS_DIR/lib/udev/rules.d;
+    ln -sv ../../../usr/lib/udev/rules.d/13-dm-disk.rules     $ROOTFS_DIR/lib/udev/rules.d;
+    ln -sv ../../../usr/lib/udev/rules.d/95-dm-notify.rules   $ROOTFS_DIR/lib/udev/rules.d
+
 }
 
 # for '_make_fuse' '_make_sshfs'
@@ -370,6 +377,26 @@ __make_pcre() {
     cp -adv /usr/lib/libpcre.so* $ROOTFS_DIR/usr/lib;
     mv -v $ROOTFS_DIR/usr/lib/libpcre.so.* $ROOTFS_DIR/lib;
     ln -sfv ../../lib/$(readlink $ROOTFS_DIR/usr/lib/libpcre.so) $ROOTFS_DIR/usr/lib/libpcre.so
+
+}
+
+# for docker, [need] zlib.h, http://linuxfromscratch.org/blfs/view/stable/general/git.html
+_make_git() {
+    [ -s $ROOTFS_DIR/usr/bin/git ] && { printf "[WARN] skip make 'git'\n"; return 0; };
+
+    _wait4 git- || return $(_err $LINENO 3);
+    _try_patch git-;
+
+    ./configure \
+        --prefix=/usr \
+        --with-gitconfig=/etc/gitconfig || return $(_err $LINENO 3);
+
+    sed -i 's/-g -O2/ /g' ./Makefile ./config.mak.autogen;
+
+    _ make && _ make DESTDIR=$ROOTFS_DIR install || return $(_err $LINENO 3);
+
+    # # need: asciidoc (man)
+    # _ make DESTDIR=$ROOTFS_DIR install-man || return $(_err $LINENO 3)
 
 }
 
@@ -468,26 +495,6 @@ _make_xz() {
     mv -v $ROOTFS_DIR/usr/bin/{lzma,unlzma,lzcat,xz,unxz,xzcat} $ROOTFS_DIR/bin;
     mv -v $ROOTFS_DIR/usr/lib/liblzma.so.* $ROOTFS_DIR/lib;
     ln -svf ../../lib/$(readlink $ROOTFS_DIR/usr/lib/liblzma.so) $ROOTFS_DIR/usr/lib/liblzma.so
-}
-
-# for docker, http://linuxfromscratch.org/blfs/view/stable/general/git.html
-_make_git() {
-    [ -s $ROOTFS_DIR/usr/bin/git ] && { printf "[WARN] skip make 'git'\n"; return 0; };
-
-    _wait4 git- || return $(_err $LINENO 3);
-    _try_patch git-;
-
-    ./configure \
-        --prefix=/usr \
-        --with-gitconfig=/etc/gitconfig || return $(_err $LINENO 3);
-
-    sed -i 's/-g -O2/ /g' ./Makefile ./config.mak.autogen;
-
-    _ make && _ make DESTDIR=$ROOTFS_DIR install;
-
-    # # need: asciidoc (man)
-    # _ make DESTDIR=$ROOTFS_DIR install-man
-
 }
 
 _make_sudo() {
