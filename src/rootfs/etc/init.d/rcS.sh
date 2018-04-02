@@ -172,17 +172,19 @@ wait $fstab_pid;
 # busybox, keyboard
 loadkmap < /usr/share/kmap/${KEYMAP:=us}.kmap;
 
-# filter environment variable
-{
-    sed 's/[\|\;\& ]/\n/g' /proc/cmdline | grep '^[_A-Z]\+=';
-    printf "export PERSISTENT_PATH=$PERSISTENT_PATH\n"
-} > /etc/profile.d/boot_envar.sh;
-
 # Configure sysctl, Read sysctl.conf
 sysctl -p /etc/sysctl.conf;
 
 udevadm control --reload-rules;
 udevadm trigger;
+
+set +x;
+
+# filter environment variable
+{
+    sed 's/[\|\;\& ]/\n/g' /proc/cmdline | grep '^[_A-Z]\+=';
+    printf "export PERSISTENT_PATH=$PERSISTENT_PATH\n"
+} > /etc/profile.d/boot_envar.sh;
 
 # mount and monitor hard drive array
 mdisk init;
@@ -192,10 +194,8 @@ syslogd;
 # Starting kernel log daemon: klogd...
 klogd;
 
-set +x;
-
 # for find/crond/log
-mkdir -p \
+mkdir -pv \
     /var/spool/cron/crontabs \
     $PERSISTENT_PATH/tiny/etc/init.d \
     $PERSISTENT_PATH/log/tiny/${Ymd:0:6};

@@ -7,7 +7,7 @@
 # import settings from profile
 for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
-: ${IF_PREFIX:='eth'};
+: ${IF_PREFIX:=eth};
 : ${IF_CONFIG:="$PERSISTENT_PATH/tiny/etc/if.cfg"};
 
 # init
