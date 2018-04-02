@@ -109,6 +109,8 @@ umask 022;
 [ -d /root ] || mkdir -m 0750 /root;
 [ -d /tmp  ] || mkdir -m 1777 /tmp;
 
+set -x;
+
 mkdir -pv /sys /proc;
 
 # Starting udev daemon...
@@ -123,7 +125,7 @@ modprobe loop;
 modprobe -q zram;
 modprobe -q zcache;
 
-while [ ! -e /dev/zram0 ]; do usleep 50000; done
+# while [ ! -e /dev/zram0 ]; do usleep 50000; done
 
 grep MemFree /proc/meminfo | awk '{print $2/4 "K"}' | \
     tee /sys/block/zram0/disksize;
@@ -146,7 +148,7 @@ export LANG=C TZ=CST-8;
 echo "LANG=$LANG" | tee /etc/sysconfig/language;
 echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
 
-while [ ! -e /dev/rtc0 ]; do usleep 50000; done
+# while [ ! -e /dev/rtc0 ]; do usleep 50000; done
 
 hwclock -u -s &
 
@@ -189,6 +191,8 @@ mdisk init;
 syslogd;
 # Starting kernel log daemon: klogd...
 klogd;
+
+set +x;
 
 # for find/crond/log
 mkdir -p \
