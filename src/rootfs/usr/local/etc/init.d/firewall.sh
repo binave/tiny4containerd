@@ -5,15 +5,17 @@
 # It blocks all incoming traffic, allows all outgoing,
 # and only allows incoming stuff when you started it (ie browsing)
 
-[ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
+[ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 _init() {
 
     # Insert connection-tracking modules
-    /sbin/modprobe -q iptable_nat;
-    /sbin/modprobe -q nf_conntrack_ipv4;
-    /sbin/modprobe -q nf_conntrack_ftp;
-    /sbin/modprobe -q ipt_LOG;
+    modprobe -q iptable_nat;
+    modprobe -q nf_conntrack_ipv4;
+    modprobe -q nf_conntrack_ftp;
+    modprobe -q ipt_LOG;
 
     # Enable broadcast echo Protection
     echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts;
@@ -45,32 +47,32 @@ _init() {
     echo 0 > /proc/sys/net/ipv4/tcp_ecn;
 
     # Set a known state
-    /sbin/iptables -P INPUT   DROP;
-    /sbin/iptables -P FORWARD DROP;
-    /sbin/iptables -P OUTPUT  ACCEPT;
+    iptables -P INPUT   DROP;
+    iptables -P FORWARD DROP;
+    iptables -P OUTPUT  ACCEPT;
 
     # These lines are here in case rules are already in place and the
     # script is ever rerun on the fly. We want to remove all rules and
     # pre-existing user defined chains before we implement new rules.
-    /sbin/iptables -F;
-    /sbin/iptables -X;
-    /sbin/iptables -Z;
+    iptables -F;
+    iptables -X;
+    iptables -Z;
 
-    /sbin/iptables -t nat -F;
+    iptables -t nat -F;
 
     # Allow local-only connections
-    /sbin/iptables -A INPUT  -i lo -j ACCEPT;
+    iptables -A INPUT  -i lo -j ACCEPT;
 
     # Permit answers on already established connections
     # and permit new connections related to established ones
     # (e.g. port mode ftp)
-    /sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT;
+    iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT;
 
     # Speed up some ftp / IM
-    # /sbin/iptables -A INPUT  -p tcp --dport 113 -j REJECT --reject-with tcp-reset;
+    # iptables -A INPUT  -p tcp --dport 113 -j REJECT --reject-with tcp-reset;
 
     # Log everything else. What's Windows' latest exploitable vulnerability?
-    # /sbin/iptables -A INPUT -j LOG --log-prefix "FIREWALL:INPUT ";
+    # iptables -A INPUT -j LOG --log-prefix "FIREWALL:INPUT ";
 
     # End of basic-firewall
     _status
@@ -79,7 +81,7 @@ _init() {
 _status() {
     printf "\033[1;34m";
     # To display numeric values, type
-    /sbin/iptables -vnL;
+    iptables -vnL;
     printf "\033[0;39m"
 }
 

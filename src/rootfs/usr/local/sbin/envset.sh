@@ -1,5 +1,7 @@
 #!/bin/sh
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
 # create empty config
 [ -s $PERSISTENT_PATH/tiny/etc/env.cfg ] || printf \
     "# set environment variable\n\n" > \
@@ -7,7 +9,7 @@
 
 # filter env
 {
-    /usr/bin/awk -F# '{print $1}' $PERSISTENT_PATH/tiny/etc/env.cfg 2>/dev/null | \
-        /bin/sed 's/[\|\;\&]/\n/g;s/export//g;s/^[ ]\+//g' | /bin/grep '^[_A-Z]\+=';
+    awk -F# '{print $1}' $PERSISTENT_PATH/tiny/etc/env.cfg 2>/dev/null | \
+        sed 's/[\|\;\&]/\n/g;s/export//g;s/^[ ]\+//g' | grep '^[_A-Z]\+=';
     echo
 } > /etc/profile.d/local_envar.sh;

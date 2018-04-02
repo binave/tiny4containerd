@@ -6,9 +6,9 @@
 CERTDIR="$1"
 
 # remove hash links
-/bin/busybox find "$CERTDIR" -regex '.*/[0-9a-f]\{8\}\.[0-9]\{1,\}' -type l -exec rm {} \;
+busybox find "$CERTDIR" -regex '.*/[0-9a-f]\{8\}\.[0-9]\{1,\}' -type l -exec rm {} \;
 
-for CFILE in $(/bin/busybox find $CERTDIR -regex '.*\.\(pem\|crt\|cer\|crl\)$') ; do
+for CFILE in $(busybox find $CERTDIR -regex '.*\.\(pem\|crt\|cer\|crl\)$') ; do
 	FNAME=$(echo $CFILE | sed "s/'/\\'/g")
 	KEYS=""
 	grep -q -E '^-----BEGIN (X509 |TRUSTED |)CERTIFICATE-----' $FNAME 2>/dev/null && \

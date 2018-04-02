@@ -13,23 +13,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-[ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
+[ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 _incremental() {
-    /bin/touch $1;
-    /usr/bin/diff $1 - | /bin/grep '^+[^+]' | /bin/sed 's/^\+//g' >> $1
+    touch $1;
+    diff $1 - | grep '^+[^+]' | sed 's/^\+//g' >> $1
 }
 
 _latnemercni() {
-    /bin/touch $1;
-    /bin/sed '1!G;h;$!d' | /usr/bin/diff $1 - | /bin/grep '^+[^+]' | \
-        /bin/grep -v 'still logged in' | /bin/sed 's/^\+//g' >> $1
+    touch $1;
+    sed '1!G;h;$!d' | diff $1 - | grep '^+[^+]' | \
+        grep -v 'still logged in' | sed 's/^\+//g' >> $1
 }
 
 YmdH=`date +%Y%m%d%H`;
-/bin/mkdir -p $PERSISTENT_PATH/log/tiny/${YmdH:0:6};
+mkdir -p $PERSISTENT_PATH/log/tiny/${YmdH:0:6};
 
-/bin/cat /home/*/.ash_history /root/.ash_history 2>/dev/null | _incremental $PERSISTENT_PATH/log/tiny/${YmdH:0:6}/history_$YmdH.log;
+cat /home/*/.ash_history /root/.ash_history 2>/dev/null | _incremental $PERSISTENT_PATH/log/tiny/${YmdH:0:6}/history_$YmdH.log;
 
 # > $PERSISTENT_PATH/log/wtmp
-/usr/bin/last | _latnemercni $PERSISTENT_PATH/log/tiny/${YmdH:0:6}/last_${YmdH:0:8}.log
+last | _latnemercni $PERSISTENT_PATH/log/tiny/${YmdH:0:6}/last_${YmdH:0:8}.log

@@ -13,8 +13,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
+
 # load MD5-based password, create user and/or group
-[ $(/usr/bin/id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
+[ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from profile
 for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
@@ -22,12 +24,12 @@ for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 : ${PW_CONFIG:="$PERSISTENT_PATH/tiny/etc/pw.cfg"};
 
 [ -s $PW_CONFIG ] || printf "# [username]:[[group]]:[MD5-based password]\n\
-# 'MD5-based password':    /usr/bin/openssl passwd -1 [password]\n\n" > $PW_CONFIG;
+# 'MD5-based password':    openssl passwd -1 [password]\n\n" > $PW_CONFIG;
 
-/usr/bin/awk -F# '{print $1}' $PW_CONFIG | \
-    /usr/bin/awk '{print $1}' | \
-    /bin/grep '^[a-z]\+:[a-zA-Z]\+\?:[$A-Za-z0-9\/\.]\+$' | \
-    /usr/bin/awk -F: '{print $1" "$3" "$2}' | \
+awk -F# '{print $1}' $PW_CONFIG | \
+    awk '{print $1}' | \
+    grep '^[a-z]\+:[a-zA-Z]\+\?:[$A-Za-z0-9\/\.]\+$' | \
+    awk -F: '{print $1" "$3" "$2}' | \
 while read user passwd group;
 do
     # test password length
@@ -36,27 +38,27 @@ do
 
     # test group exist
     [ "$group" ] || group=$user;
-    /usr/bin/awk -F# '{print $1}' /etc/group | /usr/bin/awk '{print $1}' | \
-        /bin/grep -q ^$group: || {
-            /usr/sbin/addgroup -S $group && is_add_group=true
+    awk -F# '{print $1}' /etc/group | awk '{print $1}' | \
+        grep -q ^$group: || {
+            addgroup -S $group && is_add_group=true
         };
 
     # add user
-    if /usr/bin/id $user >/dev/null 2>&1; then
-        /usr/sbin/addgroup $user $group
+    if id $user >/dev/null 2>&1; then
+        addgroup $user $group
     else
-        /usr/sbin/adduser -s /bin/sh -G $group -D $user && is_add_user=true
+        adduser -s sh -G $group -D $user && is_add_user=true
     fi
 
     # update password
-    printf "$user:$passwd" | /usr/sbin/chpasswd -e 2>&1 | \
-        /bin/grep -q 'password.*changed' || {
+    printf "$user:$passwd" | chpasswd -e 2>&1 | \
+        grep -q 'password.*changed' || {
         $is_add_user && [ \
             "$user" != "root" -a \
             "$user" != "dockremap" -a \
             "$user" != "nobody" \
             "$user" != "lp" -a \
-        ] && /usr/sbin/deluser $user;
+        ] && deluser $user;
         $is_add_group && [ \
             "$user" != "root" -a \
             "$user" != "dockremap" -a \
@@ -64,7 +66,7 @@ do
             "$user" != "lp" -a \
             "$user" != "staff" -a \
             "$user" != "docker" \
-        ] && /usr/sbin/delgroup $group;
+        ] && delgroup $group;
 
         # TODO $shell
 
