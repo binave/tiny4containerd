@@ -2,8 +2,8 @@
 
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
-# import settings from env
-[ -s /etc/env ] && . /etc/env;
+# import settings from profile (e.g. HTTP_PROXY, HTTPS_PROXY)
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 : ${SSHD_PORT:=22};
 

@@ -7,7 +7,7 @@
 
 # filter env
 {
-    /usr/bin/awk -F# '{print $1}' $PERSISTENT_PATH/tiny/etc/env.cfg 2>/dev/null | \
-        /bin/sed 's/[\|\;\&]/\n/g;s/export//g;s/^[ ]\+//g' | /bin/grep '^[_A-Z]\+=';
+    awk -F# '{print $1}' $PERSISTENT_PATH/tiny/etc/env.cfg 2>/dev/null | \
+        sed 's/[\|\;\&]/\n/g;s/export//g;s/^[ ]\+//g' | grep '^[_A-Z]\+=';
     echo
 } > /etc/profile.d/local_envar.sh;
