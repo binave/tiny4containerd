@@ -423,6 +423,7 @@ _lv_online() {
     swapon $lv_swap;
 
     # data
+    rm -fr $PERSISTENT_PATH;
     mkdir -p $PERSISTENT_PATH;
     mount $lv_data $PERSISTENT_PATH;
 
@@ -435,29 +436,23 @@ _lv_online() {
 }
 
 _dir_online() {
-    # clean $PERSISTENT_PATH/*
+    rm -fr /tmp;
     mkdir -pv \
-       /run     $1/run \
        /home    $1/home \
        /tmp     $1/tmp;
 
     # create work, opt path
     printf "\nmount:";
-    mount --bind $1/run /run && printf ", '/run'";
-
     # change home path
     if [ -d $1/home/*map ]; then
         rm -fr /home/*;
     else
-        mv -f /home/* $1/home
+        mv -fv /home/* $1/home
     fi
     mount --bind $1/home /home && printf ", '/home'";
-    # mount --bind $1/log /log && printf ", '/log'";
 
     # Make sure /tmp is on the disk too too
-    rm -fr /tmp/*;
     mount --bind $1/tmp /tmp && printf ", '/tmp'";
-
     printf "\n";
 
     return 0
@@ -534,8 +529,6 @@ _init() {
 
 _destroy() {
     umount -f /home;
-    # umount -f /log;
-    umount -f /run;
     umount -f /tmp;
     _lv_offline;
     printf "disk offline complete.\n"
@@ -638,25 +631,13 @@ _fail() {
     local md_info;
     md_info=$(mdadm --examine $2 2>/dev/null | grep 'Array UUID\|Level\|Devices\|Role');
 
-    # cut info
-    [ ${#md_info} -gt 446 ] && md_info=${md_info:0:446};
-
-    #
-    printf "$md_info" | dd of=$2 seek=$(expr 446 - ${#md_info}); sync;
-
     # https://en.wikipedia.org/wiki/Master_boot_record
+    printf "${md_info:0:446}" | dd of=$2; sync;
 
-    # # clear disk info
-    # dd if=/dev/zero of=$2 bs=1 count=512; sync;
-
-    # # clear mbr
-    # dd if=/dev/zero of=$2 bs=1 count=446; sync;
-
-    # # clear partition info
-    # dd if=/dev/zero of=$2 bs=1 seek=446 count=66; sync;
-
-    # # backup partition info
-    # dd if=$2 of=/tmp/pbr.bak bs=1 skip=446 count=66; sync;
+    # dd if=/dev/zero   of=$2           bs=1            count=446;  sync;   # clear mbr
+    # dd if=/dev/zero   of=$2           bs=1            count=512;  sync;   # clear disk info
+    # dd if=/dev/zero   of=$2           bs=1 seek=446   count=66;   sync;   # clear partition info
+    # dd if=$2          of=/tmp/pbr.bak bs=1 skip=446   count=66;   sync;   # backup partition info
 
     # erase the MD superblock
     mdadm --misc --zero-superblock $2;
@@ -711,11 +692,11 @@ case $1 in
         ls /dev/md* >/dev/null 2>&1 || exit 1;
 
         # kill monitor
-        cat $PERSISTENT_PATH/run/md.pid 2>/dev/null | xargs kill 2>/dev/null;
+        cat /run/md.pid 2>/dev/null | xargs kill 2>/dev/null && rm /run/md.pid;
 
         # mdadm --monitor --oneshot /dev/md*
-        mdadm --monitor --program=$0 --daemonise --pid-file=$PERSISTENT_PATH/run/md.pid /dev/md*
-        # mdadm --monitor --mail=root@localhost --program=$0 --daemonise --pid-file=$PERSISTENT_PATH/run/md.pid /dev/md*
+        mdadm --monitor --program=$0 --daemonise --pid-file=/run/md.pid /dev/md*
+        # mdadm --monitor --mail=root@localhost --program=$0 --daemonise --pid-file=/run/md.pid /dev/md*
     ;;
     add) _add $2 $3 2>&1 | _log_out;;
     rebuild) _rebuild 2>&1 | _log_out;;

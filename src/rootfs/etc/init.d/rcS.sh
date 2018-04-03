@@ -81,8 +81,8 @@ _rebuild_fstab(){
         esac
         [ "$MOUNTPOINT" != "none" ] && mkdir -pv "/mnt/$DEVNAME";
         grep -q "^$DEVROOT/$DEVNAME " $TMP || \
-            printf "%-15s %-15s %-8s %-20s %-s\n" \
-            "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" | \
+            printf "%-15s %-12s %-7s %-17s %-7s %-2s %-s\n" \
+            "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" 0 0 "$ADDEDBY" | \
             tee -a "$TMP"
     done
 
@@ -104,7 +104,7 @@ date;
 # This log is started before the persistence partition is mounted
 umask 022;
 
-udevd --daemon >/dev/null 2>&1;
+udevd --daemon;
 udevadm trigger --action=add &
 
 sleep 5; # wait usb
