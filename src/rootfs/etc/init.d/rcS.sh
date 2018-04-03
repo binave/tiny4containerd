@@ -4,15 +4,15 @@ _rebuild_fstab(){
     # Exit if script is already running
     [ -e /proc/partitions ] || return;
 
-    if [ -e /var/run/rebuildfstab.pid ]; then
-        if [ -e "/proc/$(cat /var/run/rebuildfstab.pid)" ]; then
-            touch /var/run/rebuildfstab.rescan;
+    if [ -e /run/rebuildfstab.pid ]; then
+        if [ -e "/proc/$(cat /run/rebuildfstab.pid)" ]; then
+            touch /run/rebuildfstab.rescan;
             return
         fi
-        rm -fv /var/run/rebuildfstab.pid
+        rm -fv /run/rebuildfstab.pid
     fi
 
-    echo "$$" | tee /var/run/rebuildfstab.pid;
+    echo "$$" | tee /run/rebuildfstab.pid;
 
     local ADDEDBY CDROMS CDROMSF DEVMAJOR DEVNAME DEVROOT FDISKL FSTYPE MOUNTPOINT OPTIONS TMP i;
 
@@ -67,7 +67,7 @@ _rebuild_fstab(){
         OPTIONS="noauto,users,exec";
         case "$FSTYPE" in
             ntfs)
-                if [ -f /usr/local/bin/ntfs-3g ]; then
+                if which ntfs-3g >/dev/null; then
                     FSTYPE="ntfs-3g";
                     OPTIONS="$OPTIONS"
                 else
@@ -81,19 +81,19 @@ _rebuild_fstab(){
         esac
         [ "$MOUNTPOINT" != "none" ] && mkdir -pv "/mnt/$DEVNAME";
         grep -q "^$DEVROOT/$DEVNAME " $TMP || \
-            printf "%-15s %-15s %-8s %-20s %-s\n" \
-            "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" | \
+            printf "%-15s %-12s %-7s %-17s %-7s %-2s %-s\n" \
+            "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" 0 0 "$ADDEDBY" | \
             tee -a "$TMP"
     done
 
     # Clean up
     mv -v "$TMP" /etc/fstab;
-    rm -fv /var/run/rebuildfstab.pid;
+    rm -fv /run/rebuildfstab.pid;
     sync;
 
     # If another copy tried to run while we were running, rescan.
-    if [ -e /var/run/rebuildfstab.rescan ]; then
-        rm -fv /var/run/rebuildfstab.rescan;
+    if [ -e /run/rebuildfstab.rescan ]; then
+        rm -fv /run/rebuildfstab.rescan;
         _rebuild_fstab "$@"
     fi
 
@@ -106,15 +106,12 @@ printf "\n\n[`date`]\n\033[1;33mRunning init script...\033[0;39m\n";
 # set globle file mode mask
 umask 022;
 
-[ -d /root ] || mkdir -m 0750 /root;
-[ -d /tmp  ] || mkdir -m 1777 /tmp;
-
 set -x;
 
 mkdir -pv /sys /proc;
 
 # Starting udev daemon...
-udevd --daemon >/dev/null 2>&1;
+udevd --daemon;
 
 # Udevadm requesting events from the Kernel...
 udevadm trigger --action=add &
@@ -188,6 +185,9 @@ set +x;
 
 # mount and monitor hard drive array
 mdisk init;
+
+[ -d /root ] || mkdir -pm 0750 /root;
+[ -d /tmp  ] || mkdir -pm 1777 /tmp;
 
 # Starting system log daemon: syslogd...
 syslogd;
