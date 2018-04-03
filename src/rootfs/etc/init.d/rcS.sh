@@ -114,7 +114,7 @@ set -x;
 mkdir -pv /sys /proc;
 
 # Starting udev daemon...
-udevd --daemon;
+udevd --daemon >/dev/null 2>&1;
 
 # Udevadm requesting events from the Kernel...
 udevadm trigger --action=add &
@@ -130,7 +130,7 @@ modprobe -q zcache;
 grep MemFree /proc/meminfo | awk '{print $2/4 "K"}' | \
     tee /sys/block/zram0/disksize;
 
-mkswap /dev/zram0 >/dev/null 2>&1;
+mkswap /dev/zram0;
 swapon /dev/zram0;
 
 printf "%-15s %-12s %-7s %-17s %-7s %-s\n"\
