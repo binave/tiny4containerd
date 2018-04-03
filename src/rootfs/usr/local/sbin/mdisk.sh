@@ -24,7 +24,7 @@ grep -q 'nodisk' /proc/cmdline 2>/dev/null && {
 };
 
 # import settings from profile
-for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
+envset; for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 # stop rebuild when assemble
 grep -q 'noautorebuild' /proc/cmdline 2>/dev/null && NOAUTOREBUILD=1 || unset NOAUTOREBUILD;
@@ -681,7 +681,7 @@ grep -q 'noraid' /proc/cmdline 2>/dev/null && NORAID=true || NORAID=false;
 # TODO change hostname
 case $1 in
     init) _init;;
-    status)
+    status|"")
         cat /proc/mdstat | grep -v '<none';
         printf "unused devices:";
         _idle_disk_list | awk '{printf " "$1}';

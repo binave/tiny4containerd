@@ -19,7 +19,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from profile
-for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
+envset; for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 : ${PW_CONFIG:="$PERSISTENT_PATH/etc/pw.cfg"};
 

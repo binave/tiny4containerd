@@ -19,7 +19,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from profile (e.g. HTTP_PROXY, HTTPS_PROXY)
-for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
+envset; for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 : ${IF_PREFIX:=eth};
 : ${CONTAINERD_ULIMITS:="1048576"};
