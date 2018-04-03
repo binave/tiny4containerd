@@ -442,23 +442,57 @@ _trim_rootfs() {
 
     echo " --------------- trim file ------------------------";
     # http://www.linuxfromscratch.org/lfs/view/stable/chapter06/revisedchroot.html
-    # clear var, drop passwd: /usr/bin/passwd -> /bin/busybox.suid, static library
+    # clear var, drop passwd: /usr/bin/passwd -> /bin/busybox.suid
     rm -frv \
         $ROOTFS_DIR/usr/bin/passwd \
-        $ROOTFS_DIR/etc/{ssl/man,*-,sysconfig/autologin} \
-        $ROOTFS_DIR/usr/{,local/}include \
-        $ROOTFS_DIR/usr/{,local/}share/{info,man,doc} \
-        $ROOTFS_DIR/{,usr/}lib/lib*.{,l}a;
-        # $ROOTFS_DIR/var/* \
+        $ROOTFS_DIR/usr/{,local/}{include,share/{info,man,doc}} \
+        $ROOTFS_DIR/etc/{*-,ssl/man,sysconfig/autologin};
+
+    # trim share libary
+    find $ROOTFS_DIR/{,usr/}lib \
+        -iname "*.a" -o \
+        -iname "*.la" -o \
+        -iname "*.o" \
+        -exec rm -frv {} +
 
     # '/*' is necessary !
+    # /usr/share/locale
     find $ROOTFS_DIR/usr/share/locale/* \
-        $ROOTFS_DIR/usr/share/i18n/locales/* \
+        -maxdepth 0 \
+        -type d \
+        ! -name "en_GB" \
+        ! -name "zh_*" \
+        ! -name "uk" \
+        ! -name "ja" \
+        ! -name "ko" \
+        -exec rm -frv {} +
+
+    # /usr/share/i18n/locales
+    find $ROOTFS_DIR/usr/share/i18n/locales/* \
+        ! -name "POSIX" \
+        ! -name "en_US" \
+        ! -name "ja_JP" \
+        ! -name "ko_KR" \
+        ! -name "uk_UA" \
+        ! -name "zh_CN" \
+        ! -name "zh_TW" \
+        ! -name "ko" \
+        -exec rm -frv {} +
+
+    # /usr/share/i18n/charmaps
+    find $ROOTFS_DIR/usr/lib/gconv \
         $ROOTFS_DIR/usr/share/i18n/charmaps/* \
-        -maxdepth 1 \
-        ! -name "en*"   ! -name "eu*"   ! -name "ja*"   ! -name "ko*"   ! -name "uk*"   ! -name "zh_*" \
-        ! -name "ANSI_X3.*"     ! -name "BIG5*"     ! -name "GB*"   ! -name "ISO-8859-*" \
-        ! -name "JIS_*" ! -name "KOI*"  ! -name "UTF*"  ! -name "*.alias" \
+        ! -name "ANSI_X3.*" \
+        ! -name "BIG5*" \
+        ! -name "EUC-*" \
+        ! -name "GB*" \
+        ! -name "ISO*8859-*" \
+        ! -name "*JP*" \
+        ! -name "KOI*" \
+        ! -name "UTF*" \
+        ! -name "gconv-modules" \
+        ! -name "UNICODE*" \
+        ! -name "lib*" \
         -exec rm -frv {} +
 
     # test and move unexecutable script to '$OUT_DIR/uexe'
