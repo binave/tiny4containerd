@@ -68,11 +68,11 @@ A:
 
 > |路径|说明|样例|备注
 > |---|---|---|---
-> |/opt/tiny/etc/pw.cfg|密码配置|`root:$1$AgCGptrX$hL7QB536iJ9KKjO1KtfVA.`|使用 `openssl passwd -1 [password]` 生成加密密码
-> |/opt/tiny/etc/if.cfg|静态 ip 配置|`eth0 192.168.1.123 192.168.1.255 255.255.255.0`|
-> |/opt/tiny/etc/init.d/[SK]*.sh|启动、关机脚本|S01_ftpd.sh K20_ftpd.sh|`S*.sh` 在服务启动前执行<br/>`K*.sh` 设备关机前执行
-> |/opt/tiny/etc/env|环境变量配置|`EXTRA_ARGS="--registry-mirror=https://xxx.mirror.aliyuncs.com"`|
-> |/opt/tiny/etc/rc.local|启动最后阶段执行||需要赋予可执行权限
+> |/opt/etc/pw.cfg|密码配置|`root:$1$AgCGptrX$hL7QB536iJ9KKjO1KtfVA.`|使用 `openssl passwd -1 [password]` 生成加密密码
+> |/opt/etc/if.cfg|静态 ip 配置|`eth0 192.168.1.123 192.168.1.255 255.255.255.0`|
+> |/opt/etc/init.d/[SK]*.sh|启动、关机脚本|S01_ftpd.sh K20_ftpd.sh|`S*.sh` 在服务启动前执行<br/>`K*.sh` 设备关机前执行
+> |/opt/etc/env|环境变量配置|`EXTRA_ARGS="--registry-mirror=https://xxx.mirror.aliyuncs.com"`|
+> |/opt/etc/rc.local|启动最后阶段执行||需要赋予可执行权限
 > |isolinux.cfg|启动参数和环境变量配置||需要编辑源代码中的配置文件
 <p><br/></p>
 
@@ -126,18 +126,18 @@ A:
 > |CHUNK|128|RAID 块大小|mdisk|不建议修改
 <br/>
 
-> 公用配置 `/opt/tiny/etc/env.cfg`：
+> 公用配置 `/opt/etc/env.cfg`：
 
 > |环境变量名称|默认值|说明|所属命令|备注
 > |---|---|---|---|---
 > |CROND_LOGLEVEL|8|crond 日志等级，0 为最详细|crond|
-> |PW_CONFIG|/opt/tiny/etc/pw.cfg|密码配置|pwset
-> |IF_CONFIG|/opt/tiny/etc/if.cfg|静态 ip 配置|ifset|
+> |PW_CONFIG|/opt/etc/pw.cfg|密码配置|pwset
+> |IF_CONFIG|/opt/etc/if.cfg|静态 ip 配置|ifset|
 > |IF_PREFIX|eth|网卡前缀名称|ifset, containerd|需要根据硬件进行调整
 > |CONTAINERD_ULIMITS|1048576|进程数上限|containerd|
 > |CONTAINERD_HOST|`-H tcp://0.0.0.0:2375`|监听 hosts|containerd|
 > |CONTAINERD_USER|tc|默认用户名|containerd|如果修改需要自己建立用户
-> |ORG|tinycorelinux|证书组织名称|containerd|
+> |ORG|binave|证书组织名称|containerd|
 > |SERVER_ORG|tinycorelinux|服务端证书组织名称|containerd|
 > |CA_ORG|tinycorelinuxCA|根证书名称|containerd|
 > |CERT_DAYS|365|证书有效期|containerd|
