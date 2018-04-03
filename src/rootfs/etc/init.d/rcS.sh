@@ -4,15 +4,15 @@ _rebuild_fstab(){
     # Exit if script is already running
     [ -e /proc/partitions ] || return;
 
-    if [ -e /var/run/rebuildfstab.pid ]; then
-        if [ -e "/proc/$(cat /var/run/rebuildfstab.pid)" ]; then
-            touch /var/run/rebuildfstab.rescan;
+    if [ -e /run/rebuildfstab.pid ]; then
+        if [ -e "/proc/$(cat /run/rebuildfstab.pid)" ]; then
+            touch /run/rebuildfstab.rescan;
             return
         fi
-        rm -fv /var/run/rebuildfstab.pid
+        rm -fv /run/rebuildfstab.pid
     fi
 
-    echo "$$" | tee /var/run/rebuildfstab.pid;
+    echo "$$" | tee /run/rebuildfstab.pid;
 
     local ADDEDBY CDROMS CDROMSF DEVMAJOR DEVNAME DEVROOT FDISKL FSTYPE MOUNTPOINT OPTIONS TMP i;
 
@@ -88,12 +88,12 @@ _rebuild_fstab(){
 
     # Clean up
     mv -v "$TMP" /etc/fstab;
-    rm -fv /var/run/rebuildfstab.pid;
+    rm -fv /run/rebuildfstab.pid;
     sync;
 
     # If another copy tried to run while we were running, rescan.
-    if [ -e /var/run/rebuildfstab.rescan ]; then
-        rm -fv /var/run/rebuildfstab.rescan;
+    if [ -e /run/rebuildfstab.rescan ]; then
+        rm -fv /run/rebuildfstab.rescan;
         _rebuild_fstab "$@"
     fi
 
