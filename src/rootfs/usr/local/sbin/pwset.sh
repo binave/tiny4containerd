@@ -23,32 +23,60 @@ envset; for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 : ${PW_CONFIG:="$PERSISTENT_PATH/etc/pw.cfg"};
 
-[ -s $PW_CONFIG ] || printf "# [username]:[[group]]:[MD5-based password]\n\
+[ -s $PW_CONFIG ] || printf "# [username]:[[group]]:[MD5-based password]:[[shell]]\n\
 # 'MD5-based password':    openssl passwd -1 [password]\n\n" > $PW_CONFIG;
+
+# test group exist
+_gd() {
+    awk -F# '{print $1}' /etc/group | awk '{print $1}' | grep -q ^$1: && return 0;
+    return 1
+}
 
 awk -F# '{print $1}' $PW_CONFIG | \
     awk '{print $1}' | \
-    grep '^[a-z]\+:[a-zA-Z]\+\?:[$A-Za-z0-9\/\.]\+$' | \
-    awk -F: '{print $1" "$3" "$2}' | \
-while read user passwd group;
+    grep '^[a-z]\+:[a-zA-Z]\+\?:[$A-Za-z0-9\/\.]\+:\?[A-Za-z0-9\/\.]\+\?$' | \
+    awk -F: '{print $1" "$3" \""$4"\" "$2}' | \
+while read user passwd shell group;
 do
-    # test password length
-    [ ${#passwd} == 34 ] || continue;
+    printf "will parse string: '$user:$group:$passwd:$shell'.\n";
+    # test password length and format
+    if [ ${#passwd} == 34 -a "${passwd:0:3}${passwd:11:1}" == "\$1\$$" ]; then
+        printf "[\033[1;31mERROR\033[0;39m] '$user:$group:$passwd:$shell' password format cannot be recognized\n" >&2;
+        continue;
+    fi
+
     is_add_user=false is_add_group=false;
 
-    # test group exist
-    [ "$group" ] || group=$user;
-    awk -F# '{print $1}' /etc/group | awk '{print $1}' | \
-        grep -q ^$group: || {
+    # test user
+    ginf=$(id $user) && {
+        if [ "$group" ]; then
+            # new group
+            if ! _gd $group; then
+                addgroup -S $group && is_add_group=true
+            fi
+            if [ "$ginf" == "${ginf/($group)/}" ]; then
+                # add user in group
+                addgroup $user $group || {
+                    # if error
+                    $is_add_group && delgroup $group;
+                    continue
+                }
+            fi
+        fi
+        :
+    } || {
+        [ "$group" ] || group=$user; # same as group
+        if ! _gd $group; then
             addgroup -S $group && is_add_group=true
-        };
-
-    # add user
-    if id $user >/dev/null 2>&1; then
-        addgroup $user $group
-    else
-        adduser -s sh -G $group -D $user && is_add_user=true
-    fi
+        fi
+        eval shell=$shell; # trim ""
+        [ "$shell" ] && shell="-s $shell";
+        adduser $shell -G $group -D $user && is_add_user=true || {
+            # if error
+            $is_add_group && delgroup $group;
+            continue
+        }
+    };
 
     # update password
     printf "$user:$passwd" | chpasswd -e 2>&1 | \
@@ -68,17 +96,17 @@ do
             "$user" != "docker" \
         ] && delgroup $group;
 
-        # TODO $shell
-
-        printf "Failed to change the password for '$user:$group'.\n" >&2;
+        printf "[\033[1;31mERROR\033[0;39m] Failed to change the password for '$user:$group'.\n" >&2;
         continue
     };
 
-    printf "Successfully changed '$user:$group' password.\n";
+    printf "\033[1;32mSuccessfully changed '$user:$group' password.\033[0;39m\n";
 
     # sudo -i, -s mast use root password
-    [ "$user" == "root" ] && printf '\nDefaults rootpw\n\n' >> /etc/sudoers;
-
+    if [ "$user" == "root" ]; then
+        grep -q 'Defaults rootpw' /etc/sudoers || \
+            printf '\nDefaults rootpw\n\n' >> /etc/sudoers
+    fi
 done
 
 exit 0
