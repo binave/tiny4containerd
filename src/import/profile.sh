@@ -429,6 +429,7 @@ _add_user() {
         if [ "$4" ]; then
             chroot $ROOTFS_DIR adduser -s $4 -G $group -D $1;
         else
+            # -S    Create a system user
             chroot $ROOTFS_DIR adduser -S -G $group $1
         fi
     fi
