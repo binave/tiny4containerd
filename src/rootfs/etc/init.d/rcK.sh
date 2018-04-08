@@ -15,5 +15,5 @@ find $PERSISTENT_PATH/etc/init.d -type f -perm /u+x -name "K*.sh" -exec sh -c {}
 wtmp;
 
 # PID USER COMMAND
-ps -ef | grep "crond\|monitor\|ntpd\|sshd\|udevd" | \
-    awk "{print \"kill \"\$1}" | sh 2>/dev/null
+ps -ef | grep -v ':[0-9][0-9] \[' | \
+    awk "{print \"kill \"\$1}" | sh

@@ -65,7 +65,7 @@ do
         fi
         :
     } || {
-        [ "$group" ] || group=$user; # same as group
+        [ "$group" ] || group=$user; # same as user
         if ! _gd $group; then
             addgroup -S $group && is_add_group=true
         fi
