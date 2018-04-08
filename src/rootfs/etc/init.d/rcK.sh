@@ -16,4 +16,4 @@ wtmp;
 
 # PID USER COMMAND
 ps -ef | grep -v ':[0-9][0-9] \[' | \
-    awk "{print \"kill \"\$1}" | sh
+    awk "{print \"kill \"\$2}" | sh
