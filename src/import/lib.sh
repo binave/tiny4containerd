@@ -168,7 +168,7 @@ _mkcfg() {
         args="-a" # appand
     fi
     if ! $force && [ -s $file_path ]; then
-        printf "[ERROR] '$file_path' already exist.\n" >&2;
+        printf "[WARN] '$file_path' already exist.\n" >&2;
         return 1
     else
         mkdir -p ${file_path%/*};
