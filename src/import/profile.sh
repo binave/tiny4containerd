@@ -450,11 +450,11 @@ _trim_rootfs() {
         $ROOTFS_DIR/etc/{*-,ssl/man,sysconfig/autologin};
 
     # trim share libary
-    find $ROOTFS_DIR/{,usr/}lib \
+    find $ROOTFS_DIR/{,usr/}lib \(\
         -iname "*.a" -o \
         -iname "*.la" -o \
         -iname "*.o" \
-        -exec rm -frv {} +
+        \) -a -exec rm -frv {} +
 
     # '/*' is necessary !
     # /usr/share/locale
