@@ -20,6 +20,6 @@ env_text=$(
 );
 
 if [ -f /etc/profile.d/local_envar.sh ]; then
-    echo "$env_text" | diff - /etc/profile.d/local_envar.sh || \
+    echo "$env_text" | diff - /etc/profile.d/local_envar.sh >/dev/null || \
         echo "$env_text" > /etc/profile.d/local_envar.sh
 fi
