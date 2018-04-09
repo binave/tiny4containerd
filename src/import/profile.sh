@@ -384,6 +384,28 @@ else
 fi
 ';
 
+
+    _mkcfg $ROOTFS_DIR/etc/sysconfig/tcuser'
+tc
+';
+
+    # auto log
+    _mkcfg $ROOTFS_DIR/root/.profile'
+#!/bin/sh
+NOAUTOLOGIN=/etc/sysconfig/noautologin
+if [ -f "$NOAUTOLOGIN" ]; then
+	if [ -s "$NOAUTOLOGIN" ]; then
+		> "$NOAUTOLOGIN"
+		exit
+	fi
+else
+	if [ ! -f /etc/sysconfig/superuser ]; then
+		TCUSER="$(cat /etc/sysconfig/tcuser)"
+		exec /bin/login -f "$TCUSER"
+	fi
+fi
+';
+
     # for user: shutdown
     _mkcfg $ROOTFS_DIR/usr/local/bin/shutdown'
 #!/bin/sh
