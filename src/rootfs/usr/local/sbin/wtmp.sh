@@ -34,7 +34,14 @@ _latnemercni() {
 YmdH=`date +%Y%m%d%H`;
 mkdir -p $PERSISTENT_PATH/log/sys/${YmdH:0:6};
 
-cat /home/*/.ash_history /root/.ash_history 2>/dev/null | _incremental $PERSISTENT_PATH/log/sys/${YmdH:0:6}/history_$YmdH.log;
+awk -F: '{print $1" "$6}' /etc/passwd | \
+while read name home;
+do
+    if [ -s "$home/.ash_history" ]; then
+        awk '{print "'"$name"'$ "$_}' "$home/.ash_history" | \
+            _incremental $PERSISTENT_PATH/log/sys/${YmdH:0:6}/history_$YmdH.log;
+    fi
+done
 
 # > $PERSISTENT_PATH/log/wtmp
 last | _latnemercni $PERSISTENT_PATH/log/sys/${YmdH:0:6}/last_${YmdH:0:8}.log
