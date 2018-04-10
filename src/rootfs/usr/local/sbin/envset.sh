@@ -8,9 +8,11 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 # create empty config
-[ -s $PERSISTENT_PATH/etc/env.cfg ] || printf \
-    "# set environment variable\n\n" > \
-    $PERSISTENT_PATH/etc/env.cfg;
+[ -s $PERSISTENT_PATH/etc/env.cfg ] || {
+    mkdir -p $PERSISTENT_PATH/etc;
+    printf "# set environment variable\n\n" > \
+        $PERSISTENT_PATH/etc/env.cfg;
+};
 
 # filter environment variables
 env_text=$(
