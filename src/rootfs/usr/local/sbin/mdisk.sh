@@ -24,7 +24,7 @@ grep -q 'nodisk' /proc/cmdline 2>/dev/null && {
 };
 
 # import settings from profile
-envset; for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 # stop rebuild when assemble
 grep -q 'noautorebuild' /proc/cmdline 2>/dev/null && NOAUTOREBUILD=1 || unset NOAUTOREBUILD;

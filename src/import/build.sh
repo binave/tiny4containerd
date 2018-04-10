@@ -96,6 +96,11 @@ _make_busybox() {
 
 }
 
+# TODO
+_make_kbd() {
+    :;
+}
+
 # for 'openssl' build, 'openssh' runtime
 __make_zlib() {
     [ -s $ROOTFS_DIR/usr/lib/libz.so ] && { printf "[WARN] skip make 'zlib'\n"; return 0; };

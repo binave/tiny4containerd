@@ -17,8 +17,6 @@ case $1 in
 
         mkdir -p /run;
 
-        sleep 5; # debug
-
         # This log is started before the persistence partition is mounted
         sh /etc/init.d/rcS 2>&1 | tee -a /usr/rcS.log;
 

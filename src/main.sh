@@ -29,6 +29,7 @@ _main() {
     _last_version kernel_version    $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x  "\"linux-$KERNEL_MAJOR_VERSION.*xz\""   '-F[-\"]'   "'{print \$3}'" || return $(_err $LINENO);
     _last_version glibc_version     $GLIBC_DOWNLOAD     "'glibc-[0-9].*xz\"'"       '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
     _last_version busybox_version   $BUSYBOX_DOWNLOAD   "'busybox-[0-9].*bz2\"'"    '-F[-\"]'       "'{print \$7}'" || return $(_err $LINENO);
+    _last_version kbd_version       $KBD_DOWNLOAD       "'kbd-[0-9].*xz\"'"         '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version zlib_version      $ZLIB_DOWNLOAD/ChangeLog.txt Changes                            "'{print \$3}'" || return $(_err $LINENO);
     _last_version openssh_version   $OPENSSH_DOWNLOAD   "'tar\.gz\"'"               '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version iptables_version  $IPTABLES_DOWNLOAD  "'\"iptables-.*bz2\"'"      '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
@@ -70,6 +71,7 @@ _main() {
     _install bc;                _message_queue --put "_make_kernel"; # this may use most time
     _install bison gawk;        _message_queue --put "_make_glibc"; # this may use long time
     _message_queue --put "_make_busybox";
+    _message_queue --put "_make_kbd";
 
     # ssl
     _message_queue --put "__make_zlib";
@@ -117,6 +119,7 @@ _main() {
     for url in \
         $GLIBC_DOWNLOAD/glibc-$glibc_version.tar.xz \
         $BUSYBOX_DOWNLOAD/busybox-$busybox_version.tar.bz2 \
+        $KBD_DOWNLOAD/kbd-$kbd_version.tar.xz \
         $ZLIB_DOWNLOAD/zlib-$zlib_version.tar.gz \
         $OPENSSL_DOWNLOAD/openssl-$OPENSSL_VERSION.tar.gz \
         $CERTDATA_DOWNLOAD \

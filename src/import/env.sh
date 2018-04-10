@@ -21,12 +21,13 @@ CORES_COUNT=$(nproc);
 LABEL=`date +tc-%y%m%d-%H`;
 
 # linux
-KERNEL_PUB=https://cdn.kernel.org/pub; # https://mirrors.edge.kernel.org/pub
+KERNEL_PUB=https://cdn.kernel.org/pub; # [mirrors] https://mirrors.edge.kernel.org/pub
 
 # base
 KERNEL_DOWNLOAD=$KERNEL_PUB/linux/kernel;
 GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
 BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
+KBD_DOWNLOAD=http://ftp.altlinux.org/pub/people/legion/kbd; # $KERNEL_PUB/linux/utils/kbd, [Official] http://kbd-project.org/
 
 # ssl
 MAKE_CA=https://raw.githubusercontent.com/djlucas/make-ca/master/make-ca; # text file
@@ -40,7 +41,7 @@ OPENSSH_DOWNLOAD=http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable; # DROPBEAR
 IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables/files;
 
 # dev
-MDADM_DOWNLOAD=$KERNEL_PUB/linux/utils/raid/mdadm; # http://neil.brown.name/blog/mdadm
+MDADM_DOWNLOAD=$KERNEL_PUB/linux/utils/raid/mdadm; # [Official] http://neil.brown.name/blog/mdadm
 UTIL_LINUX_DOWNLOAD=$KERNEL_PUB/linux/utils/util-linux;
 EUDEV_DOWNLOAD=https://dev.gentoo.org/~blueness/eudev;
 LVM2_DOWNLOAD=https://sourceware.org/ftp/lvm2/releases;

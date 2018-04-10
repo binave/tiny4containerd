@@ -116,8 +116,6 @@ udevd --daemon;
 # Udevadm requesting events from the Kernel...
 udevadm trigger --action=add &
 
-sleep 10; # debug
-
 modprobe loop;
 
 # start swap
@@ -128,8 +126,6 @@ modprobe -q zcache;
 
 grep MemFree /proc/meminfo | awk '{print $2/4 "K"}' | \
     tee /sys/block/zram0/disksize;
-
-sleep 10; # debug
 
 mkswap /dev/zram0;
 swapon /dev/zram0;
@@ -145,15 +141,14 @@ mv -v /tmp/98-tc.rules /etc/udev/rules.d/.;
 # Udevadm waiting for the event queue to finish...
 udevadm control --reload-rules &
 
-sleep 10; # debug
-
 export LANG=C TZ=CST-8;
 echo "LANG=$LANG" | tee /etc/sysconfig/language;
 echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
 
 # while [ ! -e /dev/rtc0 ]; do usleep 50000; done
 
-hwclock -u -s &
+# can'n open '/dev/misc/rtc': No such file or directory
+# hwclock -u -s &
 
 hostname -F /etc/hostname;
 # init ip
@@ -161,8 +156,6 @@ ifconfig lo 127.0.0.1 up;
 route add 127.0.0.1 lo &
 
 modprobe -q squashfs;
-
-sleep 10; # debug
 
 # Laptop options enabled (AC, Battery and PCMCIA).
 if grep -iq LAPTOP /proc/cmdline; then
@@ -174,16 +167,14 @@ fi
 sync;
 wait $fstab_pid;
 
-# busybox, keyboard
-loadkmap < /usr/share/kmap/${KEYMAP:=us}.kmap;
+# # busybox, keyboard # no such file or directory
+# loadkmap < /usr/share/kmap/${KEYMAP:=us}.kmap;
 
 # Configure sysctl, Read sysctl.conf
 sysctl -p /etc/sysctl.conf;
 
 udevadm control --reload-rules;
 udevadm trigger;
-
-sleep 10; # debug
 
 set +x;
 
@@ -198,8 +189,6 @@ mdisk init;
 
 [ -d /root ] || mkdir -pm 0750 /root;
 [ -d /tmp  ] || mkdir -pm 1777 /tmp;
-
-sleep 10; # debug
 
 # Starting system log daemon: syslogd...
 syslogd;
@@ -220,8 +209,6 @@ envset;
 
 # change password
 pwset;
-
-sleep 10; # debug
 
 echo "------ firewall --------------";
 # http://wiki.tinycorelinux.net/wiki:firewall tce-load -wi iptables; -> /usr/local/sbin/basic-firewall
@@ -251,8 +238,6 @@ chmod 700 $PERSISTENT_PATH/etc;
 #maybe the links will be up by now - trouble is, on some setups, they may never happen, so we can't just wait until they are
 sleep 3;
 
-sleep 10; # debug
-
 # set the hostname
 echo tc$(ifconfig | grep -A 1 'eth[0-9]' | grep addr: | awk '{print $2}' | awk -F\. '{printf "-"$4}') | \
     tee $PERSISTENT_PATH/etc/hostname;
@@ -260,8 +245,6 @@ HOSTNAME=`cat $PERSISTENT_PATH/etc/hostname` && hostname $HOSTNAME;
 
 # ssh dameon start
 sh /usr/local/etc/init.d/sshd;
-
-sleep 10; # debug
 
 # Launch acpid (shutdown)
 acpid;
