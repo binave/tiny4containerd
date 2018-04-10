@@ -36,6 +36,7 @@ _main() {
     _last_version mdadm_version     $MDADM_DOWNLOAD     "\"mdadm-.*.xz\""           '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
     _last_version util_linux_version    $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION     "'util-linux-.*tar.xz\"'"   '-F[-\"]'   "'{print \$4}'" || return $(_err $LINENO);
     _last_version eudev_version     $EUDEV_DOWNLOAD     "'eudev-.*.tar.gz>'"        '-F[-\>\<]'     "'{print \$7}'" || return $(_err $LINENO);
+    _last_version readline_version  $READLINE_DOWNLOAD  "'readline-[0-9].*.tar.gz\"'"   '-F[-\"]'   "'{print \$9}'" || return $(_err $LINENO);
     _last_version lvm2_version      $LVM2_DOWNLOAD      "'tgz\"'"                   '-F[\"]'        "'{print \$8}'" || return $(_err $LINENO);
     _last_version libfuse_version   $LIBFUSE_DOWNLOAD/tags  tag-name                '-F[-\>\<]'     "'{print \$5}'" || return $(_err $LINENO);
     _last_version glib_version      $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION  "'xz\"'"    '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
@@ -87,6 +88,7 @@ _main() {
     _message_queue --put "_make_mdadm";
     _message_queue --put "__make_util_linux";
     _install gperf;             _message_queue --put "_make_eudev";
+    _message_queue --put "__make_readline";
     _install pkg-config;        _message_queue --put "_make_lvm2";
 
     # sshfs
@@ -129,6 +131,7 @@ _main() {
         $MDADM_DOWNLOAD/mdadm-$mdadm_version.tar.xz \
         $UTIL_LINUX_DOWNLOAD/v$UTIL_LINUX_MAJOR_VERSION/util-linux-$util_linux_version.tar.xz \
         $EUDEV_DOWNLOAD/eudev-$eudev_version.tar.gz \
+        $READLINE_DOWNLOAD/readline-$readline_version.tar.gz \
         $LVM2_DOWNLOAD/LVM$lvm2_version.tgz \
         $GLIB_DOWNLOAD/$GLIB_MAJOR_VERSION/glib-$glib_version.tar.xz \
         $PCRE_DOWNLOAD/pcre-$pcre_version.tar.bz2 \

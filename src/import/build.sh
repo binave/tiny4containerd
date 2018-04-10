@@ -295,6 +295,31 @@ BLKID_CFLAGS=\"-I/usr/include\"
 
 }
 
+
+# for '_make_lvm2' runtime
+__make_readline() {
+    _wait4 readline || return $(_err $LINENO 3);
+    _try_patch readline;
+
+    sed -i '/MV.*old/d' Makefile.in;
+    sed -i '/{OLDSUFF}/c:' support/shlib-install;
+
+    mkdir -pv _install;
+
+    ./configure \
+        --prefix=/usr \
+        --enable-shared && \
+        make && make DESTDIR=$PWD/_install install || return $(_err $LINENO 3);
+
+    # DESTDIR=$ROOTFS
+    mv -v $PWD/_install/usr/lib/lib*.so* $ROOTFS/usr/lib;
+    mv -v $ROOTFS/usr/lib/lib{readline,history}.so.* $ROOTFS/lib;
+    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libreadline.so) $ROOTFS/usr/lib/libreadline.so;
+    ln -sfv ../../lib/$(readlink $ROOTFS/usr/lib/libhistory.so) $ROOTFS/usr/lib/libhistory.so
+
+}
+
+
 # http://linuxfromscratch.org/blfs/view/stable/postlfs/lvm2.html
 # kernel version 4.4.2 or above. [need]: 'pkg-config', 'udev'
 _make_lvm2() {

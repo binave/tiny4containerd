@@ -44,6 +44,7 @@ IPTABLES_DOWNLOAD=http://netfilter.org/projects/iptables/files;
 MDADM_DOWNLOAD=$KERNEL_PUB/linux/utils/raid/mdadm; # [Official] http://neil.brown.name/blog/mdadm
 UTIL_LINUX_DOWNLOAD=$KERNEL_PUB/linux/utils/util-linux;
 EUDEV_DOWNLOAD=https://dev.gentoo.org/~blueness/eudev;
+READLINE_DOWNLOAD=http://ftp.gnu.org/gnu/readline;
 LVM2_DOWNLOAD=https://sourceware.org/ftp/lvm2/releases;
 
 # sshfs
