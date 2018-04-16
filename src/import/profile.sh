@@ -177,6 +177,12 @@ _add_group() {
     echo "dockremap:165536:65536" | \
         tee $ROOTFS_DIR/etc/subgid > $ROOTFS_DIR/etc/subuid;
 
-    chroot $ROOTFS_DIR addgroup -S docker
+    chroot $ROOTFS_DIR addgroup -S docker;
+
+    # re-add user: tc
+    # sed -i 's/staff:.*/&tc/' $ROOTFS_DIR/etc/group;
+    chroot $ROOTFS_DIR deluser tc 2>/dev/null;
+    chroot $ROOTFS_DIR sh -xc "adduser -s /bin/sh -G staff -D tc && addgroup tc docker";
+    chroot $ROOTFS_DIR sh -xc "echo tc:tcuser | chpasswd -m"
 
 }

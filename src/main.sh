@@ -76,9 +76,6 @@ _main() {
     _refreshe;
     _add_group;
 
-    # drop user: tc
-    # sed -i 's/staff:.*/&tc/' $ROOTFS_DIR/etc/group;
-    chroot $ROOTFS_DIR deluser tc 2>/dev/null;
 
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;

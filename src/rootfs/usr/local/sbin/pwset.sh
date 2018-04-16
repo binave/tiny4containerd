@@ -50,6 +50,7 @@ do
     # test user
     ginf=$(id $user) && {
         if [ "$group" ]; then
+            [ "$group" == "root" ] && continue;
             # new group
             if ! _gd $group; then
                 addgroup -S $group && is_add_group=true
@@ -66,6 +67,7 @@ do
         :
     } || {
         [ "$group" ] || group=$user; # same as user
+        [ "$group" == "root" ] && continue;
         if ! _gd $group; then
             addgroup -S $group && is_add_group=true
         fi

@@ -141,17 +141,10 @@ hostname -F /etc/hostname;
 ifconfig lo 127.0.0.1 up;
 route add 127.0.0.1 lo &
 
-USER="tc";
-if ! grep "$USER" /etc/passwd >/dev/null; then
-    adduser -s /bin/sh -G staff -D "$USER";
-    echo "$USER":tcuser | chpasswd -m
-fi
-
-mkdir -pv /home/"$USER";
-
 modprobe -q squashfs;
 
-if [ -n "$LAPTOP" ]; then
+# Laptop options enabled (AC, Battery and PCMCIA).
+if grep -iq LAPTOP /proc/cmdline; then
     modprobe ac && modprobe battery;
     modprobe yenta_socket || modprobe i82365;
     udevadm trigger &
@@ -214,9 +207,6 @@ ntpd -d -n -p pool.ntp.org >> $PERSISTENT_PATH/log/sys/${Ymd:0:6}/ntpd_$Ymd.log 
 
 # start cron
 crond -f -d "${CROND_LOGLEVEL:-8}" >> $PERSISTENT_PATH/log/sys/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
-
-# if we have the tc user, let's add it do the docker group
-grep -q '^tc:' /etc/passwd && addgroup tc docker;
 
 chmod 1777 /tmp;
 
