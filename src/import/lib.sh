@@ -129,9 +129,8 @@ _case() {
 # autocomplete and get the last match arguments
 _la() {
     if [ "$1" ]; then
-        local path=(
-            $1*$(set | grep _VERSION= | grep -i ${1//-/_} | awk -F= '{print $2}')*
-        );
+        local path=${1##*/};
+        path=($1*$(set | grep _VERSION= | grep -i ${path//-/_} | awk -F= '{print $2}')*);
         if [ ${#path[@]} == 1 -a -e $path ]; then
             printf "$path";
             return 0
