@@ -135,12 +135,6 @@ echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
 
 while [ ! -e /dev/rtc0 ]; do usleep 50000; done
 
-hwclock -u -s &
-
-hostname -F /etc/hostname;
-ifconfig lo 127.0.0.1 up;
-route add 127.0.0.1 lo &
-
 modprobe -q squashfs;
 
 # Laptop options enabled (AC, Battery and PCMCIA).
@@ -179,6 +173,12 @@ mkdir -pv \
 
 # mdiskd
 mdisk monitor;
+
+hwclock -u -s &
+
+hostname -F /etc/hostname;
+ifconfig lo 127.0.0.1 up;
+route add 127.0.0.1 lo &
 
 # init environment from disk
 envset;
