@@ -298,8 +298,8 @@ BLKID_CFLAGS=\"-I/usr/include\"
 
 # for '_make_lvm2' runtime
 __make_readline() {
-    _wait4 readline || return $(_err $LINENO 3);
-    _try_patch readline;
+    _wait4 readline- || return $(_err $LINENO 3);
+    _try_patch readline-;
 
     sed -i '/MV.*old/d' Makefile.in;
     sed -i '/{OLDSUFF}/c:' support/shlib-install;
