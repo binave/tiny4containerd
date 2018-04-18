@@ -28,6 +28,8 @@ LINUX_DOWNLOAD=$KERNEL_PUB/linux/kernel;
 GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
 BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 KBD_DOWNLOAD=http://ftp.altlinux.org/pub/people/legion/kbd; # $KERNEL_PUB/linux/utils/kbd, [Official] http://kbd-project.org/
+WQY_BITMAPFONT=https://jaist.dl.sourceforge.net/project/wqy/wqy-bitmapfont/0.9.9/wqy-bitmapfont-pcf-0.9.9-0.tar.gz;
+
 
 # ssl
 MAKE_CA=https://raw.githubusercontent.com/djlucas/make-ca/master/make-ca; # text file

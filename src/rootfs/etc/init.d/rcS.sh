@@ -180,7 +180,7 @@ loadkmap < /usr/share/kmap/${KEYMAP:-us}.kmap;
 export LANG=${LANG:-C} TZ=${TZ:-CST-8};
 echo "LANG=$LANG" | tee /etc/sysconfig/language;
 echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
-localedef -i $LANG -f UTF-8 $LANG;
+localedef -i ${LANG%.*} -f UTF-8 ${LANG%.*};
 
 [ -d /root ] || mkdir -pm 0750 /root;
 [ -d /tmp  ] || mkdir -pm 1777 /tmp;
