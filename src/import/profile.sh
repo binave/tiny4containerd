@@ -141,6 +141,9 @@ _apply_rootfs(){
     done
     cd $STATE_DIR;
 
+    # for font
+    mkdir -p $ROOTFS_DIR/usr/lib/locale;
+
 
     _mkcfg -$ROOTFS_DIR/init'
 #!/bin/sh
