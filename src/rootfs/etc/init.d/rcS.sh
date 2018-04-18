@@ -129,10 +129,6 @@ _rebuild_fstab & fstab_pid=$!
 mv -v /tmp/98-tc.rules /etc/udev/rules.d/.;
 udevadm control --reload-rules &
 
-export LANG=C TZ=CST-8;
-echo "LANG=$LANG" | tee /etc/sysconfig/language;
-echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
-
 while [ ! -e /dev/rtc0 ]; do usleep 50000; done
 
 modprobe -q squashfs;
@@ -146,11 +142,6 @@ fi
 
 sync;
 wait $fstab_pid;
-
-# busybox, keyboard
-loadkmap < /usr/share/kmap/${KEYMAP:-us}.kmap;
-
-localedef -i zh_CN -f UTF-8 zh_CN;
 
 # Configure sysctl, Read sysctl.conf
 sysctl -p /etc/sysctl.conf;
@@ -166,6 +157,13 @@ udevadm trigger;
 
 # mount and monitor hard drive array
 mdisk init;
+
+# keyboard(busybox), LANG
+loadkmap < /usr/share/kmap/${KEYMAP:-us}.kmap;
+export LANG=${LANG:-C} TZ=${TZ:-CST-8};
+echo "LANG=$LANG" | tee /etc/sysconfig/language;
+echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
+localedef -i $LANG -f UTF-8 $LANG;
 
 # for crond, find, log
 mkdir -pv \
