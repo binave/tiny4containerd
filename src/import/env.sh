@@ -24,7 +24,7 @@ LABEL=`date +tc-%y%m%d-%H`;
 KERNEL_PUB=https://cdn.kernel.org/pub; # [mirrors] https://mirrors.edge.kernel.org/pub
 
 # base
-KERNEL_DOWNLOAD=$KERNEL_PUB/linux/kernel;
+LINUX_DOWNLOAD=$KERNEL_PUB/linux/kernel;
 GLIBC_DOWNLOAD=https://ftp.gnu.org/gnu/libc;
 BUSYBOX_DOWNLOAD=https://www.busybox.net/downloads;
 KBD_DOWNLOAD=http://ftp.altlinux.org/pub/people/legion/kbd; # $KERNEL_PUB/linux/utils/kbd, [Official] http://kbd-project.org/

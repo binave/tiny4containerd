@@ -141,19 +141,10 @@ mv -v /tmp/98-tc.rules /etc/udev/rules.d/.;
 # Udevadm waiting for the event queue to finish...
 udevadm control --reload-rules &
 
-export LANG=C TZ=CST-8;
-echo "LANG=$LANG" | tee /etc/sysconfig/language;
-echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
-
 # while [ ! -e /dev/rtc0 ]; do usleep 50000; done
 
 # can'n open '/dev/misc/rtc': No such file or directory
 # hwclock -u -s &
-
-hostname -F /etc/hostname;
-# init ip
-ifconfig lo 127.0.0.1 up;
-route add 127.0.0.1 lo &
 
 modprobe -q squashfs;
 
@@ -166,9 +157,6 @@ fi
 
 sync;
 wait $fstab_pid;
-
-# # busybox, keyboard # no such file or directory
-# loadkmap < /usr/share/kmap/${KEYMAP:=us}.kmap;
 
 # Configure sysctl, Read sysctl.conf
 sysctl -p /etc/sysctl.conf;
@@ -187,6 +175,13 @@ set +x;
 # mount and monitor hard drive array
 mdisk init;
 
+# keyboard(busybox), LANG
+loadkmap < /usr/share/kmap/${KEYMAP:-us}.kmap;
+export LANG=${LANG:-C} TZ=${TZ:-CST-8};
+echo "LANG=$LANG" | tee /etc/sysconfig/language;
+echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
+localedef -i $LANG -f UTF-8 $LANG;
+
 [ -d /root ] || mkdir -pm 0750 /root;
 [ -d /tmp  ] || mkdir -pm 1777 /tmp;
 
@@ -203,6 +198,11 @@ mkdir -pv \
 
 # mdiskd
 mdisk monitor;
+
+hostname -F /etc/hostname;
+# init ip
+ifconfig lo 127.0.0.1 up;
+route add 127.0.0.1 lo &
 
 # init environment from disk
 envset;

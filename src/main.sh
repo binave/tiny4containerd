@@ -26,7 +26,7 @@ _main() {
     _init_install && _install gawk && _install build-essential bsdtar curl git-core || return $(_err $LINENO);
 
     echo;
-    _last_version kernel_version    $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x  "\"linux-$KERNEL_MAJOR_VERSION.*xz\""   '-F[-\"]'   "'{print \$3}'" || return $(_err $LINENO);
+    _last_version linux_version     $LINUX_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x  "\"linux-$KERNEL_MAJOR_VERSION.*xz\""   '-F[-\"]'   "'{print \$3}'" || return $(_err $LINENO);
     _last_version glibc_version     $GLIBC_DOWNLOAD     "'glibc-[0-9].*xz\"'"       '-F[-\"]'       "'{print \$9}'" || return $(_err $LINENO);
     _last_version busybox_version   $BUSYBOX_DOWNLOAD   "'busybox-[0-9].*bz2\"'"    '-F[-\"]'       "'{print \$7}'" || return $(_err $LINENO);
     _last_version kbd_version       $KBD_DOWNLOAD       "'kbd-[0-9].*xz\"'"         '-F[-\"]'       "'{print \$3}'" || return $(_err $LINENO);
@@ -63,7 +63,7 @@ _main() {
     echo;
 
     # Fetch the kernel sources
-    _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz || return $(_err $LINENO);
+    _downlock $LINUX_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$linux_version.tar.xz || return $(_err $LINENO);
 
     echo " ------------- put in queue -----------------------"
     _message_queue --init;

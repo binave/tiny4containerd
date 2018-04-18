@@ -418,7 +418,7 @@ sudo /sbin/poweroff
     mkdir -pv \
         etc/{acpi/events,init.d,skel,ssl/certs,profile.d,sysconfig} \
         home lib mnt proc root run sys tmp var \
-        usr/{sbin,share};
+        usr/{lib/locale,sbin,share};
 
     chmod 0750 root;
     chmod 1777 tmp;
