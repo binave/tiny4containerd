@@ -4,7 +4,7 @@
 _make_kernel() {
     [ -s $ISO_DIR/boot/vmlinuz64 -a \
         -d $ROOTFS_DIR/lib/modules/$linux_version$CONFIG_LOCALVERSION/kernel ] && \
-        { printf "[WARN] skip make 'kernel'\n"; return 0; };
+        { printf "[WARN] skip make 'kernel'\n"; sleep $TIMEOUT_SEC; return 0; };
 
     # fix: Directory renamed before its status could be extracted
     _untar $CELLAR_DIR/linux- || return $(_err $LINENO 3);
