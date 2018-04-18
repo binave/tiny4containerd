@@ -3,7 +3,7 @@
 # [need]: 'bc'
 _make_kernel() {
     [ -s $ISO_DIR/boot/vmlinuz64 -a \
-        -d $ROOTFS_DIR/lib/modules/$kernel_version$CONFIG_LOCALVERSION/kernel ] && \
+        -d $ROOTFS_DIR/lib/modules/$linux_version$CONFIG_LOCALVERSION/kernel ] && \
         { printf "[WARN] skip make 'kernel'\n"; return 0; };
 
     # fix: Directory renamed before its status could be extracted
@@ -145,10 +145,10 @@ _refreshe() {
 
     # Generate modules.dep
     find $ROOTFS_DIR/lib/modules -maxdepth 1 -type l -delete; # delete link
-    [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
-        ln -sTv $kernel_version$CONFIG_LOCALVERSION $ROOTFS_DIR/lib/modules/`uname -r`;
+    [ "$linux_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+        ln -sTv $linux_version$CONFIG_LOCALVERSION $ROOTFS_DIR/lib/modules/`uname -r`;
     chroot $ROOTFS_DIR depmod || return $(_err $LINENO);
-    [ "$kernel_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
+    [ "$linux_version$CONFIG_LOCALVERSION" != "$(uname -r)" ] && \
         rm -v $ROOTFS_DIR/lib/modules/`uname -r`
 
 }
