@@ -50,7 +50,10 @@ TCZ_DEPS="
     portmap
     tcp_wrappers
     acpid
+    glibc_apps glibc_add_lib glibc_gconv glibc_i18n_locale fontconfig
 ";
+
+
 
 [ $TCL_MAJOR_VERSION == 9 ] && TCZ_DEPS="$TCZ_DEPS ncursesw";
 

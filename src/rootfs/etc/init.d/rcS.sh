@@ -150,6 +150,11 @@ wait $fstab_pid;
 # busybox, keyboard
 loadkmap < /usr/share/kmap/${KEYMAP:-us}.kmap;
 
+# copy font
+mkdir -p /usr/lib/locale;
+
+localedef -i zh_CN -f UTF-8 zh_CN;
+
 # Configure sysctl, Read sysctl.conf
 sysctl -p /etc/sysctl.conf;
 

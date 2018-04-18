@@ -76,7 +76,6 @@ _main() {
     _refreshe;
     _add_group;
 
-
     echo " ------------ install docker ----------------------";
     mkdir -pv $ROOTFS_DIR/usr/local/bin;
     _untar \
