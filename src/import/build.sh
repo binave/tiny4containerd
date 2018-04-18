@@ -34,7 +34,7 @@ _undep() {
     for dep in $TCZ_DEPS;
     do
         _wait4 $CELLAR_DIR/$dep.tcz $ROOTFS_DIR || return $(_err $LINENO 3);
-        printf "unsquashfs '$dep' complete.\n"
+        printf "unsquashfs '$dep' complete.\n\n"
     done
 
     _hash $CELLAR_DIR/rootfs64.gz;
