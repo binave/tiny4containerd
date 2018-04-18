@@ -34,6 +34,7 @@ _undep() {
     for dep in $TCZ_DEPS;
     do
         _wait4 $CELLAR_DIR/$dep.tcz $ROOTFS_DIR || return $(_err $LINENO 3);
+        printf "\n"
     done
 
     _hash $CELLAR_DIR/rootfs64.gz;
