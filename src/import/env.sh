@@ -22,7 +22,7 @@ LABEL=`date +tc-%y%m%d-%H`;
 KERNEL_PUB=https://cdn.kernel.org/pub; # https://mirrors.edge.kernel.org/pub
 
 # linux
-KERNEL_DOWNLOAD=$KERNEL_PUB/linux/kernel;
+LINUX_DOWNLOAD=$KERNEL_PUB/linux/kernel;
 LIBCAP_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64; # https://docs.docker.com/install/linux/docker-ce/binaries/#prerequisites
 TCL_REPO_DOWNLOAD=http://www.tinycorelinux.net/$TCL_MAJOR_VERSION.x/x86_64; # tiny core linux

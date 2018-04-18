@@ -126,8 +126,8 @@ _case() {
     printf %s "$@" | tr "[:${pre}er:]" "[:${suf}er:]"
 }
 
-# autocomplete and get the last match arguments
-_la() {
+# autocomplete by version value
+_autocomplete() {
     if [ "$1" ]; then
         local path=${1##*/};
         path=($1*$(set | grep _VERSION= | grep -i ${path//-/_} | awk -F= '{print $2}')*);
@@ -135,10 +135,10 @@ _la() {
             printf "$path";
             return 0
         else
-            printf "[ERROR] '$1' not found." >&2
+            printf "[ERROR] '$1' not found.\n" > $WORK_DIR/.error
         fi
     else
-        printf "[ERROR] args is empty." >&2
+        printf "[ERROR] args is empty.\n" > $WORK_DIR/.error
     fi
     return 1
 }
@@ -188,9 +188,9 @@ _mkcfg() {
 
 # Usage: _wait4 [file]
 _wait4(){
-    [ -s $WORK_DIR/.error ] && return 1;
     [ "$1" ] || return 1;
-    set $(_la $CELLAR_DIR/${1##*/}) $2 >/dev/null;
+    set $(_autocomplete $CELLAR_DIR/${1##*/}) $2 >/dev/null;
+    [ -s $WORK_DIR/.error ] && return 1;
     set ${1##*/} $2 >/dev/null;
     local count=0 times=$((TIMEOUT_SEC / TIMELAG_SEC));
     until [ -f "$LOCK_DIR/$1.lock" ];
@@ -210,7 +210,8 @@ _wait4(){
 
 # decompression
 _untar() {
-    local _1=$(_la $1) _2=${2:-$WORK_DIR};
+    local _1=$(_autocomplete $1) _2=${2:-$WORK_DIR};
+    [ -s $WORK_DIR/.error ] && return 1;
     shift; shift;
     set $_1 $_2 $@ >/dev/null;
     _hash $1 || return 1;
@@ -235,7 +236,7 @@ _hash() {
 # Usage: _try_patch [prefix_name]-
 _try_patch() {
     [ "$1" ] || return 1;
-    cd $(_la $WORK_DIR/$1) || return 1;
+    cd $(_autocomplete $WORK_DIR/${1##*/}) || return 1;
     # find $THIS_DIR/patch -type f -iname "${PWD##*/}*$2*.patch" -exec patch -Ntp1 -i {} \;
     return $?
 }

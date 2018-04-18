@@ -142,7 +142,7 @@ _apply_rootfs(){
     cd $STATE_DIR;
 
     # for font
-    mkdir -p $ROOTFS_DIR/usr/lib/locale;
+    mkdir -pv $ROOTFS_DIR/usr/lib/locale;
 
 
     _mkcfg -$ROOTFS_DIR/init'

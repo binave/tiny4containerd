@@ -25,7 +25,7 @@ _main() {
     _init_install && _install gawk && _install build-essential bsdtar curl || return $(_err $LINENO);
 
     echo;
-    _last_version kernel_version    $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x  "\"linux-$KERNEL_MAJOR_VERSION.*xz\""   '-F[-\"]'   "'{print \$3}'" || return $(_err $LINENO);
+    _last_version linux_version     $LINUX_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x  "\"linux-$KERNEL_MAJOR_VERSION.*xz\""   '-F[-\"]'   "'{print \$3}'" || return $(_err $LINENO);
     _last_version libcap_version    $LIBCAP_DOWNLOAD    "'xz\"'"    '-F[-\"]'   "'{print \$3}'"         || return $(_err $LINENO);
     _last_version docker_version    $DOCKER_DOWNLOAD    docker-     '-F[-\"]'   "'{print \$3\"-\"\$4}'" || return $(_err $LINENO);
 
@@ -34,7 +34,7 @@ _main() {
     echo;
 
     # Fetch the kernel sources
-    _downlock $KERNEL_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$kernel_version.tar.xz || return $(_err $LINENO);
+    _downlock $LINUX_DOWNLOAD/v${KERNEL_MAJOR_VERSION%.*}.x/linux-$linux_version.tar.xz || return $(_err $LINENO);
 
     echo " ------------- put in queue -----------------------";
     _message_queue --init;
