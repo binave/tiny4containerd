@@ -163,7 +163,7 @@ loadkmap < /usr/share/kmap/${KEYMAP:-us}.kmap;
 export LANG=${LANG:-C} TZ=${TZ:-CST-8};
 echo "LANG=$LANG" | tee /etc/sysconfig/language;
 echo "TZ=$TZ"     | tee /etc/sysconfig/timezone;
-localedef -i $LANG -f UTF-8 $LANG;
+localedef -i ${LANG%.*} -f UTF-8 ${LANG%.*};
 
 # for crond, find, log
 mkdir -pv \
