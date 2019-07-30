@@ -43,14 +43,11 @@ If make sure the disk is empty for real, initialise to md array, create a logica
 <br/>If there is a logical volume name `lv_data` and `lv_log`, mount it.
 <br/>如果启动中检测到一个逻辑卷名为 `lv_data` 和 `lv_log`，会对其进行自动挂载。
 <br/>
-<br/>卷标为 `lv_log` 的逻辑卷会挂载到 `/log` 目录上。
-<br/>逻辑卷 `lv_data` 中的以下目录会被挂载到根目录上：
+<br/>逻辑卷 `lv_data` 中的 `/home` 目录会被挂载到根目录上：
+<br/>卷标为 `lv_log` 的逻辑卷会挂载到 `/home/log` 目录上。
 
 ```
-/home
-/opt
 /tmp
-/volume1
 ```
 
 如果没有相应目录，会自动建立并挂载。
@@ -68,11 +65,11 @@ A:
 
 > |路径|说明|样例|备注
 > |---|---|---|---
-> |/opt/etc/pw.cfg|密码配置|`root:$1$AgCGptrX$hL7QB536iJ9KKjO1KtfVA.`|使用 `openssl passwd -1 [password]` 生成加密密码
-> |/opt/etc/if.cfg|静态 ip 配置|`eth0 192.168.1.123 192.168.1.255 255.255.255.0`|
-> |/opt/etc/init.d/[SK]*.sh|启动、关机脚本|S01_ftpd.sh K20_ftpd.sh|`S*.sh` 在服务启动前执行<br/>`K*.sh` 设备关机前执行
-> |/opt/etc/env|环境变量配置|`EXTRA_ARGS="--registry-mirror=https://xxx.mirror.aliyuncs.com"`|
-> |/opt/etc/rc.local|启动最后阶段执行||需要赋予可执行权限
+> |/home/etc/pw.cfg|密码配置|`root:$1$AgCGptrX$hL7QB536iJ9KKjO1KtfVA.`|使用 `openssl passwd -1 [password]` 生成加密密码
+> |/home/etc/if.cfg|静态 ip 配置|`eth0 192.168.1.123 192.168.1.255 255.255.255.0`|
+> |/home/etc/init.d/[SK]*.sh|启动、关机脚本|S01_ftpd.sh K20_ftpd.sh|`S*.sh` 在服务启动前执行<br/>`K*.sh` 设备关机前执行
+> |/home/etc/env.cfg|环境变量配置|`EXTRA_ARGS="--registry-mirror=https://xxx.mirror.aliyuncs.com"`|
+> |/home/etc/rc.local|启动最后阶段执行||需要赋予可执行权限
 > |isolinux.cfg|启动参数和环境变量配置||需要编辑源代码中的配置文件
 <p><br/></p>
 
@@ -126,13 +123,13 @@ A:
 > |CHUNK|128|RAID 块大小|mdisk|不建议修改
 <br/>
 
-> 公用配置 `/opt/etc/env.cfg`：
+> 公用配置 `/home/etc/env.cfg`：
 
 > |环境变量名称|默认值|说明|所属命令|备注
 > |---|---|---|---|---
 > |CROND_LOGLEVEL|8|crond 日志等级，0 为最详细|crond|
-> |PW_CONFIG|/opt/etc/pw.cfg|密码配置|pwset
-> |IF_CONFIG|/opt/etc/if.cfg|静态 ip 配置|ifset|
+> |PW_CONFIG|/home/etc/pw.cfg|密码配置|pwset
+> |IF_CONFIG|/home/etc/if.cfg|静态 ip 配置|ifset|
 > |IF_PREFIX|eth|网卡前缀名称|ifset, containerd|需要根据硬件进行调整
 > |CONTAINERD_ULIMITS|1048576|进程数上限|containerd|
 > |CONTAINERD_HOST|`-H tcp://0.0.0.0:2375`|监听 hosts|containerd|

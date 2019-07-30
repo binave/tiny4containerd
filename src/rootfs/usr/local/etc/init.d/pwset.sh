@@ -19,43 +19,39 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from profile
-envset; for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
+/usr/local/etc/init.d/envset;
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
-: ${PW_CONFIG:="$PERSISTENT_PATH/etc/pw.cfg"};
+: ${PW_CONFIG:="/home/etc/pw.cfg"};
 
 [ -s $PW_CONFIG ] || printf "# [username]:[[group]]:[MD5-based password]:[[shell]]\n\
 # 'MD5-based password':    openssl passwd -1 [password]\n\n" > $PW_CONFIG;
 
-# test group exist
-_gd() {
-    awk -F# '{print $1}' /etc/group | awk '{print $1}' | grep -q ^$1: && return 0;
-    return 1
-}
+# test format
+awk '/^([[:blank:]]+)?[a-z]+/ && ! /[a-z][0-9a-z]+:([a-z][0-9a-z]+:)?\$1(\$[0-9A-z\/\.]{8}){2}[0-9A-z\/\.]{14,}(:\/[a-z])?/' $PW_CONFIG | grep '[a-z]' 2>&1 && exit 1;
 
-awk -F# '{print $1}' $PW_CONFIG | \
-    awk '{print $1}' | \
-    grep '^[a-z]\+:[a-zA-Z]\+\?:[$A-Za-z0-9\/\.]\+:\?[A-Za-z0-9\/\.]\+\?$' | \
-    awk -F: '{print $1" "$3" \""$4"\" "$2}' | \
-while read user passwd shell group;
+awk '/^([[:blank:]]+)?[a-z]+/{print $1}' $PW_CONFIG | \
+    awk -F : '/[a-z][0-9a-z]+:([a-z][0-9a-z]+:)?\$1(\$[0-9A-z\/\.]{8}){2}[0-9A-z\/\.]{14,}(:\/[a-z])?/{
+        if ($2 ~ /\$1\$[0-9A-z\/\.]+/) {
+            print $1, $2
+        } else print $1, $3, $2, $4
+    }' | while read user passwd group shell;
 do
-    printf "will parse string: '$user:$group:$passwd:$shell'.\n";
-    # test password length and format
-    if [ ${#passwd} == 34 -a "${passwd:0:3}${passwd:11:1}" == "\$1\$$" ]; then
-        printf "[\033[1;31mERROR\033[0;39m] '$user:$group:$passwd:$shell' password format cannot be recognized\n" >&2;
-        continue;
-    fi
-
     is_add_user=false is_add_group=false;
 
+    [ "$group" == "root" ] && continue;
+
+    # shell not exist
+    [ "$shell" -a ! -e "$shell" ] && continue;
+
     # test user
-    ginf=$(id $user) && {
+    user_info=$(id $user 2>/dev/null) && {
         if [ "$group" ]; then
-            [ "$group" == "root" ] && continue;
             # new group
-            if ! _gd $group; then
+            if ! grep -q ^$group: /etc/group; then
                 addgroup -S $group && is_add_group=true
             fi
-            if [ "$ginf" == "${ginf/($group)/}" ]; then
+            if [ "$user_info" == "${user_info/($group)/}" ]; then
                 # add user in group
                 addgroup $user $group || {
                     # if error
@@ -67,8 +63,7 @@ do
         :
     } || {
         [ "$group" ] || group=$user; # same as user
-        [ "$group" == "root" ] && continue;
-        if ! _gd $group; then
+        if ! grep -q ^$group: /etc/group; then
             addgroup -S $group && is_add_group=true
         fi
         eval shell=$shell; # trim ""
@@ -86,8 +81,8 @@ do
         $is_add_user && [ \
             "$user" != "root" -a \
             "$user" != "dockremap" -a \
-            "$user" != "nobody" \
-            "$user" != "lp" -a \
+            "$user" != "nobody" -a \
+            "$user" != "lp" \
         ] && deluser $user;
         $is_add_group && [ \
             "$user" != "root" -a \
@@ -108,6 +103,9 @@ do
     if [ "$user" == "root" ]; then
         grep -q 'Defaults rootpw' /etc/sudoers || \
             printf '\nDefaults rootpw\n\n' >> /etc/sudoers
+
+        # close local autologin
+        printf "%s\n" booting > /etc/sysconfig/noautologin
     fi
 done
 

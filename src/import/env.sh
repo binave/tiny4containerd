@@ -19,7 +19,7 @@ CORES_COUNT=$(nproc);
 LABEL=`date +tc-%y%m%d-%H`;
 
 # linux
-KERNEL_PUB=https://cdn.kernel.org/pub; # https://mirrors.edge.kernel.org/pub
+KERNEL_PUB=https://www.kernel.org/pub; # https://mirrors.edge.kernel.org/pub
 
 # linux
 LINUX_DOWNLOAD=$KERNEL_PUB/linux/kernel;
@@ -27,6 +27,10 @@ LIBCAP_DOWNLOAD=$KERNEL_PUB/linux/libs/security/linux-privs/libcap2;
 DOCKER_DOWNLOAD=https://download.docker.com/linux/static/stable/x86_64; # https://docs.docker.com/install/linux/docker-ce/binaries/#prerequisites
 TCL_REPO_DOWNLOAD=http://www.tinycorelinux.net/$TCL_MAJOR_VERSION.x/x86_64; # tiny core linux
 WQY_BITMAPFONT=https://jaist.dl.sourceforge.net/project/wqy/wqy-bitmapfont/0.9.9/wqy-bitmapfont-pcf-0.9.9-0.tar.gz;
+
+# TODO dstat
+
+# TODO sort --version-sort
 
 # tce-load -wi [tcz]
 #   mdadm: raid-dm-KERNEL
@@ -47,14 +51,12 @@ TCZ_DEPS="
     mdadm
     e2fsprogs
     net-tools
-    procps
+    procps-ng
     portmap
     tcp_wrappers
     acpid
     glibc_apps glibc_add_lib glibc_gconv glibc_i18n_locale fontconfig
 ";
-
-
 
 [ $TCL_MAJOR_VERSION == 9 ] && TCZ_DEPS="$TCZ_DEPS ncursesw";
 

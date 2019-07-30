@@ -8,15 +8,15 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 # create empty config
-[ -s $PERSISTENT_PATH/etc/env.cfg ] || {
-    mkdir -p $PERSISTENT_PATH/etc;
+[ -s /home/etc/env.cfg ] || {
+    mkdir -p /home/etc;
     printf "# set environment variable\n\n" > \
-        $PERSISTENT_PATH/etc/env.cfg;
+        /home/etc/env.cfg;
 };
 
 # filter environment variables
 env_text=$(
-    awk -F# '{print $1}' $PERSISTENT_PATH/etc/env.cfg 2>/dev/null | \
+    awk -F# '{print $1}' /home/etc/env.cfg 2>/dev/null | \
         sed 's/[\|\;\&]/\n/g;s/export//g;s/^[ ]\+//g' | grep '^[_A-Z]\+=';
     echo
 );

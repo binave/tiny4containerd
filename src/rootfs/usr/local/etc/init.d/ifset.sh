@@ -7,10 +7,12 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from profile
-envset; for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
+/usr/local/etc/init.d/envset;
+
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 : ${IF_PREFIX:=eth};
-: ${IF_CONFIG:="$PERSISTENT_PATH/etc/if.cfg"};
+: ${IF_CONFIG:="/home/etc/if.cfg"};
 
 # init
 [ -s $IF_CONFIG ] || printf "# [interface] [ip] [broadcast] [netmask]\n\n" > $IF_CONFIG;

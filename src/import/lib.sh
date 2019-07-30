@@ -316,7 +316,7 @@ _init_install() {
     # clear work path
     rm -fr /var/lib/apt/lists/*;
     {
-        curl -L --connect-timeout 1 http://www.google.com >/dev/null 2>&1 && \
+        curl --location --connect-timeout 1 http://www.google.com >/dev/null 2>&1 && \
             printf %s "$DEBIAN_SOURCE" || printf %s "$DEBIAN_CN_SOURCE"
     } | tee /etc/apt/sources.list;
     apt-get update;

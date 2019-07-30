@@ -18,7 +18,9 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from profile
-envset; for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
+/usr/local/etc/init.d/envset;
+
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 _incremental() {
     touch $1;
@@ -32,16 +34,16 @@ _latnemercni() {
 }
 
 YmdH=`date +%Y%m%d%H`;
-mkdir -p $PERSISTENT_PATH/log/sys/${YmdH:0:6};
+mkdir -p /home/log/sys/${YmdH:0:6};
 
 awk -F: '{print $1" "$6}' /etc/passwd | \
 while read name home;
 do
     if [ -s "$home/.ash_history" ]; then
         awk '{print "'"$name"'$ "$_}' "$home/.ash_history" | \
-            _incremental $PERSISTENT_PATH/log/sys/${YmdH:0:6}/history_$YmdH.log;
+            _incremental /home/log/sys/${YmdH:0:6}/history_$YmdH.log;
     fi
 done
 
-# > $PERSISTENT_PATH/log/wtmp
-last | _latnemercni $PERSISTENT_PATH/log/sys/${YmdH:0:6}/last_${YmdH:0:8}.log
+# > /home/log/wtmp
+last | _latnemercni /home/log/sys/${YmdH:0:6}/last_${YmdH:0:8}.log

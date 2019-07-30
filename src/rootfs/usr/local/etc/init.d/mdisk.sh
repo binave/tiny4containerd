@@ -423,47 +423,23 @@ _lv_online() {
     swapon $lv_swap;
 
     # data
-    rm -fr $PERSISTENT_PATH;
-    mkdir -p $PERSISTENT_PATH;
-    mount $lv_data $PERSISTENT_PATH;
+    rm -fr /home;
+    mkdir -p /home;
+    mount $lv_data /home;
 
     # log
-    mkdir -pv $PERSISTENT_PATH/log;
-    mount $lv_log $PERSISTENT_PATH/log;
+    rm -fr /home/log;
+    mkdir -pv /home/log /home/tmp;
+    mount $lv_log /home/log;
+    mount --bind /home/log /var/log;
 
-    _dir_online $PERSISTENT_PATH;
-    return 0
-}
-
-_dir_online() {
-    rm -fr /tmp;
-    mkdir -pv \
-       /home    $1/home \
-       /tmp     $1/tmp;
-
-    # create work, opt path
-    printf "\nmount:";
-    # change home path
-    if [ -d $1/home/*map ]; then
-        rm -fr /home/*;
-    else
-        mv -fv /home/* $1/home
-    fi
-    mount --bind $1/home /home && printf ", '/home'";
-
-    # Make sure /tmp is on the disk too too
-    mount --bind $1/tmp /tmp && printf ", '/tmp'";
-    printf "\n";
-
+    # Make sure /tmp is on the disk
+    mount --bind /home/tmp /tmp
     return 0
 }
 
 # unload device
 _lv_offline() {
-    umount -f $PERSISTENT_PATH/log;
-    umount -f $PERSISTENT_PATH;
-
-    # umount -afr >/dev/null 2>&1;
 
     local vg vg_list=$(__vg_list);
     # lv offline
@@ -488,20 +464,20 @@ _lv_offline() {
 }
 
 _logger() {
-    local mdisk_log="$PERSISTENT_PATH/log/sys/${Ymd:0:6}/${0##*/}_$Ymd.log";
+    local mdisk_log="/home/log/sys/${Ymd:0:6}/${0##*/}_$Ymd.log";
     mkdir -p "${mdisk_log%/*}";
     awk '{print strftime("%F %T, '"$@"'") $0}' >> $mdisk_log
 }
 
 _log_out() {
-    local mdisk_log="$PERSISTENT_PATH/log/sys/${Ymd:0:6}/${0##*/}_$Ymd.log";
+    local mdisk_log="/home/log/sys/${Ymd:0:6}/${0##*/}_$Ymd.log";
     mkdir -p "${mdisk_log%/*}";
     tee -a $mdisk_log
 }
 
 # main
 _init() {
-    [ -d $PERSISTENT_PATH/log ] && {
+    [ -d /home/log ] && {
         printf "[WARN] disk is already initialized.\n" >&2;
         return 0
     };
@@ -528,8 +504,12 @@ _init() {
 }
 
 _destroy() {
-    umount -f /home;
     umount -f /tmp;
+    umount -f /home/log;
+    umount -f /home
+
+    # umount -afr >/dev/null 2>&1;
+
     _lv_offline;
     printf "disk offline complete.\n"
 }

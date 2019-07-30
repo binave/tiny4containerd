@@ -19,7 +19,9 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin;
 [ $(id -u) = 0 ] || { echo 'must be root' >&2; exit 1; }
 
 # import settings from profile (e.g. HTTP_PROXY, HTTPS_PROXY)
-envset; for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
+/usr/local/etc/init.d/envset;
+
+for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 
 : ${IF_PREFIX:=eth};
 : ${CONTAINERD_ULIMITS:="1048576"};
@@ -36,10 +38,10 @@ envset; for i in /etc/profile.d/*.sh; do [ -r $i ] && . $i; done; unset i;
 Ymd=`date +%Y%m%d`;
 CERT_INTERFACES="switch0 ${IF_PREFIX}0 ${IF_PREFIX}1 ${IF_PREFIX}2 ${IF_PREFIX}3 ${IF_PREFIX}4";
 
-CONTAINERD_LOG="$PERSISTENT_PATH/log/sys/${Ymd:0:6}/${0##*/}_$Ymd.log";
-CONTAINERD_DIR="$PERSISTENT_PATH/${0##*/}ata";
+CONTAINERD_LOG="/home/log/sys/${Ymd:0:6}/${0##*/}_$Ymd.log";
+CONTAINERD_DIR="/home/${0##*/}ata";
 
-SERVER_TLS_DIR="$PERSISTENT_PATH/etc/tls";
+SERVER_TLS_DIR="/home/etc/tls";
 SERVER_KEY="$SERVER_TLS_DIR/serverkey.pem";
 SERVER_CSR="$SERVER_TLS_DIR/servercsr.pem";
 SERVER_CERT="$SERVER_TLS_DIR/server.pem";
@@ -61,8 +63,8 @@ _start() {
     };
 
     [ -e "/etc/docker" ] || {
-        mkdir -p "$PERSISTENT_PATH/etc/docker";
-        ln -sf "$PERSISTENT_PATH/etc/docker" "/etc/docker"
+        mkdir -p "/home/etc/docker";
+        ln -sf "/home/etc/docker" "/etc/docker"
     };
 
     _install_tls;

@@ -101,13 +101,15 @@ _rebuild_fstab(){
 
 date;
 
+printf "\n\n[`date`]\n\033[1;33mRunning init script...\033[0;39m\n";
+
 # This log is started before the persistence partition is mounted
 umask 022;
 
 udevd --daemon;
 udevadm trigger --action=add &
 
-sleep 5; # wait usb
+sleep 7; # wait usb
 
 modprobe loop;
 modprobe -q zram;
@@ -120,6 +122,7 @@ grep MemFree /proc/meminfo | awk '{print $2/4 "K"}' | \
 
 mkswap /dev/zram0;
 swapon /dev/zram0;
+
 printf "%-15s %-12s %-7s %-17s %-7s %-s\n"\
     /dev/zram0 swap swap defaults,noauto 0 0 | \
     tee -a /etc/fstab;
@@ -151,14 +154,14 @@ udevadm trigger;
 
 # filter environment variable
 {
-    sed 's/[\|\;\& ]/\n/g' /proc/cmdline | grep '^[_A-Z]\+=';
-    printf "export PERSISTENT_PATH=$PERSISTENT_PATH\n"
+    sed 's/[\|\;\& ]/\n/g' /proc/cmdline | grep '^[_A-Z]\+='
 } > /etc/profile.d/boot_envar.sh;
 
 # mount and monitor hard drive array
-mdisk init;
+/usr/local/etc/init.d/mdisk init;
 
 # keyboard(busybox), LANG
+. /etc/profile.d/boot_envar.sh;
 loadkmap < /usr/share/kmap/${KEYMAP:-us}.kmap;
 export LANG=${LANG:-C} TZ=${TZ:-CST-8};
 echo "LANG=$LANG" | tee /etc/sysconfig/language;
@@ -168,11 +171,11 @@ localedef -i ${LANG%.*} -f UTF-8 ${LANG%.*};
 # for crond, find, log
 mkdir -pv \
     /var/spool/cron/crontabs \
-    $PERSISTENT_PATH/etc/init.d \
-    $PERSISTENT_PATH/log/sys/${Ymd:0:6};
+    /home/etc/init.d \
+    /home/log/sys/${Ymd:0:6};
 
 # mdiskd
-mdisk monitor;
+/usr/local/etc/init.d/mdisk monitor;
 
 hwclock -u -s &
 
@@ -181,10 +184,10 @@ ifconfig lo 127.0.0.1 up;
 route add 127.0.0.1 lo &
 
 # init environment from disk
-envset;
+/usr/local/etc/init.d/envset;
 
 # change password
-pwset;
+/usr/local/etc/init.d/pwset;
 
 echo "------ firewall --------------";
 # http://wiki.tinycorelinux.net/wiki:firewall
@@ -192,7 +195,7 @@ echo "------ firewall --------------";
 sh /usr/local/etc/init.d/firewall init;
 
 # set static ip or start dhcp
-ifset;
+/usr/local/etc/init.d/ifset;
 
 # mount cgroups hierarchy. https://github.com/tianon/cgroupfs-mount
 sh /usr/local/etc/init.d/cgroupfs mount;
@@ -200,26 +203,26 @@ sh /usr/local/etc/init.d/cgroupfs mount;
 sleep 2;
 
 # init
-find $PERSISTENT_PATH/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
+find /home/etc/init.d -type f -perm /u+x -name "S*.sh" -exec /bin/sh -c {} \;
 
 # sync the clock
-ntpd -d -n -p pool.ntp.org >> $PERSISTENT_PATH/log/sys/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
+ntpd -d -n -p pool.ntp.org >> /home/log/sys/${Ymd:0:6}/ntpd_$Ymd.log 2>&1 &
 
 # start cron
-crond -f -d "${CROND_LOGLEVEL:-8}" >> $PERSISTENT_PATH/log/sys/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
+crond -f -d "${CROND_LOGLEVEL:-8}" >> /home/log/sys/${Ymd:0:6}/crond_$Ymd.log 2>&1 &
 
 chmod 1777 /tmp;
 
 # hide directory
-chmod 700 $PERSISTENT_PATH/etc;
+chmod 700 /home/etc;
 
 #maybe the links will be up by now - trouble is, on some setups, they may never happen, so we can't just wait until they are
 sleep 3;
 
 # set the hostname
 echo tc$(ip addr | grep -A 2 'eth[0-9]*:' | grep inet | awk -F'[.]|/' '{print "-"$4}' | awk '{printf $_}') | \
-    tee $PERSISTENT_PATH/etc/hostname;
-HOSTNAME=`cat $PERSISTENT_PATH/etc/hostname`;
+    tee /home/etc/hostname;
+HOSTNAME=`cat /home/etc/hostname`;
 sethostname $HOSTNAME;
 
 # ssh dameon start
@@ -235,13 +238,13 @@ ifconfig | grep -A 2 '^[a-z]' | sed 's/Link .*//;s/--//g;s/UP.*//g;s/\s\s/ /g' |
 echo "----- containerd -------------";
 
 # Launch Containerd
-containerd start;
+/usr/local/etc/init.d/containerd start;
 
 # Allow rc.local customisation
-touch $PERSISTENT_PATH/etc/rc.local;
-if [ -x $PERSISTENT_PATH/etc/rc.local ]; then
+touch /home/etc/rc.local;
+if [ -x /home/etc/rc.local ]; then
     echo "------ rc.local --------------";
-    . $PERSISTENT_PATH/etc/rc.local
+    . /home/etc/rc.local
 fi
 
-# echo "booting" > /etc/sysconfig/noautologin
+printf "\033[1;32mFinished init script...\033[0;39m\n";

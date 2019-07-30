@@ -7,12 +7,12 @@
 printf "\n\n[`date`]\n";
 
 # stop container daemon
-containerd stop;
+/usr/local/etc/init.d/containerd stop;
 
 # shutdown script
-find $PERSISTENT_PATH/etc/init.d -type f -perm /u+x -name "K*.sh" -exec sh -c {} \;
+find /home/etc/init.d -type f -perm /u+x -name "K*.sh" -exec sh -c {} \;
 
-wtmp;
+/usr/local/sbin/wtmp;
 
 # PID USER COMMAND
 ps -ef | grep -v ':[0-9][0-9] \[' | awk "{print \"kill \"\$2}" | sh
